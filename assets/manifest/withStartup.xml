@@ -1,0 +1,8 @@
+<Application Id="wtnews" EntryPoint="Windows.FullTrustApplication" Executable="wtnews.exe">
+    <uap:VisualElements DisplayName="WTNews" Square150x150Logo="Assets/Logo.png" Square44x44Logo="Assets/Logo.png" BackgroundColor="#333333" Description="WTNews" />
+    <Extensions>
+        <desktop:Extension Category="windows.startupTask" Executable="wtnews.exe" EntryPoint="Windows.FullTrustApplication">
+            <desktop:StartupTask TaskId="WTNews" Enabled="true" DisplayName="WTNews" />
+        </desktop:Extension>
+    </Extensions>
+</Application>

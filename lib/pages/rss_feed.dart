@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_notifier/local_notifier.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
@@ -31,8 +33,9 @@ class _RSSViewState extends ConsumerState<RSSView> {
 
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
-      ref.read(isOnSettings.notifier).state = false;
       rssFeed = await getForum();
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
       setState(() {});
     });
     Timer.periodic(const Duration(seconds: 15), (timer) async {
@@ -46,10 +49,17 @@ class _RSSViewState extends ConsumerState<RSSView> {
       newItemTitle.addListener(() async {
         saveToPrefs();
         await sendNotification(newTitle: newItemTitle.value);
+        if (ref.watch(playSound)) {
+          soundPlayer(newSound);
+        }
       });
     });
   }
 
+  String newSound = p.joinAll([
+    p.dirname(Platform.resolvedExecutable),
+    'data\\flutter_assets\\assets\\sound\\new.wav'
+  ]);
   Future<void> loadFromPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     newItemTitle.value = prefs.getString('lastTitle');
@@ -61,45 +71,41 @@ class _RSSViewState extends ConsumerState<RSSView> {
         LocalNotification notification =
             LocalNotification(title: 'New DevBlog!!', body: newTitle);
         await localNotifier.notify(notification);
-      }
-      if (newTitle.contains('Event')) {
+      } else if (newTitle.contains('Event')) {
         LocalNotification notification =
             LocalNotification(title: 'New Event!', body: newTitle);
         await localNotifier.notify(notification);
-      }
-      if (newTitle.contains('Video')) {
+      } else if (newTitle.contains('Video')) {
         LocalNotification notification =
             LocalNotification(title: 'New Video!', body: newTitle);
         await localNotifier.notify(notification);
-      }
-      if (newTitle.contains('It’s fixed!')) {
+      } else if (newTitle.contains('It’s fixed!')) {
         LocalNotification notification =
             LocalNotification(title: 'New It\'s Fixed!', body: newTitle);
         await localNotifier.notify(notification);
-      }
-      if (newTitle.contains('Update') && !newTitle.contains('Dev ')) {
+      } else if (newTitle.contains('Update') && !newTitle.contains('Dev ')) {
         LocalNotification notification =
             LocalNotification(title: 'New Update!', body: newTitle);
         await localNotifier.notify(notification);
-      }
-      if (newTitle.contains('Dev ')) {
+      } else if (newTitle.contains('Dev ')) {
         LocalNotification notification =
             LocalNotification(title: 'New Dev-related news!', body: newTitle);
         await localNotifier.notify(notification);
-      }
-      if (newTitle.toLowerCase().contains('dev server opening')) {
+      } else if (newTitle.toLowerCase().contains('dev server opening')) {
         LocalNotification notification =
             LocalNotification(title: 'Dev Server Opening!!', body: newTitle);
         await localNotifier.notify(notification);
-      }
-      if (newTitle.contains('Planned Battle Rating')) {
+      } else if (newTitle.contains('Planned Battle Rating')) {
         LocalNotification notification = LocalNotification(
             title: 'Planned Battle Rating changes!', body: newTitle);
         await localNotifier.notify(notification);
-      }
-      if (newTitle.contains('Economic')) {
+      } else if (newTitle.contains('Economic')) {
         LocalNotification notification = LocalNotification(
             title: 'There seems to be some economic stuff!', body: newTitle);
+        await localNotifier.notify(notification);
+      } else {
+        LocalNotification notification = LocalNotification(
+            title: 'New content in official forums', body: newTitle);
         await localNotifier.notify(notification);
       }
     }
@@ -139,7 +145,7 @@ class _RSSViewState extends ConsumerState<RSSView> {
               imageFilter: ImageFilter.blur(sigmaX: 14.0, sigmaY: 14.0)),
           rssFeed != null
               ? Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+                  padding: const EdgeInsets.fromLTRB(0, 30, 0, 0),
                   child: ListView.builder(
                       itemCount: rssFeed?.items?.length,
                       itemBuilder: (context, index) {
@@ -188,8 +194,8 @@ class _RSSViewState extends ConsumerState<RSSView> {
                 )
               : const Center(
                   child: SizedBox(
-                    width: 150,
-                    height: 150,
+                    width: 250,
+                    height: 250,
                     child: CircularProgressIndicator(
                       color: Colors.red,
                     ),

@@ -17,7 +17,13 @@ class _MoveWindow extends StatelessWidget {
         onPanStart: (details) {
           windowManager.startDragging();
         },
-        onDoubleTap: () => windowManager.maximize(),
+        onDoubleTap: () async {
+          if (!await windowManager.isMaximized()) {
+            await windowManager.maximize();
+          } else {
+            await windowManager.unmaximize();
+          }
+        },
         child: child ?? Container());
   }
 }
@@ -69,8 +75,8 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
               child: Container(
                 width: 15,
                 height: 15,
-                margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                child: const Icon(Icons.settings, color: Colors.white),
+                margin: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                child: const Icon(Icons.settings, color: Colors.green),
               ),
             ),
             InkWell(
@@ -80,8 +86,8 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
               child: Container(
                 width: 15,
                 height: 15,
-                margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                child: const Icon(Icons.minimize_rounded, color: Colors.white),
+                margin: const EdgeInsets.fromLTRB(12, 0, 12, 18),
+                child: const Icon(Icons.minimize_rounded, color: Colors.blue),
               ),
             ),
             InkWell(
@@ -93,7 +99,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
                 width: 15,
                 height: 15,
                 margin: const EdgeInsets.all(12),
-                child: const Icon(Icons.close, color: Colors.white),
+                child: const Icon(Icons.close, color: Colors.red),
               ),
             ),
           ],

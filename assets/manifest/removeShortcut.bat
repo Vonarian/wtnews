@@ -1,0 +1,1 @@
+del "%userprofile%\Start Menu\Programs\Startup\WTNews.lnk"

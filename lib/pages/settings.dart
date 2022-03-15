@@ -3,8 +3,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:launch_at_startup/launch_at_startup.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wtnews/main.dart';
 import 'package:wtnews/widgets/titlebar.dart';
 
@@ -20,10 +20,17 @@ class _SettingsState extends ConsumerState<Settings> {
   void initState() {
     super.initState();
     WidgetsBinding.instance!.addPostFrameCallback((_) async {
-      ref.read(isOnSettings.notifier).state = true;
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      ref.read(isStartupEnabled.notifier).state =
+          prefs.getBool('startup') ?? false;
+      ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? false;
     });
   }
 
+  String pathToAddShortcut =
+      '${p.dirname(Platform.resolvedExecutable)}/data/flutter_assets/assets/manifest/addShortcut.bat';
+  String pathToRemoveShortcut =
+      '${p.dirname(Platform.resolvedExecutable)}/data/flutter_assets/assets/manifest/removeShortcut.bat';
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -49,20 +56,17 @@ class _SettingsState extends ConsumerState<Settings> {
                 children: [
                   TextButton.icon(
                       onPressed: () async {
-                        PackageInfo packageInfo =
-                            await PackageInfo.fromPlatform();
-                        launchAtStartup.setup(
-                          appName: packageInfo.appName,
-                          appPath: Platform.resolvedExecutable,
-                        );
-
                         if (!ref.watch(isStartupEnabled)) {
-                          await launchAtStartup.enable();
+                          await Process.run(pathToAddShortcut, []);
                         } else {
-                          await launchAtStartup.disable();
+                          await Process.run(pathToRemoveShortcut, []);
                         }
                         ref.read(isStartupEnabled.notifier).state =
-                            await launchAtStartup.isEnabled();
+                            !ref.read(isStartupEnabled.notifier).state;
+                        SharedPreferences prefs =
+                            await SharedPreferences.getInstance();
+                        await prefs.setBool(
+                            'startup', ref.watch(isStartupEnabled));
                       },
                       icon: const Icon(
                         Icons.settings,
@@ -71,7 +75,23 @@ class _SettingsState extends ConsumerState<Settings> {
                       label: Text(
                         'Start at startup: ${ref.watch(isStartupEnabled) ? 'On' : 'Off'}',
                         style: const TextStyle(fontSize: 40),
-                      ))
+                      )),
+                  TextButton.icon(
+                      onPressed: () async {
+                        ref.read(playSound.notifier).state =
+                            !ref.read(playSound.notifier).state;
+                        SharedPreferences prefs =
+                            await SharedPreferences.getInstance();
+                        await prefs.setBool('playSound', ref.watch(playSound));
+                      },
+                      icon: const Icon(
+                        Icons.settings,
+                        size: 40,
+                      ),
+                      label: Text(
+                        'Play sound: ${ref.watch(playSound) ? 'On' : 'Off'}',
+                        style: const TextStyle(fontSize: 40),
+                      )),
                 ],
               ),
             ),

@@ -41,6 +41,8 @@ dependencies:
   package_info_plus: 1.3.0
   launch_at_startup: ^0.1.6
   flutter_riverpod: ^1.0.3
+  win32:
+  xml: ^5.3.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -74,6 +76,9 @@ flutter:
     - assets/install/installer.bat
     - assets/install/version.txt
     - assets/app_icon.ico
+    - assets/sound/new.wav
+    - assets/manifest/addShortcut.bat
+    - assets/manifest/removeShortcut.bat
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
