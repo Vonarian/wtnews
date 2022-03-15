@@ -54,7 +54,7 @@ class _LoadingState extends State<Loading> {
               duration: const Duration(seconds: 10),
               content: Text('Version: $version ___ Status: Up-to-date!')));
         Future.delayed(const Duration(seconds: 2), () async {
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
             PageRouteBuilder(
               pageBuilder: (c, a1, a2) => const RSSView(),

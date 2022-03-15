@@ -3,10 +3,10 @@ import 'dart:developer';
 import 'dart:ui';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:local_notifier/local_notifier.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
 import 'package:wtnews/widgets/titlebar.dart';
@@ -31,24 +31,29 @@ class _RSSViewState extends State<RSSView> {
     if (widget.rssFeed != null) {
       rssFeed = widget.rssFeed!;
     }
-    rememberList.value = rssFeed?.items!;
-    Timer.periodic(const Duration(seconds: 15), (timer) async {
+    Future.delayed(Duration.zero, () async {
+      if (!mounted) return;
       rssFeed = await getForum();
-      if (rssFeed?.items != null) {
-        rememberList.value = rssFeed?.items!;
-      }
-
       setState(() {});
     });
-    rememberList.addListener(() {
-      saveToPrefs();
-      sendNotification(newTitle: firstItemTitle);
+    Timer.periodic(const Duration(seconds: 15), (timer) async {
+      if (!mounted) return;
+
+      rssFeed = await getForum();
+      setState(() {});
+    });
+
+    Future.delayed(const Duration(seconds: 10), () {
+      newItemTitle.addListener(() async {
+        saveToPrefs();
+        await sendNotification(newTitle: newItemTitle.value);
+      });
     });
   }
 
   Future<void> loadFromPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    rememberList.value?.length = prefs.getInt('listLength') ?? 0;
+    newItemTitle.value = prefs.getString('lastTitle');
   }
 
   Future<void> sendNotification({required String? newTitle}) async {
@@ -83,7 +88,7 @@ class _RSSViewState extends State<RSSView> {
             LocalNotification(title: 'New Dev-related news!', body: newTitle);
         await localNotifier.notify(notification);
       }
-      if (newTitle.contains('Dev Server')) {
+      if (newTitle.toLowerCase().contains('dev server opening')) {
         LocalNotification notification =
             LocalNotification(title: 'Dev Server Opening!!', body: newTitle);
         await localNotifier.notify(notification);
@@ -93,7 +98,7 @@ class _RSSViewState extends State<RSSView> {
 
   Future<void> saveToPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('listLength', rememberList.value?.length ?? 0);
+    await prefs.setString('lastTitle', newItemTitle.value ?? '');
   }
 
   Future<RssFeed> getForum() async {
@@ -109,8 +114,7 @@ class _RSSViewState extends State<RSSView> {
     }
   }
 
-  ValueNotifier<List<RssItem>?> rememberList = ValueNotifier(null);
-  String? firstItemTitle;
+  ValueNotifier<String?> newItemTitle = ValueNotifier(null);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -130,7 +134,7 @@ class _RSSViewState extends State<RSSView> {
                   child: ListView.builder(
                       itemCount: rssFeed?.items?.length,
                       itemBuilder: (context, index) {
-                        firstItemTitle = rssFeed?.items?.first.title;
+                        newItemTitle.value = rssFeed?.items?.first.title;
                         RssItem? data = rssFeed?.items![index];
                         String? description = data?.description;
                         if (data != null) {
@@ -163,6 +167,10 @@ class _RSSViewState extends State<RSSView> {
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(color: Colors.white),
                             ),
+                            onTap: () async {
+                              await launch(
+                                  data.link ?? 'https://Forum.Warthunder.com');
+                            },
                           );
                         } else {
                           return const Center(child: Text('No Data'));
