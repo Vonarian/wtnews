@@ -1,12 +1,13 @@
-import 'dart:developer';
+import 'dart:io';
 import 'dart:ui';
 
-import 'package:dart_rss/dart_rss.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 
+import '../services/github.dart';
 import '../widgets/titlebar.dart';
-import 'home.dart';
+import 'downloader.dart';
+import 'rss_feed.dart';
 
 class Loading extends StatefulWidget {
   const Loading({Key? key}) : super(key: key);
@@ -21,32 +22,74 @@ class _LoadingState extends State<Loading> {
     super.initState();
   }
 
-  Future<RssFeed> getForum() async {
+  Future<String> checkVersion() async {
+    final File file = File(
+        '${p.dirname(Platform.resolvedExecutable)}/data/flutter_assets/assets/install/version.txt');
+    final String version = await file.readAsString();
+    return version;
+  }
+
+  Future<void> checkGitVersion(String version) async {
     try {
-      Dio dio = Dio();
-      Response response = await dio
-          .get('https://forum.warthunder.com/index.php?/discover/693.xml');
-      RssFeed rssFeed = RssFeed.parse(response.data);
-      return rssFeed;
-    } catch (e, st) {
-      log('ERROR: $e', stackTrace: st);
-      rethrow;
+      Data data = await Data.getData();
+
+      if (int.parse(data.tagName.replaceAll('.', '')) >
+          int.parse(version.replaceAll('.', ''))) {
+        ScaffoldMessenger.of(context)
+          ..removeCurrentSnackBar()
+          ..showSnackBar(SnackBar(
+              content: Text(
+                  'Version: $version. Status: Proceeding to update in 3 seconds!')));
+
+        Future.delayed(const Duration(seconds: 3), () async {
+          Navigator.of(context)
+              .pushReplacement(MaterialPageRoute(builder: (context) {
+            return const Downloader();
+          }));
+        });
+      } else {
+        ScaffoldMessenger.of(context)
+          ..removeCurrentSnackBar()
+          ..showSnackBar(SnackBar(
+              duration: const Duration(seconds: 10),
+              content: Text('Version: $version ___ Status: Up-to-date!')));
+        Future.delayed(const Duration(seconds: 2), () async {
+          Navigator.push(
+            context,
+            PageRouteBuilder(
+              pageBuilder: (c, a1, a2) => const RSSView(),
+              transitionsBuilder: (c, anim, a2, child) =>
+                  FadeTransition(opacity: anim, child: child),
+              transitionDuration: const Duration(milliseconds: 2000),
+            ),
+          );
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(SnackBar(
+            duration: const Duration(seconds: 10),
+            content: Text(
+                'Version: $version ___ Status: Error checking for update!')));
+      Future.delayed(const Duration(seconds: 4), () async {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (c, a1, a2) => const RSSView(),
+            transitionsBuilder: (c, anim, a2, child) =>
+                FadeTransition(opacity: anim, child: child),
+            transitionDuration: const Duration(milliseconds: 2000),
+          ),
+        );
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
-      getForum().then((value) => Navigator.of(context).pushReplacement(
-            PageRouteBuilder(
-              pageBuilder: (c, a1, a2) => Home(
-                rssFeed: value,
-              ),
-              transitionsBuilder: (c, anim, a2, child) =>
-                  FadeTransition(opacity: anim, child: child),
-              transitionDuration: const Duration(milliseconds: 2000),
-            ),
-          ));
+    WidgetsBinding.instance!.addPostFrameCallback((_) async {
+      await checkGitVersion(await checkVersion());
     });
     return Scaffold(
       body: Stack(

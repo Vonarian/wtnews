@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:local_notifier/local_notifier.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/loading.dart';
+
+final localNotifier = LocalNotifier.instance;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
