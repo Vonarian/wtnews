@@ -1,11 +1,10 @@
 @echo off
 SET currentDirectory=%~dp0
-PUSHD %CD%
+PUSHD %currentDirectory%
 CD ..
 CD ..
 CD ..
 SET MNIST_DIR=%CD%
-ECHO %MNIST_DIR%
   @timeout 2 /nobreak >NUL
   @echo Proceeding to update the application, please do not close the window!
 taskkill /F /IM wtnews.exe
