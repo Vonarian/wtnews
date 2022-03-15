@@ -37,6 +37,8 @@ class _SettingsState extends ConsumerState<Settings> {
                 children: [
                   TextButton.icon(
                       onPressed: () async {
+                        ref.read(isStartupEnabled.notifier).state =
+                            await launchAtStartup.isEnabled();
                         PackageInfo packageInfo =
                             await PackageInfo.fromPlatform();
                         launchAtStartup.setup(
