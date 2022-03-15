@@ -27,6 +27,7 @@ class _DownloaderState extends State<Downloader>
     super.initState();
     windowManager.addListener(this);
     trayManager.addListener(this);
+    downloadUpdate();
   }
 
   @override

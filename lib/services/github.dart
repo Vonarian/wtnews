@@ -89,15 +89,11 @@ class Data {
       };
 
   static Future<Data> getData() async {
-    try {
-      Dio dio = Dio();
-      Response response = await dio
-          .get('https://api.github.com/repos/Vonarian/WTbgA/releases/latest');
-      Data data = Data.fromJson(jsonDecode(response.data));
-      return data;
-    } catch (e) {
-      rethrow;
-    }
+    Dio dio = Dio();
+    Response response = await dio
+        .get('https://api.github.com/repos/Vonarian/WTNews/releases/latest');
+    Data data = Data.fromJson(response.data);
+    return data;
   }
 }
 

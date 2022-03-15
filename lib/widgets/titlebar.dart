@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -21,14 +22,14 @@ class _MoveWindow extends StatelessWidget {
   }
 }
 
-class WindowTitleBar extends StatefulWidget {
+class WindowTitleBar extends ConsumerStatefulWidget {
   const WindowTitleBar({Key? key}) : super(key: key);
 
   @override
-  State<WindowTitleBar> createState() => _WindowTitleBarState();
+  _WindowTitleBarState createState() => _WindowTitleBarState();
 }
 
-class _WindowTitleBarState extends State<WindowTitleBar>
+class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
     with TrayListener, WindowListener {
   @override
   void initState() {
@@ -49,18 +50,19 @@ class _WindowTitleBarState extends State<WindowTitleBar>
     return _MoveWindow(
       child: SizedBox(
         width: MediaQuery.of(context).size.width,
-        child: Row(
+        child: Flex(
+          direction: Axis.horizontal,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             InkWell(
               onTap: () {
-                Navigator.pushReplacement(
+                Navigator.push(
                   context,
                   PageRouteBuilder(
                     pageBuilder: (c, a1, a2) => const Settings(),
                     transitionsBuilder: (c, anim, a2, child) =>
                         FadeTransition(opacity: anim, child: child),
-                    transitionDuration: const Duration(milliseconds: 2000),
+                    transitionDuration: const Duration(milliseconds: 1200),
                   ),
                 );
               },

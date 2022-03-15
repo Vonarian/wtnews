@@ -17,6 +17,14 @@ class Settings extends ConsumerStatefulWidget {
 
 class _SettingsState extends ConsumerState<Settings> {
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance!.addPostFrameCallback((_) async {
+      ref.read(isOnSettings.notifier).state = true;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Material(
       child: Stack(
@@ -30,6 +38,10 @@ class _SettingsState extends ConsumerState<Settings> {
               ),
               imageFilter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0)),
           Scaffold(
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+            ),
             backgroundColor: Colors.transparent,
             body: Center(
               child: Column(
@@ -37,8 +49,6 @@ class _SettingsState extends ConsumerState<Settings> {
                 children: [
                   TextButton.icon(
                       onPressed: () async {
-                        ref.read(isStartupEnabled.notifier).state =
-                            await launchAtStartup.isEnabled();
                         PackageInfo packageInfo =
                             await PackageInfo.fromPlatform();
                         launchAtStartup.setup(

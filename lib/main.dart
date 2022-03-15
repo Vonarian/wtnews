@@ -5,6 +5,8 @@ import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/loading.dart';
 
 final StateProvider<bool> isStartupEnabled = StateProvider((ref) => false);
+final StateProvider<bool> isOnSettings = StateProvider((ref) => false);
+
 final localNotifier = LocalNotifier.instance;
 
 Future<void> main() async {

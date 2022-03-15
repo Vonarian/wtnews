@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 import 'dart:ui';
 
@@ -20,6 +21,9 @@ class _LoadingState extends State<Loading> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance!.addPostFrameCallback((_) async {
+      await checkGitVersion(await checkVersion());
+    });
   }
 
   Future<String> checkVersion() async {
@@ -32,7 +36,6 @@ class _LoadingState extends State<Loading> {
   Future<void> checkGitVersion(String version) async {
     try {
       Data data = await Data.getData();
-
       if (int.parse(data.tagName.replaceAll('.', '')) >
           int.parse(version.replaceAll('.', ''))) {
         ScaffoldMessenger.of(context)
@@ -65,7 +68,8 @@ class _LoadingState extends State<Loading> {
           );
         });
       }
-    } catch (e) {
+    } catch (e, st) {
+      log('ERROR: $e', stackTrace: st);
       ScaffoldMessenger.of(context)
         ..removeCurrentSnackBar()
         ..showSnackBar(SnackBar(
@@ -88,9 +92,6 @@ class _LoadingState extends State<Loading> {
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance!.addPostFrameCallback((_) async {
-      await checkGitVersion(await checkVersion());
-    });
     return Scaffold(
       body: Stack(
         children: [

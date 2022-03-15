@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_notifier/local_notifier.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -13,26 +14,24 @@ import 'package:wtnews/widgets/titlebar.dart';
 
 import '../main.dart';
 
-class RSSView extends StatefulWidget {
-  final RssFeed? rssFeed;
-  const RSSView({Key? key, this.rssFeed}) : super(key: key);
+class RSSView extends ConsumerStatefulWidget {
+  const RSSView({Key? key}) : super(key: key);
 
   @override
-  State<RSSView> createState() => _RSSViewState();
+  _RSSViewState createState() => _RSSViewState();
 }
 
-class _RSSViewState extends State<RSSView> {
+class _RSSViewState extends ConsumerState<RSSView> {
   RssFeed? rssFeed;
 
   @override
   void initState() {
     super.initState();
     loadFromPrefs();
-    if (widget.rssFeed != null) {
-      rssFeed = widget.rssFeed!;
-    }
+
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
+      ref.read(isOnSettings.notifier).state = false;
       rssFeed = await getForum();
       setState(() {});
     });
@@ -91,6 +90,16 @@ class _RSSViewState extends State<RSSView> {
       if (newTitle.toLowerCase().contains('dev server opening')) {
         LocalNotification notification =
             LocalNotification(title: 'Dev Server Opening!!', body: newTitle);
+        await localNotifier.notify(notification);
+      }
+      if (newTitle.contains('Planned Battle Rating')) {
+        LocalNotification notification = LocalNotification(
+            title: 'Planned Battle Rating changes!', body: newTitle);
+        await localNotifier.notify(notification);
+      }
+      if (newTitle.contains('Economic')) {
+        LocalNotification notification = LocalNotification(
+            title: 'There seems to be some economic stuff!', body: newTitle);
         await localNotifier.notify(notification);
       }
     }
