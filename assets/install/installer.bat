@@ -10,4 +10,4 @@ SET MNIST_DIR=%CD%
 taskkill /F /IM wtnews.exe
 powershell.exe Add-AppPackage -Path '%MNIST_DIR%\out\WTNews.msix'
 @echo Installation process complete
-timeout 1
+powershell.exe %~dp0launcher.ps1

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wtnews/main.dart';
+import 'package:wtnews/pages/custom_feed.dart';
 import 'package:wtnews/services/utility.dart';
 import 'package:wtnews/widgets/titlebar.dart';
 
@@ -29,7 +30,41 @@ class _SettingsState extends ConsumerState<Settings> {
         await Process.run(pathToUpdateShortcut, []);
       }
       ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? false;
+      ref.read(customFeed.notifier).state = prefs.getString('customFeed');
     });
+  }
+
+  static Route<String> dialogBuilderUrl(BuildContext context, String url) {
+    TextEditingController userInputOverG = TextEditingController(text: url);
+    return DialogRoute(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+              content: TextField(
+                onChanged: (value) {},
+                controller: userInputOverG,
+                decoration: const InputDecoration(
+                    hintText:
+                        'https://forum.warthunder.com/index.php?/discover/*NUMBER HERE*.xml/'),
+              ),
+              title: const Text('Set custom url for feed'),
+              actions: [
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Cancel')),
+                ElevatedButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context)
+                        ..removeCurrentSnackBar()
+                        ..showSnackBar(SnackBar(
+                            content:
+                                Text('Custom set: ${userInputOverG.text}. ')));
+                      Navigator.of(context).pop(userInputOverG.text);
+                    },
+                    child: const Text('Notify'))
+              ],
+            ));
   }
 
   String pathToAddShortcut =
@@ -132,6 +167,37 @@ class _SettingsState extends ConsumerState<Settings> {
                       ),
                       label: const Text(
                         'Pick a directory and save log',
+                        style: TextStyle(fontSize: 40),
+                      )),
+                  TextButton.icon(
+                      onPressed: () async {
+                        ref.read(customFeed.notifier).state =
+                            (await Navigator.of(context).push(dialogBuilderUrl(
+                                context, ref.watch(customFeed) ?? '')))!;
+                        SharedPreferences prefs =
+                            await SharedPreferences.getInstance();
+                        await prefs.setString(
+                            'customFeed', ref.watch(customFeed) ?? '');
+                      },
+                      icon: const Icon(
+                        Icons.save,
+                        size: 40,
+                      ),
+                      label: const Text(
+                        'Set custom feed url',
+                        style: TextStyle(fontSize: 40),
+                      )),
+                  TextButton.icon(
+                      onPressed: () async {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => const CustomRSSView()));
+                      },
+                      icon: const Icon(
+                        Icons.save,
+                        size: 40,
+                      ),
+                      label: const Text(
+                        'Switch to custom feed screen',
                         style: TextStyle(fontSize: 40),
                       )),
                 ],

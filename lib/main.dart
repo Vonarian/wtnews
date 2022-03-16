@@ -11,6 +11,7 @@ import 'package:wtnews/pages/loading.dart';
 
 final StateProvider<bool> isStartupEnabled = StateProvider((ref) => false);
 final StateProvider<bool> playSound = StateProvider((ref) => true);
+final StateProvider<String?> customFeed = StateProvider((ref) => null);
 
 final localNotifier = LocalNotifier.instance;
 String pathToUpdateShortcut =

@@ -1,0 +1,1 @@
+Start-Process -FilePath 'wtnews.exe' -WorkingDirectory (Get-AppxPackage -Name "WTNews").InstallLocation
