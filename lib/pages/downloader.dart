@@ -37,10 +37,8 @@ class _DownloaderState extends State<Downloader>
     trayManager.removeListener(this);
   }
 
-  String errorLogPath = p.joinAll([
-    p.dirname(Platform.resolvedExecutable),
-    'data/flutter_assets/logs/errors'
-  ]);
+  String logPath =
+      p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\logs\\']);
 
   LocalNotification toast = LocalNotification(
       title: 'Downloading WTNews update',
@@ -90,23 +88,15 @@ class _DownloaderState extends State<Downloader>
         await Process.run(installer, []);
       }).timeout(const Duration(minutes: 8));
     } catch (e, st) {
-      String path = await AppUtil.createFolderInAppDocDir(errorLogPath);
-      final File fileWrite = File('$path/downloader-update.txt');
       ScaffoldMessenger.of(context)
         ..removeCurrentSnackBar()
         ..showSnackBar(SnackBar(
             duration: const Duration(seconds: 10),
             content: Text(e.toString())));
-      final String finalString = 'Logging:'
-          '\nError:\n'
-          '$e'
-          '\nStackTrace: '
-          '\n$st';
-      await fileWrite.writeAsString(finalString);
-
+      AppUtil.logAndSaveToText('$logPath\\Downloader.txt', e.toString(),
+          st.toString(), 'Downloader catch');
       error = true;
       setState(() {});
-      rethrow;
     }
   }
 

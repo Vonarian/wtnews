@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
+import 'package:wtnews/services/utility.dart';
 import 'package:wtnews/widgets/titlebar.dart';
 
 import '../main.dart';
@@ -41,8 +42,13 @@ class _RSSViewState extends ConsumerState<RSSView> {
     Timer.periodic(const Duration(seconds: 15), (timer) async {
       if (!mounted) return;
 
-      rssFeed = await getForum();
-      setState(() {});
+      try {
+        rssFeed = await getForum();
+        setState(() {});
+      } catch (e, st) {
+        await AppUtil.logAndSaveToText('$logPath\\rss_feed.txt', e.toString(),
+            st.toString(), 'RSS_Feed Timer');
+      }
     });
 
     Future.delayed(const Duration(seconds: 10), () {
@@ -60,6 +66,8 @@ class _RSSViewState extends ConsumerState<RSSView> {
     p.dirname(Platform.resolvedExecutable),
     'data\\flutter_assets\\assets\\sound\\new.wav'
   ]);
+  String logPath =
+      p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\logs']);
   Future<void> loadFromPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     newItemTitle.value = prefs.getString('lastTitle');
