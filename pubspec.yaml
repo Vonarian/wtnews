@@ -72,13 +72,13 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/bg.png
     - assets/install/installer.bat
     - assets/install/version.txt
     - assets/app_icon.ico
     - assets/sound/new.wav
     - assets/manifest/addShortcut.bat
     - assets/manifest/removeShortcut.bat
+    - assets/manifest/updateShortcut.bat
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

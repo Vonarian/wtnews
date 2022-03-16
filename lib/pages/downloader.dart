@@ -87,7 +87,7 @@ class _DownloaderState extends State<Downloader>
           'install',
           'installer.bat'
         ]));
-        await Process.run(installer, [], runInShell: true);
+        await Process.run(installer, []);
       }).timeout(const Duration(minutes: 8));
     } catch (e, st) {
       String path = await AppUtil.createFolderInAppDocDir(errorLogPath);

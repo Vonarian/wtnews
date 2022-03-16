@@ -96,13 +96,28 @@ class _LoadingState extends State<Loading> {
       body: Stack(
         children: [
           ImageFiltered(
-              child: Image.asset(
-                'assets/bg.png',
-                fit: BoxFit.cover,
+              child: Container(
+                decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                  colors: [
+                    Colors.black,
+                    Colors.black,
+                    Colors.black,
+                    Colors.black87,
+                    Colors.black87,
+                    Colors.black87,
+                    Colors.black87,
+                    Colors.black,
+                    Colors.black,
+                    Colors.black,
+                  ],
+                )),
                 height: MediaQuery.of(context).size.height,
                 width: MediaQuery.of(context).size.width,
               ),
-              imageFilter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0)),
+              imageFilter: ImageFilter.blur(sigmaX: 14.0, sigmaY: 14.0)),
           const Center(
             child: SizedBox(
               width: 150,

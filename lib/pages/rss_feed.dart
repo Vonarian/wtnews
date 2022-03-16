@@ -136,16 +136,31 @@ class _RSSViewState extends ConsumerState<RSSView> {
       body: Stack(
         children: [
           ImageFiltered(
-              child: Image.asset(
-                'assets/bg.png',
-                fit: BoxFit.cover,
+              child: Container(
+                decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                  colors: [
+                    Colors.black,
+                    Colors.black,
+                    Colors.black,
+                    Colors.black87,
+                    Colors.black87,
+                    Colors.black87,
+                    Colors.black87,
+                    Colors.black,
+                    Colors.black,
+                    Colors.black,
+                  ],
+                )),
                 height: MediaQuery.of(context).size.height,
                 width: MediaQuery.of(context).size.width,
               ),
               imageFilter: ImageFilter.blur(sigmaX: 14.0, sigmaY: 14.0)),
           rssFeed != null
               ? Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 30, 0, 0),
+                  padding: const EdgeInsets.fromLTRB(0, 45, 0, 0),
                   child: ListView.builder(
                       itemCount: rssFeed?.items?.length,
                       itemBuilder: (context, index) {
@@ -180,7 +195,9 @@ class _RSSViewState extends ConsumerState<RSSView> {
                                       .replaceAll('	', '') ??
                                   '',
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: Colors.white),
+                              style: const TextStyle(
+                                color: Colors.white,
+                              ),
                             ),
                             onTap: () async {
                               await launch(

@@ -73,11 +73,13 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
                 );
               },
               child: Container(
+                alignment: Alignment.center,
                 width: 15,
                 height: 15,
-                margin: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                margin: const EdgeInsets.fromLTRB(12, 2, 12, 12),
                 child: const Icon(Icons.settings, color: Colors.green),
               ),
+              hoverColor: Colors.green,
             ),
             InkWell(
               onTap: () {
@@ -86,22 +88,28 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
               child: Container(
                 width: 15,
                 height: 15,
-                margin: const EdgeInsets.fromLTRB(12, 0, 12, 18),
-                child: const Icon(Icons.minimize_rounded, color: Colors.blue),
+                margin: const EdgeInsets.fromLTRB(12, 0, 10, 25.5),
+                child: const Icon(Icons.minimize_outlined, color: Colors.blue),
               ),
+              hoverColor: Colors.blue,
             ),
             InkWell(
-              onTap: () {
-                windowManager.close();
-                exit(0);
-              },
-              child: Container(
-                width: 15,
-                height: 15,
-                margin: const EdgeInsets.all(12),
-                child: const Icon(Icons.close, color: Colors.red),
-              ),
-            ),
+                onTap: () {
+                  windowManager.close();
+                  exit(0);
+                },
+                child: Container(
+                  alignment: Alignment.center,
+                  width: 15,
+                  height: 15,
+                  margin: const EdgeInsets.fromLTRB(12, 0, 14, 12),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.red,
+                    size: 25,
+                  ),
+                ),
+                hoverColor: Colors.red),
           ],
         ),
       ),
