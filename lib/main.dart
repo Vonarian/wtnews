@@ -24,6 +24,7 @@ late SharedPreferences prefs;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
+  prefs = await SharedPreferences.getInstance();
   bool isStartupEnabled = prefs.getBool('startup') ?? false;
   if (isStartupEnabled && !kDebugMode) {
     Process.runSync(pathToUpdateShortcut, []);
@@ -36,7 +37,6 @@ Future<void> main() async {
   });
   await WinToast.instance().initialize(
       appName: 'WTNews', productName: 'WTNews', companyName: 'Vonarian');
-  prefs = await SharedPreferences.getInstance();
   await FirebaseDartFlutter.setup();
   app = await Firebase.initializeApp(
       options: FirebaseOptions.fromMap(firebaseConfig), name: 'wtnews-54364');
