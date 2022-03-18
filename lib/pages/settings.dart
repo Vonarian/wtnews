@@ -5,7 +5,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wtnews/main.dart';
 import 'package:wtnews/pages/custom_feed.dart';
 import 'package:wtnews/services/utility.dart';
@@ -23,7 +22,6 @@ class _SettingsState extends ConsumerState<Settings> {
   void initState() {
     super.initState();
     WidgetsBinding.instance!.addPostFrameCallback((_) async {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
       ref.read(isStartupEnabled.notifier).state =
           prefs.getBool('startup') ?? false;
       if (ref.read(isStartupEnabled.notifier).state) {
@@ -118,8 +116,6 @@ class _SettingsState extends ConsumerState<Settings> {
                         }
                         ref.read(isStartupEnabled.notifier).state =
                             !ref.read(isStartupEnabled.notifier).state;
-                        SharedPreferences prefs =
-                            await SharedPreferences.getInstance();
                         await prefs.setBool(
                             'startup', ref.watch(isStartupEnabled));
                       },
@@ -135,8 +131,6 @@ class _SettingsState extends ConsumerState<Settings> {
                       onPressed: () async {
                         ref.read(playSound.notifier).state =
                             !ref.read(playSound.notifier).state;
-                        SharedPreferences prefs =
-                            await SharedPreferences.getInstance();
                         await prefs.setBool('playSound', ref.watch(playSound));
                       },
                       icon: const Icon(
@@ -174,8 +168,6 @@ class _SettingsState extends ConsumerState<Settings> {
                         ref.read(customFeed.notifier).state =
                             (await Navigator.of(context).push(dialogBuilderUrl(
                                 context, ref.watch(customFeed) ?? '')))!;
-                        SharedPreferences prefs =
-                            await SharedPreferences.getInstance();
                         await prefs.setString(
                             'customFeed', ref.watch(customFeed) ?? '');
                       },
@@ -185,7 +177,8 @@ class _SettingsState extends ConsumerState<Settings> {
                       ),
                       label: const Text(
                         'Set custom feed url',
-                        style: TextStyle(fontSize: 40),
+                        style: TextStyle(
+                            fontSize: 40, color: Colors.deepPurpleAccent),
                       )),
                   TextButton.icon(
                       onPressed: () async {
@@ -198,13 +191,14 @@ class _SettingsState extends ConsumerState<Settings> {
                       ),
                       label: const Text(
                         'Switch to custom feed screen',
-                        style: TextStyle(fontSize: 40),
+                        style: TextStyle(
+                            fontSize: 40, color: Colors.deepPurpleAccent),
                       )),
                 ],
               ),
             ),
           ),
-          const WindowTitleBar(),
+          const WindowTitleBar(isCustom: true),
         ],
       ),
     );

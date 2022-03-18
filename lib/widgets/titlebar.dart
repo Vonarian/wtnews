@@ -29,7 +29,8 @@ class _MoveWindow extends StatelessWidget {
 }
 
 class WindowTitleBar extends ConsumerStatefulWidget {
-  const WindowTitleBar({Key? key}) : super(key: key);
+  final bool isCustom;
+  const WindowTitleBar({Key? key, required this.isCustom}) : super(key: key);
 
   @override
   _WindowTitleBarState createState() => _WindowTitleBarState();
@@ -60,27 +61,29 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
           direction: Axis.horizontal,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    pageBuilder: (c, a1, a2) => const Settings(),
-                    transitionsBuilder: (c, anim, a2, child) =>
-                        FadeTransition(opacity: anim, child: child),
-                    transitionDuration: const Duration(milliseconds: 500),
-                  ),
-                );
-              },
-              child: Container(
-                alignment: Alignment.center,
-                width: 15,
-                height: 15,
-                margin: const EdgeInsets.fromLTRB(12, 2, 12, 12),
-                child: const Icon(Icons.settings, color: Colors.green),
-              ),
-              hoverColor: Colors.green,
-            ),
+            !widget.isCustom
+                ? InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (c, a1, a2) => const Settings(),
+                          transitionsBuilder: (c, anim, a2, child) =>
+                              FadeTransition(opacity: anim, child: child),
+                          transitionDuration: const Duration(milliseconds: 500),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      alignment: Alignment.center,
+                      width: 15,
+                      height: 15,
+                      margin: const EdgeInsets.fromLTRB(12, 2, 12, 12),
+                      child: const Icon(Icons.settings, color: Colors.green),
+                    ),
+                    hoverColor: Colors.green,
+                  )
+                : const SizedBox(),
             InkWell(
               onTap: () {
                 windowManager.minimize();

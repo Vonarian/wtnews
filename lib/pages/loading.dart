@@ -127,7 +127,7 @@ class _LoadingState extends State<Loading> {
               ),
             ),
           ),
-          const WindowTitleBar(),
+          const WindowTitleBar(isCustom: false),
         ],
       ),
     );

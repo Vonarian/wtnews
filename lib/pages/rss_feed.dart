@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:ui';
@@ -9,7 +8,6 @@ import 'package:firebase_dart/database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
@@ -39,7 +37,6 @@ class _RSSViewState extends ConsumerState<RSSView> {
       if (!mounted) return;
       startListening();
       rssFeed = await getForum();
-      SharedPreferences prefs = await SharedPreferences.getInstance();
       ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
       setState(() {});
     });
@@ -58,7 +55,7 @@ class _RSSViewState extends ConsumerState<RSSView> {
     Future.delayed(const Duration(seconds: 10), () {
       newItemTitle.addListener(() async {
         saveToPrefs();
-        await sendNotification(newTitle: newItemTitle.value);
+        await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
         if (ref.watch(playSound)) {
           soundPlayer(newSound);
         }
@@ -74,17 +71,26 @@ class _RSSViewState extends ConsumerState<RSSView> {
         .reference();
     ref.onValue.listen((event) async {
       final data = event.snapshot.value;
-      if (data != null && data['title'] != null && data['subtitle'] != null) {
-        prefs = await SharedPreferences.getInstance();
+      if (data != null &&
+          data['title'] != null &&
+          data['subtitle'] != null &&
+          data['id'] != null &&
+          data['title'] != '' &&
+          data['subtitle'] != '') {
         Message message = Message.fromMap(data);
-        Message prefsData =
-            Message.fromMap(jsonDecode(prefs.getString('message') ?? ''));
-        if (prefsData != message && prefsData.subtitle != message.subtitle) {
-          await WinToast.instance().showToast(
+        if (prefs.getInt('id') != message.id) {
+          var toast = await WinToast.instance().showToast(
               type: ToastType.text04,
               title: message.title,
               subtitle: message.subtitle);
-          await prefs.setString('message', jsonEncode(message.toMap()));
+          toast?.eventStream.listen((event) async {
+            if (event is ActivatedEvent) {
+              if (message.url != null) {
+                await launch(message.url!);
+              }
+            }
+          });
+          await prefs.setInt('id', message.id);
         }
       }
     });
@@ -97,61 +103,109 @@ class _RSSViewState extends ConsumerState<RSSView> {
   String logPath =
       p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\logs']);
   Future<void> loadFromPrefs() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
     newItemTitle.value = prefs.getString('lastTitle');
   }
 
   Future<void> sendNotification(
-      {required String? newTitle, String? url}) async {
+      {required String? newTitle, required String url}) async {
     if (newTitle != null) {
       if (newTitle.contains('Development')) {
-        await WinToast.instance().showToast(
+        var toast = await WinToast.instance().showToast(
             type: ToastType.text04, title: 'New DevBlog!!', subtitle: newTitle);
+        toast?.eventStream.listen((event) async {
+          if (event is ActivatedEvent) {
+            await launch(url);
+          }
+        });
       } else if (newTitle.contains('Event')) {
-        await WinToast.instance().showToast(
+        var toast = await WinToast.instance().showToast(
             type: ToastType.text04, title: 'New Event!!', subtitle: newTitle);
+        toast?.eventStream.listen((event) async {
+          if (event is ActivatedEvent) {
+            await launch(url);
+          }
+        });
       } else if (newTitle.contains('Video')) {
-        await WinToast.instance().showToast(
+        var toast = await WinToast.instance().showToast(
             type: ToastType.text04, title: 'New Video!!', subtitle: newTitle);
+        toast?.eventStream.listen((event) async {
+          if (event is ActivatedEvent) {
+            await launch(url);
+          }
+        });
       } else if (newTitle.contains('It’s fixed!')) {
-        await WinToast.instance().showToast(
+        var toast = await WinToast.instance().showToast(
             type: ToastType.text04,
             title: 'New It\'s fixed!!',
             subtitle: newTitle);
+        toast?.eventStream.listen((event) async {
+          if (event is ActivatedEvent) {
+            await launch(url);
+          }
+        });
       } else if (newTitle.contains('Update') && !newTitle.contains('Dev ')) {
-        await WinToast.instance().showToast(
+        var toast = await WinToast.instance().showToast(
             type: ToastType.text04, title: 'New Update!!', subtitle: newTitle);
+        toast?.eventStream.listen((event) async {
+          if (event is ActivatedEvent) {
+            await launch(url);
+          }
+        });
       } else if (newTitle.contains('Dev ')) {
-        await WinToast.instance().showToast(
+        var toast = await WinToast.instance().showToast(
             type: ToastType.text04,
             title: 'New Dev related content!!',
             subtitle: newTitle);
+        toast?.eventStream.listen((event) async {
+          if (event is ActivatedEvent) {
+            await launch(url);
+          }
+        });
       } else if (newTitle.toLowerCase().contains('dev server opening')) {
-        await WinToast.instance().showToast(
+        var toast = await WinToast.instance().showToast(
             type: ToastType.text04,
             title: 'Dev Server Opening!!',
             subtitle: newTitle);
+        toast?.eventStream.listen((event) async {
+          if (event is ActivatedEvent) {
+            await launch(url);
+          }
+        });
       } else if (newTitle.contains('Planned Battle Rating')) {
-        await WinToast.instance().showToast(
+        var toast = await WinToast.instance().showToast(
             type: ToastType.text04,
             title: 'Planned BR changes!!',
             subtitle: newTitle);
+        toast?.eventStream.listen((event) async {
+          if (event is ActivatedEvent) {
+            await launch(url);
+          }
+        });
       } else if (newTitle.contains('Economic')) {
-        await WinToast.instance().showToast(
+        var toast = await WinToast.instance().showToast(
             type: ToastType.text04,
             title: 'Something new about economics!!',
             subtitle: newTitle);
+        toast?.eventStream.listen((event) async {
+          if (event is ActivatedEvent) {
+            await launch(url);
+          }
+        });
       } else {
-        await WinToast.instance().showToast(
+        var toast = await WinToast.instance().showToast(
             type: ToastType.text04,
-            title: 'New content in the official forums!!',
+            title: 'New content in the official forums',
             subtitle: newTitle);
+        toast?.eventStream.listen((event) async {
+          if (event is ActivatedEvent) {
+            await launch(url);
+          }
+        });
       }
     }
   }
 
   Future<void> saveToPrefs() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('lastTitle', newItemTitle.value ?? '');
   }
 
@@ -168,6 +222,7 @@ class _RSSViewState extends ConsumerState<RSSView> {
     }
   }
 
+  String newItemUrl = '';
   ValueNotifier<String?> newItemTitle = ValueNotifier(null);
   @override
   Widget build(BuildContext context) {
@@ -204,6 +259,7 @@ class _RSSViewState extends ConsumerState<RSSView> {
                       itemCount: rssFeed?.items?.length,
                       itemBuilder: (context, index) {
                         newItemTitle.value = rssFeed?.items?.first.title;
+                        newItemUrl = rssFeed?.items?.first.link ?? '';
                         RssItem? data = rssFeed?.items![index];
                         String? description = data?.description;
                         if (data != null) {
@@ -257,7 +313,9 @@ class _RSSViewState extends ConsumerState<RSSView> {
                     ),
                   ),
                 ),
-          const WindowTitleBar()
+          const WindowTitleBar(
+            isCustom: false,
+          )
         ],
       ),
     );

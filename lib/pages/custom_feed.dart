@@ -7,7 +7,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
@@ -34,7 +33,6 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
       rssFeed = await getForum(ref.watch(customFeed) ?? '');
-      SharedPreferences prefs = await SharedPreferences.getInstance();
       ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
       setState(() {});
     });
@@ -47,7 +45,7 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
     Future.delayed(const Duration(seconds: 10), () {
       newItemTitle.addListener(() async {
         saveToPrefs();
-        await sendNotification(newTitle: newItemTitle.value);
+        await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
         if (ref.watch(playSound)) {
           soundPlayer(newSound);
         }
@@ -62,21 +60,25 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
   String logPath =
       p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\logs']);
   Future<void> loadFromPrefs() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
     newItemTitle.value = prefs.getString('lastTitleCustom');
   }
 
-  Future<void> sendNotification({required String? newTitle}) async {
+  Future<void> sendNotification(
+      {required String? newTitle, required String url}) async {
     if (newTitle != null) {
-      await WinToast.instance().showToast(
+      var toast = await WinToast.instance().showToast(
           type: ToastType.text04,
           title: 'New content in the feed',
           subtitle: newTitle);
+      toast?.eventStream.listen((event) async {
+        if (event is ActivatedEvent) {
+          await launch(url);
+        }
+      });
     }
   }
 
   Future<void> saveToPrefs() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('lastTitleCustom', newItemTitle.value ?? '');
   }
 
@@ -92,6 +94,7 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
     }
   }
 
+  String newItemUrl = '';
   ValueNotifier<String?> newItemTitle = ValueNotifier(null);
   @override
   Widget build(BuildContext context) {
@@ -133,6 +136,7 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
                       itemCount: rssFeed?.items?.length,
                       itemBuilder: (context, index) {
                         newItemTitle.value = rssFeed?.items?.first.title;
+                        newItemUrl = rssFeed?.items?.first.link ?? '';
                         RssItem? data = rssFeed?.items![index];
                         String? description = data?.description;
                         if (data != null) {
@@ -173,7 +177,9 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
                   ),
                 ),
         ),
-        const WindowTitleBar()
+        const WindowTitleBar(
+          isCustom: true,
+        )
       ]),
     );
   }
