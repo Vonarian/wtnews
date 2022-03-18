@@ -33,7 +33,7 @@ dependencies:
   dio: ^4.0.4
   window_manager: ^0.1.9
   shared_preferences: ^2.0.13
-  local_notifier: ^0.1.1
+  win_toast: ^0.0.2
   tray_manager: ^0.1.4
   archive: ^3.2.2
   percent_indicator: ^4.0.0
@@ -44,8 +44,13 @@ dependencies:
   win32:
   xml: ^5.3.1
   file_picker:
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  firebase_dart: ^1.0.5
+  firebase_dart_flutter:
+  firebase_core:
+  firebase_core_desktop:
+
+# The following adds the Cupertino Icons font to your application.
+# Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
 
 dev_dependencies:

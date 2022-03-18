@@ -4,10 +4,10 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:local_notifier/local_notifier.dart';
 import 'package:path/path.dart' as p;
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:tray_manager/tray_manager.dart';
+import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../services/github.dart';
@@ -40,11 +40,12 @@ class _DownloaderState extends State<Downloader>
   String logPath =
       p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\logs\\']);
 
-  LocalNotification toast = LocalNotification(
-      title: 'Downloading WTNews update',
-      subtitle: 'Please do not close the application!');
-
   Future<void> downloadUpdate() async {
+    await WinToast.instance().showToast(
+        type: ToastType.text04,
+        title: 'Updating WTNews...',
+        subtitle:
+            'WTNews is downloading update, please do not close the application');
     await windowManager.setMinimumSize(const Size(230, 300));
     await windowManager.setMaximumSize(const Size(600, 600));
     await windowManager.setSize(const Size(230, 300));

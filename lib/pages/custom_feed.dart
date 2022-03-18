@@ -6,12 +6,12 @@ import 'dart:ui';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:local_notifier/local_notifier.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
+import 'package:win_toast/win_toast.dart';
 import 'package:wtnews/widgets/titlebar.dart';
 
 import '../main.dart';
@@ -68,9 +68,10 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
 
   Future<void> sendNotification({required String? newTitle}) async {
     if (newTitle != null) {
-      LocalNotification notification = LocalNotification(
-          body: newTitle, title: 'New content in custom feed');
-      await localNotifier.notify(notification);
+      await WinToast.instance().showToast(
+          type: ToastType.text04,
+          title: 'New content in the feed',
+          subtitle: newTitle);
     }
   }
 

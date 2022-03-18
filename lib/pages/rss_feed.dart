@@ -1,21 +1,24 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:ui';
 
 import 'package:dio/dio.dart';
+import 'package:firebase_dart/database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:local_notifier/local_notifier.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
+import 'package:win_toast/win_toast.dart';
 import 'package:wtnews/services/utility.dart';
 import 'package:wtnews/widgets/titlebar.dart';
 
 import '../main.dart';
+import '../services/data_class.dart';
 
 class RSSView extends ConsumerStatefulWidget {
   const RSSView({Key? key}) : super(key: key);
@@ -34,6 +37,7 @@ class _RSSViewState extends ConsumerState<RSSView> {
 
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
+      startListening();
       rssFeed = await getForum();
       SharedPreferences prefs = await SharedPreferences.getInstance();
       ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
@@ -62,6 +66,30 @@ class _RSSViewState extends ConsumerState<RSSView> {
     });
   }
 
+  void startListening() {
+    DatabaseReference ref = FirebaseDatabase(
+            app: app,
+            databaseURL:
+                'https://wtnews-54364-default-rtdb.europe-west1.firebasedatabase.app')
+        .reference();
+    ref.onValue.listen((event) async {
+      final data = event.snapshot.value;
+      if (data != null && data['title'] != null && data['subtitle'] != null) {
+        prefs = await SharedPreferences.getInstance();
+        Message message = Message.fromMap(data);
+        Message prefsData =
+            Message.fromMap(jsonDecode(prefs.getString('message') ?? ''));
+        if (prefsData != message && prefsData.subtitle != message.subtitle) {
+          await WinToast.instance().showToast(
+              type: ToastType.text04,
+              title: message.title,
+              subtitle: message.subtitle);
+          await prefs.setString('message', jsonEncode(message.toMap()));
+        }
+      }
+    });
+  }
+
   String newSound = p.joinAll([
     p.dirname(Platform.resolvedExecutable),
     'data\\flutter_assets\\assets\\sound\\new.wav'
@@ -73,48 +101,51 @@ class _RSSViewState extends ConsumerState<RSSView> {
     newItemTitle.value = prefs.getString('lastTitle');
   }
 
-  Future<void> sendNotification({required String? newTitle}) async {
+  Future<void> sendNotification(
+      {required String? newTitle, String? url}) async {
     if (newTitle != null) {
       if (newTitle.contains('Development')) {
-        LocalNotification notification =
-            LocalNotification(title: 'New DevBlog!!', body: newTitle);
-        await localNotifier.notify(notification);
+        await WinToast.instance().showToast(
+            type: ToastType.text04, title: 'New DevBlog!!', subtitle: newTitle);
       } else if (newTitle.contains('Event')) {
-        LocalNotification notification =
-            LocalNotification(title: 'New Event!', body: newTitle);
-        await localNotifier.notify(notification);
+        await WinToast.instance().showToast(
+            type: ToastType.text04, title: 'New Event!!', subtitle: newTitle);
       } else if (newTitle.contains('Video')) {
-        LocalNotification notification =
-            LocalNotification(title: 'New Video!', body: newTitle);
-        await localNotifier.notify(notification);
+        await WinToast.instance().showToast(
+            type: ToastType.text04, title: 'New Video!!', subtitle: newTitle);
       } else if (newTitle.contains('It’s fixed!')) {
-        LocalNotification notification =
-            LocalNotification(title: 'New It\'s Fixed!', body: newTitle);
-        await localNotifier.notify(notification);
+        await WinToast.instance().showToast(
+            type: ToastType.text04,
+            title: 'New It\'s fixed!!',
+            subtitle: newTitle);
       } else if (newTitle.contains('Update') && !newTitle.contains('Dev ')) {
-        LocalNotification notification =
-            LocalNotification(title: 'New Update!', body: newTitle);
-        await localNotifier.notify(notification);
+        await WinToast.instance().showToast(
+            type: ToastType.text04, title: 'New Update!!', subtitle: newTitle);
       } else if (newTitle.contains('Dev ')) {
-        LocalNotification notification =
-            LocalNotification(title: 'New Dev-related news!', body: newTitle);
-        await localNotifier.notify(notification);
+        await WinToast.instance().showToast(
+            type: ToastType.text04,
+            title: 'New Dev related content!!',
+            subtitle: newTitle);
       } else if (newTitle.toLowerCase().contains('dev server opening')) {
-        LocalNotification notification =
-            LocalNotification(title: 'Dev Server Opening!!', body: newTitle);
-        await localNotifier.notify(notification);
+        await WinToast.instance().showToast(
+            type: ToastType.text04,
+            title: 'Dev Server Opening!!',
+            subtitle: newTitle);
       } else if (newTitle.contains('Planned Battle Rating')) {
-        LocalNotification notification = LocalNotification(
-            title: 'Planned Battle Rating changes!', body: newTitle);
-        await localNotifier.notify(notification);
+        await WinToast.instance().showToast(
+            type: ToastType.text04,
+            title: 'Planned BR changes!!',
+            subtitle: newTitle);
       } else if (newTitle.contains('Economic')) {
-        LocalNotification notification = LocalNotification(
-            title: 'There seems to be some economic stuff!', body: newTitle);
-        await localNotifier.notify(notification);
+        await WinToast.instance().showToast(
+            type: ToastType.text04,
+            title: 'Something new about economics!!',
+            subtitle: newTitle);
       } else {
-        LocalNotification notification = LocalNotification(
-            title: 'New content in official forums', body: newTitle);
-        await localNotifier.notify(notification);
+        await WinToast.instance().showToast(
+            type: ToastType.text04,
+            title: 'New content in the official forums!!',
+            subtitle: newTitle);
       }
     }
   }

@@ -45,3 +45,5 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /pubspec.lock
+/lib/services/firebase_data.dart
+/lib/services/supabase_data.dart
