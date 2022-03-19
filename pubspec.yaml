@@ -31,7 +31,7 @@ dependencies:
     sdk: flutter
   webfeed: ^0.7.0
   dio: ^4.0.4
-  window_manager: ^0.1.9
+  window_manager: ^0.2.0
   shared_preferences: ^2.0.13
   win_toast: ^0.0.2
   tray_manager: ^0.1.4
@@ -78,14 +78,12 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/install/installer.bat
-    - assets/install/launcher.ps1
     - assets/install/version.txt
     - assets/app_icon.ico
     - assets/sound/new.wav
     - assets/manifest/addShortcut.bat
     - assets/manifest/removeShortcut.bat
     - assets/manifest/updateShortcut.bat
-  #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

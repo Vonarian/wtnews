@@ -243,6 +243,8 @@ class _RSSViewState extends ConsumerState<RSSView> {
                     Colors.black87,
                     Colors.black87,
                     Colors.black87,
+                    Colors.black87,
+                    Colors.black87,
                     Colors.black,
                     Colors.black,
                     Colors.black,
@@ -251,7 +253,7 @@ class _RSSViewState extends ConsumerState<RSSView> {
                 height: MediaQuery.of(context).size.height,
                 width: MediaQuery.of(context).size.width,
               ),
-              imageFilter: ImageFilter.blur(sigmaX: 14.0, sigmaY: 14.0)),
+              imageFilter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0)),
           rssFeed != null
               ? Padding(
                   padding: const EdgeInsets.fromLTRB(0, 45, 0, 0),

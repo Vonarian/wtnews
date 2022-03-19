@@ -5,6 +5,7 @@ import 'package:archive/archive_io.dart';
 import 'package:path/path.dart' as p;
 
 class AppUtil {
+  ///Will create the folder if missing and return its path.
   static Future<String> createFolderInAppDocDir(String path) async {
     //Get this App Document Directory
 
@@ -27,6 +28,7 @@ class AppUtil {
     }
   }
 
+  ///Will save error and stack trace to a text file with given [e], [stackTrace] and [location].
   static Future<void> logAndSaveToText(
       String filePath, String e, String stackTrace, String location) async {
     await createFolderInAppDocDir(p.dirname(filePath));

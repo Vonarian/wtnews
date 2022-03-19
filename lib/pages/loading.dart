@@ -44,7 +44,7 @@ class _LoadingState extends State<Loading> {
               content: Text(
                   'Version: $version. Status: Proceeding to update in 3 seconds!')));
 
-        Future.delayed(const Duration(seconds: 3), () async {
+        Future.delayed(const Duration(seconds: 2), () async {
           Navigator.of(context)
               .pushReplacement(MaterialPageRoute(builder: (context) {
             return const Downloader();
@@ -56,14 +56,14 @@ class _LoadingState extends State<Loading> {
           ..showSnackBar(SnackBar(
               duration: const Duration(seconds: 10),
               content: Text('Version: $version ___ Status: Up-to-date!')));
-        Future.delayed(const Duration(seconds: 2), () async {
+        Future.delayed(const Duration(microseconds: 500), () async {
           Navigator.pushReplacement(
             context,
             PageRouteBuilder(
               pageBuilder: (c, a1, a2) => const RSSView(),
               transitionsBuilder: (c, anim, a2, child) =>
                   FadeTransition(opacity: anim, child: child),
-              transitionDuration: const Duration(milliseconds: 2000),
+              transitionDuration: const Duration(milliseconds: 1000),
             ),
           );
         });
@@ -105,8 +105,6 @@ class _LoadingState extends State<Loading> {
                     Colors.black,
                     Colors.black,
                     Colors.black,
-                    Colors.black87,
-                    Colors.black87,
                     Colors.black87,
                     Colors.black87,
                     Colors.black,

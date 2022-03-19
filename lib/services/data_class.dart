@@ -3,7 +3,6 @@ class Message {
   final String subtitle;
   final int id;
   final String? url;
-
   @override
   String toString() {
     return 'Message{title: $title, subtitle: $subtitle, id: $id, url: $url}';

@@ -49,15 +49,17 @@ class _DownloaderState extends State<Downloader>
     await windowManager.setMinimumSize(const Size(230, 300));
     await windowManager.setMaximumSize(const Size(600, 600));
     await windowManager.setSize(const Size(230, 300));
+    await windowManager.center();
     try {
       Data data = await Data.getData();
 
       Dio dio = Dio();
       await dio.download(data.assets.last.browserDownloadUrl,
           '${p.dirname(Platform.resolvedExecutable)}/data/update.zip',
-          onReceiveProgress: (downloaded, full) {
+          onReceiveProgress: (downloaded, full) async {
         progress = downloaded / full * 100;
         setState(() {});
+        await windowManager.setProgressBar(progress / 100);
       }).whenComplete(() async {
         final File filePath =
             File('${p.dirname(Platform.resolvedExecutable)}/data/update.zip');

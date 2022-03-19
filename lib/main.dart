@@ -58,14 +58,14 @@ void soundPlayer(String path) {
       print('WAV file missing.');
     }
   } else {
-    final pszLogonSound = TEXT(path);
-    final result = PlaySound(pszLogonSound, NULL, SND_FILENAME | SND_SYNC);
+    final soundFile = TEXT(path);
+    final result = PlaySound(soundFile, NULL, SND_FILENAME | SND_SYNC);
 
     if (result != TRUE) {
       if (kDebugMode) {
         print('Sound playback failed.');
       }
     }
-    free(pszLogonSound);
+    free(soundFile);
   }
 }

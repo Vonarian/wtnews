@@ -129,7 +129,10 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
     await TrayManager.instance.setIcon(
       'assets/app_icon.ico',
     );
-    List<MenuItem> menuItems = [MenuItem(key: 'show-app', title: 'Show')];
+    List<MenuItem> menuItems = [
+      MenuItem(key: 'show-app', title: 'Show'),
+      MenuItem(key: 'close-app', title: 'Exit')
+    ];
     await TrayManager.instance.setContextMenu(menuItems);
   }
 
@@ -167,6 +170,9 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
     switch (menuItem.key) {
       case 'show-app':
         windowManager.show();
+        break;
+      case 'close-app':
+        windowManager.close();
         break;
     }
   }
