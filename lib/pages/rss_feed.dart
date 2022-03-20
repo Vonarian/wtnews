@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
 import 'package:win_toast/win_toast.dart';
+import 'package:wtnews/services/presence.dart';
 import 'package:wtnews/services/utility.dart';
 import 'package:wtnews/widgets/titlebar.dart';
 
@@ -25,17 +27,20 @@ class RSSView extends ConsumerStatefulWidget {
   _RSSViewState createState() => _RSSViewState();
 }
 
-class _RSSViewState extends ConsumerState<RSSView> {
+class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
   RssFeed? rssFeed;
-
+  StreamSubscription? subscription;
   @override
   void initState() {
     super.initState();
     loadFromPrefs();
-
+    WidgetsBinding.instance?.addObserver(this);
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
-      startListening();
+      subscription = startListening();
+      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+      PresenceService()
+          .configureUserPresence((await deviceInfo.windowsInfo).computerName);
       rssFeed = await getForum();
       ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
       setState(() {});
@@ -63,13 +68,32 @@ class _RSSViewState extends ConsumerState<RSSView> {
     });
   }
 
-  void startListening() {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.paused) {
+      PresenceService().disconnect();
+      subscription?.cancel();
+    }
+    if (state == AppLifecycleState.resumed) {
+      PresenceService().connect();
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    WidgetsBinding.instance?.removeObserver(this);
+    subscription?.cancel();
+  }
+
+  StreamSubscription? startListening() {
     DatabaseReference ref = FirebaseDatabase(
             app: app,
             databaseURL:
                 'https://wtnews-54364-default-rtdb.europe-west1.firebasedatabase.app')
         .reference();
-    ref.onValue.listen((event) async {
+    return ref.onValue.listen((event) async {
       final data = event.snapshot.value;
       if (data != null &&
           data['title'] != null &&
