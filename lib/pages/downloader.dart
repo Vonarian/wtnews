@@ -59,7 +59,6 @@ class _DownloaderState extends State<Downloader>
           onReceiveProgress: (downloaded, full) async {
         progress = downloaded / full * 100;
         setState(() {});
-        await windowManager.setProgressBar(progress / 100);
       }).whenComplete(() async {
         final File filePath =
             File('${p.dirname(Platform.resolvedExecutable)}/data/update.zip');
