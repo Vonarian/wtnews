@@ -8,8 +8,8 @@ import 'package:window_manager/window_manager.dart';
 import '../pages/settings.dart';
 
 class _MoveWindow extends StatelessWidget {
-  const _MoveWindow({Key? key, this.child}) : super(key: key);
-  final Widget? child;
+  const _MoveWindow({Key? key, required this.child}) : super(key: key);
+  final Widget child;
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -24,7 +24,7 @@ class _MoveWindow extends StatelessWidget {
             await windowManager.unmaximize();
           }
         },
-        child: child ?? Container());
+        child: child);
   }
 }
 
@@ -57,10 +57,18 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
     return _MoveWindow(
       child: SizedBox(
         width: MediaQuery.of(context).size.width,
+        height: 40,
         child: Flex(
           direction: Axis.horizontal,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            !widget.isCustom
+                ? Expanded(
+                    child: Image.asset(
+                    'assets/app_icon.ico',
+                    alignment: Alignment.centerLeft,
+                  ))
+                : const SizedBox(),
             !widget.isCustom
                 ? InkWell(
                     onTap: () {

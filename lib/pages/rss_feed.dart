@@ -9,12 +9,12 @@ import 'package:firebase_dart/database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
 import 'package:win_toast/win_toast.dart';
 import 'package:wtnews/services/presence.dart';
-import 'package:wtnews/services/utility.dart';
 import 'package:wtnews/widgets/titlebar.dart';
 
 import '../main.dart';
@@ -39,30 +39,35 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
       if (!mounted) return;
       subscription = startListening();
       DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-      PresenceService()
-          .configureUserPresence((await deviceInfo.windowsInfo).computerName);
-      rssFeed = await getForum();
-      ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
+      try {
+        await PresenceService()
+            .configureUserPresence((await deviceInfo.windowsInfo).computerName);
+        await Dio().get('https://test.com');
+        rssFeed = await getForum();
+        ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
+      } catch (e, st) {
+        await Sentry.captureException(e, stackTrace: st);
+      }
       setState(() {});
     });
     Timer.periodic(const Duration(seconds: 15), (timer) async {
       if (!mounted) return;
-
       try {
         rssFeed = await getForum();
         setState(() {});
       } catch (e, st) {
-        await AppUtil.logAndSaveToText('$logPath\\rss_feed.txt', e.toString(),
-            st.toString(), 'RSS_Feed Timer');
+        await Sentry.captureException(e, stackTrace: st);
       }
     });
 
     Future.delayed(const Duration(seconds: 10), () {
       newItemTitle.addListener(() async {
         saveToPrefs();
-        await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
-        if (ref.watch(playSound)) {
-          soundPlayer(newSound);
+        try {
+          await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
+          if (ref.watch(playSound)) soundPlayer(newSound);
+        } catch (e, st) {
+          await Sentry.captureException(e, stackTrace: st);
         }
       });
     });
@@ -77,6 +82,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
     }
     if (state == AppLifecycleState.resumed) {
       PresenceService().connect();
+      subscription?.resume();
     }
   }
 
@@ -126,7 +132,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
   ]);
   String logPath =
       p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\logs']);
-  Future<void> loadFromPrefs() async {
+  void loadFromPrefs() {
     newItemTitle.value = prefs.getString('lastTitle');
   }
 

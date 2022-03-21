@@ -47,3 +47,4 @@ app.*.map.json
 /pubspec.lock
 /lib/services/firebase_data.dart
 /lib/services/supabase_data.dart
+/lib/services/dsn.dart

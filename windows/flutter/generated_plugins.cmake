@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  sentry_flutter
   tray_manager
   url_launcher_windows
   win_toast

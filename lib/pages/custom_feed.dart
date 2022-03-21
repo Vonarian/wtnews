@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
@@ -32,14 +33,22 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
 
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
-      rssFeed = await getForum(ref.watch(customFeed) ?? '');
-      ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
-      setState(() {});
+      try {
+        rssFeed = await getForum(ref.watch(customFeed) ?? '');
+        ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
+        setState(() {});
+      } catch (e, st) {
+        await Sentry.captureException(e, stackTrace: st);
+      }
     });
     Timer.periodic(const Duration(seconds: 15), (timer) async {
       if (!mounted) return;
-      rssFeed = await getForum(ref.watch(customFeed) ?? '');
-      setState(() {});
+      try {
+        rssFeed = await getForum(ref.watch(customFeed) ?? '');
+        setState(() {});
+      } catch (e, st) {
+        await Sentry.captureException(e, stackTrace: st);
+      }
     });
 
     Future.delayed(const Duration(seconds: 10), () {

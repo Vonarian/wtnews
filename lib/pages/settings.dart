@@ -1,13 +1,11 @@
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:wtnews/main.dart';
 import 'package:wtnews/pages/custom_feed.dart';
-import 'package:wtnews/services/utility.dart';
 import 'package:wtnews/widgets/titlebar.dart';
 
 class Settings extends ConsumerStatefulWidget {
@@ -140,28 +138,6 @@ class _SettingsState extends ConsumerState<Settings> {
                       label: Text(
                         'Play sound: ${ref.watch(playSound) ? 'On' : 'Off'}',
                         style: const TextStyle(fontSize: 40),
-                      )),
-                  TextButton.icon(
-                      onPressed: () async {
-                        String logPath = p.joinAll(
-                            [p.dirname(Platform.resolvedExecutable), 'data']);
-                        String packPath =
-                            AppUtil.packAndAccessLog('$logPath\\logs');
-                        String? selectedDirectory =
-                            await FilePicker.platform.getDirectoryPath();
-                        if (selectedDirectory != null) {
-                          File file = File(packPath);
-                          await file.copy('$selectedDirectory\\log.zip');
-                          await file.delete();
-                        }
-                      },
-                      icon: const Icon(
-                        Icons.save,
-                        size: 40,
-                      ),
-                      label: const Text(
-                        'Pick a directory and save log',
-                        style: TextStyle(fontSize: 40),
                       )),
                   TextButton.icon(
                       onPressed: () async {

@@ -31,7 +31,7 @@ class PresenceService {
         con?.onDisconnect().remove();
         con?.set(true);
 
-        lastOnlineRef.onDisconnect().set(ServerValue.timestamp);
+        lastOnlineRef.onDisconnect().set(DateTime.now().toString());
       }
     });
   }

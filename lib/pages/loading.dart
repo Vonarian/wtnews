@@ -1,9 +1,9 @@
-import 'dart:developer';
 import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../services/github.dart';
 import '../widgets/titlebar.dart';
@@ -27,10 +27,15 @@ class _LoadingState extends State<Loading> {
   }
 
   Future<String> checkVersion() async {
-    final File file = File(
-        '${p.dirname(Platform.resolvedExecutable)}/data/flutter_assets/assets/install/version.txt');
-    final String version = await file.readAsString();
-    return version;
+    try {
+      final File file = File(
+          '${p.dirname(Platform.resolvedExecutable)}/data/flutter_assets/assets/install/version.txt');
+      final String version = await file.readAsString();
+      return version;
+    } catch (e, st) {
+      await Sentry.captureException(e, stackTrace: st);
+      rethrow;
+    }
   }
 
   Future<void> checkGitVersion(String version) async {
@@ -69,13 +74,13 @@ class _LoadingState extends State<Loading> {
         });
       }
     } catch (e, st) {
-      log('ERROR: $e', stackTrace: st);
       ScaffoldMessenger.of(context)
         ..removeCurrentSnackBar()
         ..showSnackBar(SnackBar(
             duration: const Duration(seconds: 10),
             content: Text(
                 'Version: $version ___ Status: Error checking for update!')));
+      await Sentry.captureException(e, stackTrace: st);
       Future.delayed(const Duration(seconds: 4), () async {
         Navigator.pushReplacement(
           context,

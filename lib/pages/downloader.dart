@@ -6,12 +6,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../services/github.dart';
-import '../services/utility.dart';
 
 class Downloader extends StatefulWidget {
   const Downloader({Key? key}) : super(key: key);
@@ -95,8 +95,8 @@ class _DownloaderState extends State<Downloader>
         ..showSnackBar(SnackBar(
             duration: const Duration(seconds: 10),
             content: Text(e.toString())));
-      AppUtil.logAndSaveToText('$logPath\\Downloader.txt', e.toString(),
-          st.toString(), 'Downloader catch');
+      await Sentry.captureException(e, stackTrace: st);
+
       error = true;
       setState(() {});
     }
