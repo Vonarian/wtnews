@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:wtnews/main.dart';
 import 'package:wtnews/pages/custom_feed.dart';
+import 'package:wtnews/widgets/feedback.dart' as fb;
 import 'package:wtnews/widgets/titlebar.dart';
 
 class Settings extends ConsumerStatefulWidget {
@@ -127,6 +128,21 @@ class _SettingsState extends ConsumerState<Settings> {
                       )),
                   TextButton.icon(
                       onPressed: () async {
+                        ref.read(minimizeOnStart.notifier).state =
+                            !ref.read(minimizeOnStart.notifier).state;
+                        await prefs.setBool(
+                            'minimize', ref.watch(minimizeOnStart));
+                      },
+                      icon: const Icon(
+                        Icons.settings,
+                        size: 40,
+                      ),
+                      label: Text(
+                        'Minimize on startup: ${ref.watch(minimizeOnStart) ? 'On' : 'Off'}',
+                        style: const TextStyle(fontSize: 40),
+                      )),
+                  TextButton.icon(
+                      onPressed: () async {
                         ref.read(playSound.notifier).state =
                             !ref.read(playSound.notifier).state;
                         await prefs.setBool('playSound', ref.watch(playSound));
@@ -170,6 +186,9 @@ class _SettingsState extends ConsumerState<Settings> {
                         style: TextStyle(
                             fontSize: 40, color: Colors.deepPurpleAccent),
                       )),
+                  const fb.Feedback(text: 'Set Username', onlyUserName: true),
+                  const fb.Feedback(
+                      text: 'Send Feedback ❤', onlyUserName: false),
                 ],
               ),
             ),

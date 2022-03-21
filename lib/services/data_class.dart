@@ -3,16 +3,21 @@ class Message {
   final String subtitle;
   final int id;
   final String? url;
+  final String? operation;
+  final String? device;
   @override
-  String toString() {
-    return 'Message{title: $title, subtitle: $subtitle, id: $id, url: $url}';
-  }
-
   const Message(
       {required this.title,
       required this.subtitle,
       required this.id,
-      this.url});
+      this.url,
+      this.operation,
+      this.device});
+
+  @override
+  String toString() {
+    return 'Message{title: $title, subtitle: $subtitle, id: $id, url: $url, operation: $operation, device: $device}';
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -20,6 +25,8 @@ class Message {
       'subtitle': subtitle,
       'id': id,
       'url': url,
+      'operation': operation,
+      'device': device,
     };
   }
 
@@ -28,7 +35,9 @@ class Message {
       title: map['title'] as String,
       subtitle: map['subtitle'] as String,
       id: map['id'] as int,
-      url: map['url'] ?? '',
+      url: map['url'] as String?,
+      operation: map['operation'] as String?,
+      device: map['device'] as String?,
     );
   }
 }

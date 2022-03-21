@@ -18,17 +18,21 @@ import 'package:wtnews/services/firebase_data.dart';
 
 final StateProvider<bool> isStartupEnabled = StateProvider((ref) => false);
 final StateProvider<bool> playSound = StateProvider((ref) => true);
+final StateProvider<bool> minimizeOnStart = StateProvider((ref) => false);
 final StateProvider<String?> customFeed = StateProvider((ref) => null);
+late final StateProvider<String?> userNameProvider;
 late FirebaseApp app;
-
 String pathToUpdateShortcut =
     '${p.dirname(Platform.resolvedExecutable)}/data/flutter_assets/assets/manifest/updateShortcut.bat';
+String pathToVersion =
+    '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\install\\version.txt';
 late SharedPreferences prefs;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
   prefs = await SharedPreferences.getInstance();
   bool isStartupEnabled = prefs.getBool('startup') ?? false;
+  userNameProvider = StateProvider((ref) => prefs.getString('userName'));
   if (isStartupEnabled && !kDebugMode) {
     Process.runSync(pathToUpdateShortcut, []);
   }
@@ -44,6 +48,13 @@ Future<void> main() async {
   app = await Firebase.initializeApp(
       options: FirebaseOptions.fromMap(firebaseConfig), name: 'wtnews-54364');
   runZonedGuarded(() async {
+    Sentry.configureScope(
+      (scope) => scope.user = SentryUser(
+          username: prefs.getString('userName'),
+          ipAddress: scope.user?.ipAddress),
+    );
+    final file = File(pathToVersion);
+
     await SentryFlutter.init(
       (options) {
         options.dsn = dsn;
@@ -51,7 +62,7 @@ Future<void> main() async {
         options.enableAutoSessionTracking = true;
         options.enableOutOfMemoryTracking = true;
         options.reportPackages = false;
-        // OR if you prefer, determine traces sample rate based on the sampling context
+        options.release = 'WTNews@${file.readAsStringSync()}';
         options.tracesSampler = (samplingContext) {
           return 1.0;
         };

@@ -30,6 +30,7 @@ class RSSView extends ConsumerStatefulWidget {
 class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
   RssFeed? rssFeed;
   StreamSubscription? subscription;
+  DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
   @override
   void initState() {
     super.initState();
@@ -38,10 +39,11 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
       subscription = startListening();
-      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
       try {
-        await PresenceService()
-            .configureUserPresence((await deviceInfo.windowsInfo).computerName);
+        await PresenceService().configureUserPresence(
+            (await deviceInfo.windowsInfo).computerName,
+            prefs.getBool('startup') ?? false,
+            File(pathToVersion).readAsStringSync());
         rssFeed = await getForum();
         ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
       } catch (e, st) {
@@ -108,18 +110,21 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
           data['subtitle'] != '') {
         Message message = Message.fromMap(data);
         if (prefs.getInt('id') != message.id) {
-          var toast = await WinToast.instance().showToast(
-              type: ToastType.text04,
-              title: message.title,
-              subtitle: message.subtitle);
-          toast?.eventStream.listen((event) async {
-            if (event is ActivatedEvent) {
-              if (message.url != null) {
-                await launch(message.url!);
+          if (message.device == (await deviceInfo.windowsInfo).computerName ||
+              message.device == null) {
+            var toast = await WinToast.instance().showToast(
+                type: ToastType.text04,
+                title: message.title,
+                subtitle: message.subtitle);
+            toast?.eventStream.listen((event) async {
+              if (event is ActivatedEvent) {
+                if (message.url != null) {
+                  await launch(message.url!);
+                }
               }
-            }
-          });
-          await prefs.setInt('id', message.id);
+            });
+            await prefs.setInt('id', message.id);
+          }
         }
       }
     });

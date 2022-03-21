@@ -2,27 +2,36 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:window_manager/window_manager.dart';
+import 'package:wtnews/main.dart';
 
 import '../services/github.dart';
 import '../widgets/titlebar.dart';
 import 'downloader.dart';
 import 'rss_feed.dart';
 
-class Loading extends StatefulWidget {
+class Loading extends ConsumerStatefulWidget {
   const Loading({Key? key}) : super(key: key);
 
   @override
-  State<Loading> createState() => _LoadingState();
+  _LoadingState createState() => _LoadingState();
 }
 
-class _LoadingState extends State<Loading> {
+class _LoadingState extends ConsumerState<Loading> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance!.addPostFrameCallback((_) async {
       await checkGitVersion(await checkVersion());
+      ref.read(minimizeOnStart.notifier).state =
+          prefs.getBool('minimize') ?? false;
+      if (ref.watch(minimizeOnStart)) {
+        await windowManager.minimize();
+        await windowManager.hide();
+      }
     });
   }
 
