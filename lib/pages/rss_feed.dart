@@ -42,7 +42,6 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
       try {
         await PresenceService()
             .configureUserPresence((await deviceInfo.windowsInfo).computerName);
-        await Dio().get('https://test.com');
         rssFeed = await getForum();
         ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
       } catch (e, st) {
