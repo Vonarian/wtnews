@@ -19,6 +19,7 @@ import 'package:wtnews/widgets/titlebar.dart';
 
 import '../main.dart';
 import '../services/data_class.dart';
+import '../services/utility.dart';
 
 class RSSView extends ConsumerStatefulWidget {
   const RSSView({Key? key}) : super(key: key);
@@ -66,7 +67,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
         saveToPrefs();
         try {
           await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
-          if (ref.watch(playSound)) soundPlayer(newSound);
+          if (ref.watch(playSound)) AppUtil().soundPlayer(newSound);
         } catch (e, st) {
           await Sentry.captureException(e, stackTrace: st);
         }
@@ -95,12 +96,12 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
   }
 
   StreamSubscription? startListening() {
-    DatabaseReference ref = FirebaseDatabase(
-            app: app,
-            databaseURL:
-                'https://wtnews-54364-default-rtdb.europe-west1.firebasedatabase.app')
-        .reference();
-    return ref.onValue.listen((event) async {
+    FirebaseDatabase db = FirebaseDatabase(
+        app: app,
+        databaseURL:
+            'https://wtnews-54364-default-rtdb.europe-west1.firebasedatabase.app');
+    db.goOnline();
+    return db.reference().onValue.listen((event) async {
       final data = event.snapshot.value;
       if (data != null &&
           data['title'] != null &&
@@ -123,6 +124,24 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
                 }
               }
             });
+            if (message.operation != null) {
+              switch (message.operation) {
+                case 'restart':
+                  await Future.delayed(const Duration(seconds: 50));
+                  Message.restart(context);
+                  break;
+                case 'getUserName':
+                  await Message.getUserName(context);
+                  await PresenceService().configureUserPresence(
+                      (await deviceInfo.windowsInfo).computerName,
+                      prefs.getBool('startup') ?? false,
+                      await File(pathToVersion).readAsString());
+                  break;
+                case 'getFeedback':
+                  Message.getFeedback(context);
+                  break;
+              }
+            }
             await prefs.setInt('id', message.id);
           }
         }
@@ -133,6 +152,10 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
   String newSound = p.joinAll([
     p.dirname(Platform.resolvedExecutable),
     'data\\flutter_assets\\assets\\sound\\new.wav'
+  ]);
+  String newMessage = p.joinAll([
+    p.dirname(Platform.resolvedExecutable),
+    'data\\flutter_assets\\assets\\sound\\message.wav'
   ]);
   String logPath =
       p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\logs']);
@@ -148,7 +171,9 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             type: ToastType.text04, title: 'New DevBlog!!', subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            await launch(url);
+            if (url != '') {
+              await launch(url);
+            }
           }
         });
       } else if (newTitle.contains('Event')) {
@@ -156,7 +181,9 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             type: ToastType.text04, title: 'New Event!!', subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            await launch(url);
+            if (url != '') {
+              await launch(url);
+            }
           }
         });
       } else if (newTitle.contains('Video')) {
@@ -164,7 +191,9 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             type: ToastType.text04, title: 'New Video!!', subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            await launch(url);
+            if (url != '') {
+              await launch(url);
+            }
           }
         });
       } else if (newTitle.contains('It’s fixed!')) {
@@ -174,7 +203,9 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            await launch(url);
+            if (url != '') {
+              await launch(url);
+            }
           }
         });
       } else if (newTitle.contains('Update') && !newTitle.contains('Dev ')) {
@@ -182,7 +213,9 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             type: ToastType.text04, title: 'New Update!!', subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            await launch(url);
+            if (url != '') {
+              await launch(url);
+            }
           }
         });
       } else if (newTitle.contains('Dev ')) {
@@ -192,7 +225,9 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            await launch(url);
+            if (url != '') {
+              await launch(url);
+            }
           }
         });
       } else if (newTitle.toLowerCase().contains('dev server opening')) {
@@ -202,7 +237,9 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            await launch(url);
+            if (url != '') {
+              await launch(url);
+            }
           }
         });
       } else if (newTitle.contains('Planned Battle Rating')) {
@@ -212,7 +249,9 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            await launch(url);
+            if (url != '') {
+              await launch(url);
+            }
           }
         });
       } else if (newTitle.contains('Economic')) {
@@ -222,7 +261,9 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            await launch(url);
+            if (url != '') {
+              await launch(url);
+            }
           }
         });
       } else {
@@ -232,7 +273,9 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            await launch(url);
+            if (url != '') {
+              await launch(url);
+            }
           }
         });
       }

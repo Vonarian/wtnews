@@ -55,10 +55,24 @@ class _LoadingState extends ConsumerState<Loading> {
         ScaffoldMessenger.of(context)
           ..removeCurrentSnackBar()
           ..showSnackBar(SnackBar(
-              content: Text(
-                  'Version: $version. Status: Proceeding to update in 3 seconds!')));
+            content: Text(
+                'Version: $version. Status: Proceeding to update in 4 seconds!'),
+            action: SnackBarAction(
+                label: 'Cancel update',
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (c, a1, a2) => const RSSView(),
+                      transitionsBuilder: (c, anim, a2, child) =>
+                          FadeTransition(opacity: anim, child: child),
+                      transitionDuration: const Duration(milliseconds: 1000),
+                    ),
+                  );
+                }),
+          ));
 
-        Future.delayed(const Duration(seconds: 2), () async {
+        Future.delayed(const Duration(seconds: 5), () async {
           Navigator.of(context)
               .pushReplacement(MaterialPageRoute(builder: (context) {
             return const Downloader();
@@ -90,7 +104,7 @@ class _LoadingState extends ConsumerState<Loading> {
             content: Text(
                 'Version: $version ___ Status: Error checking for update!')));
       await Sentry.captureException(e, stackTrace: st);
-      Future.delayed(const Duration(seconds: 4), () async {
+      Future.delayed(const Duration(seconds: 2), () async {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(

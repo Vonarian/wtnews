@@ -5,11 +5,11 @@ import 'package:firebase_dart/firebase_dart.dart';
 import 'package:firebase_dart_flutter/firebase_dart_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:win32/win32.dart';
 import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/loading.dart';
@@ -68,37 +68,26 @@ Future<void> main() async {
         };
       },
     );
-
+    if (prefs.getString('userName') != null &&
+        prefs.getString('userName') != '') {
+      WinToast.instance().showToast(
+          type: ToastType.text04,
+          subtitle: 'Welcome back ${prefs.getString('userName')} :)',
+          title: 'Hi!');
+    }
     runApp(ProviderScope(
-      child: MaterialApp(
-        title: 'WTNews',
-        themeMode: ThemeMode.dark,
-        debugShowCheckedModeBanner: false,
-        home: const Loading(),
-        navigatorObservers: [SentryNavigatorObserver()],
+      child: DefaultAssetBundle(
+        bundle: SentryAssetBundle(enableStructuredDataTracing: true),
+        child: MaterialApp(
+          title: 'WTNews',
+          themeMode: ThemeMode.dark,
+          debugShowCheckedModeBanner: false,
+          home: Phoenix(child: const Loading()),
+          navigatorObservers: [SentryNavigatorObserver()],
+        ),
       ),
     ));
   }, (exception, stackTrace) async {
     await Sentry.captureException(exception, stackTrace: stackTrace);
   });
-}
-
-void soundPlayer(String path) {
-  final file = File(path).existsSync();
-
-  if (!file) {
-    if (kDebugMode) {
-      print('WAV file missing.');
-    }
-  } else {
-    final soundFile = TEXT(path);
-    final result = PlaySound(soundFile, NULL, SND_FILENAME | SND_SYNC);
-
-    if (result != TRUE) {
-      if (kDebugMode) {
-        print('Sound playback failed.');
-      }
-    }
-    free(soundFile);
-  }
 }

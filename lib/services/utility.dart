@@ -2,7 +2,9 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
+import 'package:win32/win32.dart';
 
 class AppUtil {
   ///Will create the folder if missing and return its path.
@@ -55,5 +57,26 @@ class AppUtil {
     var encoder = ZipFileEncoder();
     encoder.zipDirectory(Directory(path), filename: 'log.zip');
     return '$path\\log.zip';
+  }
+
+  ///Play a wav file with given [path].
+  void soundPlayer(String path) {
+    final fileBool = File(path).existsSync();
+
+    if (!fileBool) {
+      if (kDebugMode) {
+        print('WAV file missing.');
+      }
+    } else {
+      final soundFile = TEXT(path);
+      final result = PlaySound(soundFile, NULL, SND_FILENAME | SND_SYNC);
+
+      if (result != TRUE) {
+        if (kDebugMode) {
+          print('Sound playback failed.');
+        }
+      }
+      free(soundFile);
+    }
   }
 }

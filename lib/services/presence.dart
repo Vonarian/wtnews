@@ -27,9 +27,9 @@ class PresenceService {
     if (prefs.getString('userName') != '' &&
         prefs.getString('userName') != null) {
       userNameRef.set(prefs.getString('userName'));
-      startupRef.set(startup);
-      versionRef.set(version);
     }
+    startupRef.set(startup);
+    versionRef.set(version);
     database
         .reference()
         .child('presence')

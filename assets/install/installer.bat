@@ -8,6 +8,5 @@ SET MNIST_DIR=%CD%
   @timeout 2 /nobreak >NUL
   @echo Proceeding to update the application, please do not close the window!
 taskkill /F /IM wtnews.exe
-powershell.exe Add-AppPackage -Path '%MNIST_DIR%\out\WTNews.msix'
-timeout 3
-powershell.exe Start-Process -FilePath 'wtnews.exe' -WorkingDirectory "(Get-AppxPackage -Name 'WTNews').InstallLocation"
+"%MNIST_DIR%\out\WTNews.msix"
+timeout 1

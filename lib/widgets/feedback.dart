@@ -7,6 +7,8 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wtnews/main.dart';
 import 'package:wtnews/services/presence.dart';
 
+import '../services/data_class.dart';
+
 class Feedback extends ConsumerStatefulWidget {
   final bool onlyUserName;
   final String text;
@@ -18,81 +20,6 @@ class Feedback extends ConsumerStatefulWidget {
 }
 
 class _FeedbackState extends ConsumerState<Feedback> {
-  static Route<String> dialogBuilderUserName(BuildContext context) {
-    TextEditingController userNameController = TextEditingController();
-    return DialogRoute(
-        context: context,
-        builder: (BuildContext context) => AlertDialog(
-              content: TextFormField(
-                onChanged: (value) {},
-                validator: (value) {
-                  if (value != null) {
-                    if (value.isEmpty) {
-                      return 'Username can\'t be empty';
-                    } else {
-                      return null;
-                    }
-                  }
-                  return null;
-                },
-                controller: userNameController,
-                decoration: const InputDecoration(
-                    hintText: 'Enter your forum username'),
-              ),
-              title: const Text('Set a username (Forum username)'),
-              actions: [
-                ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Cancel')),
-                ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(userNameController.text);
-                    },
-                    child: const Text('Save'))
-              ],
-            ));
-  }
-
-  static Route<String> dialogBuilderFeedback(BuildContext context) {
-    TextEditingController feedBackController = TextEditingController();
-    return DialogRoute(
-        context: context,
-        builder: (BuildContext context) => AlertDialog(
-              content: TextFormField(
-                onChanged: (value) {},
-                validator: (value) {
-                  if (value != null) {
-                    if (value.isEmpty) {
-                      return 'Feedback can\'t be empty';
-                    } else {
-                      return null;
-                    }
-                  }
-                  return null;
-                },
-                controller: feedBackController,
-                decoration: const InputDecoration(
-                    hintText:
-                        'I like this part, I don\'t like that part, that part has issues'),
-              ),
-              title: const Text('Send feedback'),
-              actions: [
-                ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Cancel')),
-                ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(feedBackController.text);
-                    },
-                    child: const Text('Send'))
-              ],
-            ));
-  }
-
   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
 
   @override

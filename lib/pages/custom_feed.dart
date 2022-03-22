@@ -15,6 +15,7 @@ import 'package:win_toast/win_toast.dart';
 import 'package:wtnews/widgets/titlebar.dart';
 
 import '../main.dart';
+import '../services/utility.dart';
 
 class CustomRSSView extends ConsumerStatefulWidget {
   const CustomRSSView({Key? key}) : super(key: key);
@@ -56,7 +57,7 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
         saveToPrefs();
         await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
         if (ref.watch(playSound)) {
-          soundPlayer(newSound);
+          AppUtil().soundPlayer(newSound);
         }
       });
     });
