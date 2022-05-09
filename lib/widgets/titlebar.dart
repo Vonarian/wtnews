@@ -206,6 +206,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
       ref.read(customFeed.notifier).state = url;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('New custom feed url: $url')));
+      prefs.setString('customFeed', url);
     }
   }
 }
