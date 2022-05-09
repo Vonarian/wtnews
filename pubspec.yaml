@@ -39,7 +39,7 @@ dependencies:
   percent_indicator: ^4.0.0
   url_launcher: ^6.0.20
   flutter_riverpod: ^1.0.3
-  win32:
+  win32: ^2.4.4
   xml: ^5.3.1
   file_picker:
   firebase_dart: ^1.0.5
@@ -49,6 +49,7 @@ dependencies:
   device_info_plus: ^3.2.2
   sentry_flutter: ^6.4.0
   flutter_phoenix: ^1.0.0
+  protocol_handler: ^0.1.1
 
 # The following adds the Cupertino Icons font to your application.
 # Use with the CupertinoIcons class for iOS style icons.

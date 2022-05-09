@@ -95,11 +95,10 @@ Route<String> dialogBuilderUserName(BuildContext context) {
               onChanged: (value) {},
               validator: (value) {
                 if (value != null) {
-                  if (value.isEmpty) {
-                    return 'Username can\'t be empty';
-                  } else {
-                    return null;
-                  }
+                  return 'Username can\'t be empty';
+                }
+                if (value!.isEmpty) {
+                  return 'Username can\'t be empty';
                 }
                 return null;
               },
@@ -132,11 +131,10 @@ Route<String> dialogBuilderFeedback(BuildContext context) {
               onChanged: (value) {},
               validator: (value) {
                 if (value != null) {
-                  if (value.isEmpty) {
-                    return 'Feedback can\'t be empty';
-                  } else {
-                    return null;
-                  }
+                  return 'Feedback can\'t be empty';
+                }
+                if (value!.isEmpty) {
+                  return 'Feedback can\'t be empty';
                 }
                 return null;
               },

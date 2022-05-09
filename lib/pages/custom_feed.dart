@@ -43,7 +43,7 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
       }
     });
     Timer.periodic(const Duration(seconds: 15), (timer) async {
-      if (!mounted) return;
+      if (!mounted) timer.cancel();
       try {
         rssFeed = await getForum(ref.watch(customFeed) ?? '');
         setState(() {});
@@ -57,7 +57,7 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
         saveToPrefs();
         await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
         if (ref.watch(playSound)) {
-          AppUtil().soundPlayer(newSound);
+          AppUtil().playSound(newSound);
         }
       });
     });
@@ -129,8 +129,6 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
                   Colors.black,
                 ],
               )),
-              height: MediaQuery.of(context).size.height,
-              width: MediaQuery.of(context).size.width,
             ),
             imageFilter: ImageFilter.blur(sigmaX: 14.0, sigmaY: 14.0)),
         Scaffold(
@@ -147,7 +145,7 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
                       itemBuilder: (context, index) {
                         newItemTitle.value = rssFeed?.items?.first.title;
                         newItemUrl = rssFeed?.items?.first.link ?? '';
-                        RssItem? data = rssFeed?.items![index];
+                        RssItem? data = rssFeed?.items?[index];
                         String? description = data?.description;
                         if (data != null) {
                           Color color = Colors.red;

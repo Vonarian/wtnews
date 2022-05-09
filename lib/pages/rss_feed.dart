@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:io';
 import 'dart:ui';
 
@@ -37,6 +36,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
     super.initState();
     loadFromPrefs();
     WidgetsBinding.instance?.addObserver(this);
+
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
       subscription = startListening();
@@ -53,7 +53,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
       setState(() {});
     });
     Timer.periodic(const Duration(seconds: 15), (timer) async {
-      if (!mounted) return;
+      if (!mounted) timer.cancel();
       try {
         rssFeed = await getForum();
         setState(() {});
@@ -67,7 +67,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
         saveToPrefs();
         try {
           await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
-          if (ref.watch(playSound)) AppUtil().soundPlayer(newSound);
+          if (ref.watch(playSound)) AppUtil().playSound(newSound);
         } catch (e, st) {
           await Sentry.captureException(e, stackTrace: st);
         }
@@ -164,14 +164,14 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
   }
 
   Future<void> sendNotification(
-      {required String? newTitle, required String url}) async {
+      {required String? newTitle, required String? url}) async {
     if (newTitle != null) {
       if (newTitle.contains('Development')) {
         var toast = await WinToast.instance().showToast(
             type: ToastType.text04, title: 'New DevBlog!!', subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            if (url != '') {
+            if (url != null) {
               await launch(url);
             }
           }
@@ -181,7 +181,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             type: ToastType.text04, title: 'New Event!!', subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            if (url != '') {
+            if (url != null) {
               await launch(url);
             }
           }
@@ -191,7 +191,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             type: ToastType.text04, title: 'New Video!!', subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            if (url != '') {
+            if (url != null) {
               await launch(url);
             }
           }
@@ -203,7 +203,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            if (url != '') {
+            if (url != null) {
               await launch(url);
             }
           }
@@ -213,7 +213,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             type: ToastType.text04, title: 'New Update!!', subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            if (url != '') {
+            if (url != null) {
               await launch(url);
             }
           }
@@ -225,7 +225,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            if (url != '') {
+            if (url != null) {
               await launch(url);
             }
           }
@@ -237,7 +237,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            if (url != '') {
+            if (url != null) {
               await launch(url);
             }
           }
@@ -249,7 +249,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            if (url != '') {
+            if (url != null) {
               await launch(url);
             }
           }
@@ -261,7 +261,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            if (url != '') {
+            if (url != null) {
               await launch(url);
             }
           }
@@ -273,7 +273,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
-            if (url != '') {
+            if (url != null) {
               await launch(url);
             }
           }
@@ -287,19 +287,14 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
   }
 
   Future<RssFeed> getForum() async {
-    try {
-      Dio dio = Dio();
-      Response response = await dio
-          .get('https://forum.warthunder.com/index.php?/discover/693.xml');
-      RssFeed rssFeed = RssFeed.parse(response.data);
-      return rssFeed;
-    } catch (e, st) {
-      log('ERROR: $e', stackTrace: st);
-      rethrow;
-    }
+    Dio dio = Dio();
+    Response response = await dio
+        .get('https://forum.warthunder.com/index.php?/discover/693.xml');
+    RssFeed rssFeed = RssFeed.parse(response.data);
+    return rssFeed;
   }
 
-  String newItemUrl = '';
+  String? newItemUrl;
   ValueNotifier<String?> newItemTitle = ValueNotifier(null);
   @override
   Widget build(BuildContext context) {
@@ -327,8 +322,6 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
                     Colors.black,
                   ],
                 )),
-                height: MediaQuery.of(context).size.height,
-                width: MediaQuery.of(context).size.width,
               ),
               imageFilter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0)),
           rssFeed != null
@@ -338,8 +331,8 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
                       itemCount: rssFeed?.items?.length,
                       itemBuilder: (context, index) {
                         newItemTitle.value = rssFeed?.items?.first.title;
-                        newItemUrl = rssFeed?.items?.first.link ?? '';
-                        RssItem? data = rssFeed?.items![index];
+                        newItemUrl = rssFeed?.items?.first.link;
+                        RssItem? data = rssFeed?.items?[index];
                         String? description = data?.description;
                         if (data != null) {
                           Color color = data.title!.contains('Development')

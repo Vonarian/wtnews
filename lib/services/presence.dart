@@ -13,29 +13,20 @@ class PresenceService {
   DatabaseReference? con;
   Future<void> configureUserPresence(
       String uid, bool startup, String version) async {
-    final myConnectionsRef =
-        database.reference().child('presence').child(uid).child('connected');
-    final lastOnlineRef =
-        database.reference().child('presence').child(uid).child('lastOnline');
-    final userNameRef =
-        database.reference().child('presence').child(uid).child('username');
-    final startupRef =
-        database.reference().child('presence').child(uid).child('startup');
-    final versionRef =
-        database.reference().child('presence').child(uid).child('version');
+    final uidRef = database.reference().child('presence').child(uid);
+    final myConnectionsRef = uidRef.child('connected');
+    final lastOnlineRef = uidRef.child('lastOnline');
+    final userNameRef = uidRef.child('username');
+    final startupRef = uidRef.child('startup');
+    final versionRef = uidRef.child('version');
     await database.goOnline();
-    if (prefs.getString('userName') != '' &&
-        prefs.getString('userName') != null) {
-      userNameRef.set(prefs.getString('userName'));
+    String? userName = prefs.getString('userName');
+    if (userName != '' && userName != null) {
+      userNameRef.set(userName);
     }
     startupRef.set(startup);
     versionRef.set(version);
-    database
-        .reference()
-        .child('presence')
-        .child(uid)
-        .onValue
-        .listen((event) {});
+    uidRef.onValue.listen((event) {});
     subscription = database
         .reference()
         .child('.info/connected')
@@ -46,7 +37,8 @@ class PresenceService {
         con?.onDisconnect().set(false);
         con?.set(true);
 
-        lastOnlineRef.onDisconnect().set(DateTime.now().toUtc().toString());
+        lastOnlineRef.onDisconnect().set(
+            '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} - ${DateTime.now().hour}:${DateTime.now().minute}');
       }
     });
   }

@@ -140,8 +140,6 @@ class _LoadingState extends ConsumerState<Loading> {
                     Colors.black,
                   ],
                 )),
-                height: MediaQuery.of(context).size.height,
-                width: MediaQuery.of(context).size.width,
               ),
               imageFilter: ImageFilter.blur(sigmaX: 14.0, sigmaY: 14.0)),
           const Center(

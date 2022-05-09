@@ -59,8 +59,8 @@ class AppUtil {
     return '$path\\log.zip';
   }
 
-  ///Play a wav file with given [path].
-  void soundPlayer(String path) {
+  ///Plays a wav file with given [path].
+  void playSound(String path) {
     final fileBool = File(path).existsSync();
 
     if (!fileBool) {

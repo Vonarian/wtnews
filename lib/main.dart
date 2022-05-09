@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
+import 'package:protocol_handler/protocol_handler.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:win_toast/win_toast.dart';
@@ -42,6 +43,8 @@ Future<void> main() async {
     await windowManager.setTitle('WTNews');
     await windowManager.show();
   });
+  await protocolHandler.register('wtnews');
+
   await WinToast.instance().initialize(
       appName: 'WTNews', productName: 'WTNews', companyName: 'Vonarian');
   await FirebaseDartFlutter.setup();
@@ -75,14 +78,13 @@ Future<void> main() async {
           subtitle: 'Welcome back ${prefs.getString('userName')} :)',
           title: 'Hi!');
     }
-    runApp(ProviderScope(
-      child: DefaultAssetBundle(
-        bundle: SentryAssetBundle(enableStructuredDataTracing: true),
+    runApp(Phoenix(
+      child: ProviderScope(
         child: MaterialApp(
           title: 'WTNews',
           themeMode: ThemeMode.dark,
           debugShowCheckedModeBanner: false,
-          home: Phoenix(child: const Loading()),
+          home: const Loading(),
           navigatorObservers: [SentryNavigatorObserver()],
         ),
       ),

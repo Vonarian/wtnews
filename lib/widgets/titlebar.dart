@@ -2,8 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:protocol_handler/protocol_handler.dart';
 import 'package:tray_manager/tray_manager.dart';
+import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:wtnews/main.dart';
 
 import '../pages/settings.dart';
 
@@ -37,18 +40,20 @@ class WindowTitleBar extends ConsumerStatefulWidget {
 }
 
 class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
-    with TrayListener, WindowListener {
+    with TrayListener, WindowListener, ProtocolListener {
   @override
   void initState() {
     super.initState();
     trayManager.addListener(this);
     windowManager.addListener(this);
+    protocolHandler.addListener(this);
   }
 
   @override
   void dispose() {
     trayManager.removeListener(this);
     windowManager.removeListener(this);
+    protocolHandler.removeListener(this);
     super.dispose();
   }
 
@@ -189,5 +194,18 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
   void onWindowMinimize() {
     windowManager.hide();
     _trayInit();
+    WinToast.instance().showToast(
+        type: ToastType.text04,
+        title: 'WTNews is minimized to tray',
+        subtitle: 'Check tray to open app again');
+  }
+
+  @override
+  void onProtocolUrlReceived(String url) {
+    if (url.contains('xml') && url.isNotEmpty) {
+      ref.read(customFeed.notifier).state = url;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('New custom feed url: $url')));
+    }
   }
 }

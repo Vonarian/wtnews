@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  protocol_handler
   sentry_flutter
   tray_manager
   url_launcher_windows
