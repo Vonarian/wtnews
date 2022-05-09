@@ -82,7 +82,7 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
           subtitle: newTitle);
       toast?.eventStream.listen((event) async {
         if (event is ActivatedEvent) {
-          await launch(url);
+          await launchUrl(Uri.parse(url));
         }
       });
     }
@@ -166,8 +166,8 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
                               ),
                             ),
                             onTap: () async {
-                              await launch(
-                                  data.link ?? 'https://Forum.Warthunder.com');
+                              await launchUrl(Uri.parse(
+                                  data.link ?? 'https://Forum.Warthunder.com'));
                             },
                           );
                         } else {

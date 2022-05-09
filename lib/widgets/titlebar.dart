@@ -139,14 +139,15 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
   }
 
   Future<void> _trayInit() async {
-    await TrayManager.instance.setIcon(
+    await trayManager.setIcon(
       'assets/app_icon.ico',
     );
-    List<MenuItem> menuItems = [
-      MenuItem(key: 'show-app', title: 'Show'),
-      MenuItem(key: 'close-app', title: 'Exit')
-    ];
-    await TrayManager.instance.setContextMenu(menuItems);
+    Menu menu = Menu(items: [
+      MenuItem(key: 'show-app', label: 'Show'),
+      MenuItem.separator(),
+      MenuItem(key: 'close-app', label: 'Exit'),
+    ]);
+    await trayManager.setContextMenu(menu);
   }
 
   void _trayUnInit() async {

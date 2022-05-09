@@ -38,7 +38,7 @@ Future<void> main() async {
     Process.runSync(pathToUpdateShortcut, []);
   }
   windowManager.waitUntilReadyToShow().then((_) async {
-    await windowManager.setTitleBarStyle('hidden');
+    await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
     await windowManager.setResizable(true);
     await windowManager.setTitle('WTNews');
     await windowManager.show();

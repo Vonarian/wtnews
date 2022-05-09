@@ -120,7 +120,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
             toast?.eventStream.listen((event) async {
               if (event is ActivatedEvent) {
                 if (message.url != null) {
-                  await launch(message.url!);
+                  await launchUrl(Uri.parse(message.url!));
                 }
               }
             });
@@ -172,7 +172,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
             if (url != null) {
-              await launch(url);
+              await launchUrl(Uri.parse(url));
             }
           }
         });
@@ -182,7 +182,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
             if (url != null) {
-              await launch(url);
+              await launchUrl(Uri.parse(url));
             }
           }
         });
@@ -192,7 +192,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
             if (url != null) {
-              await launch(url);
+              await launchUrl(Uri.parse(url));
             }
           }
         });
@@ -204,7 +204,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
             if (url != null) {
-              await launch(url);
+              await launchUrl(Uri.parse(url));
             }
           }
         });
@@ -214,7 +214,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
             if (url != null) {
-              await launch(url);
+              await launchUrl(Uri.parse(url));
             }
           }
         });
@@ -226,7 +226,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
             if (url != null) {
-              await launch(url);
+              await launchUrl(Uri.parse(url));
             }
           }
         });
@@ -238,7 +238,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
             if (url != null) {
-              await launch(url);
+              await launchUrl(Uri.parse(url));
             }
           }
         });
@@ -250,7 +250,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
             if (url != null) {
-              await launch(url);
+              await launchUrl(Uri.parse(url));
             }
           }
         });
@@ -262,7 +262,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
             if (url != null) {
-              await launch(url);
+              await launchUrl(Uri.parse(url));
             }
           }
         });
@@ -274,7 +274,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
             if (url != null) {
-              await launch(url);
+              await launchUrl(Uri.parse(url));
             }
           }
         });
@@ -367,8 +367,8 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
                               ),
                             ),
                             onTap: () async {
-                              await launch(
-                                  data.link ?? 'https://Forum.Warthunder.com');
+                              await launchUrl(Uri.parse(
+                                  data.link ?? 'https://Forum.Warthunder.com'));
                             },
                           );
                         } else {
