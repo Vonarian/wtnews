@@ -31,27 +31,27 @@ dependencies:
     sdk: flutter
   webfeed: ^0.7.0
   dio: ^4.0.4
-  window_manager: ^0.2.0
+  window_manager: ^0.2.3
   shared_preferences: ^2.0.13
   win_toast: ^0.0.2
-  tray_manager: ^0.1.4
-  archive: ^3.2.2
-  percent_indicator: ^4.0.0
-  url_launcher: ^6.0.20
+  tray_manager: ^0.1.5
+  archive: ^3.3.0
+  percent_indicator: ^4.0.1
+  url_launcher: ^6.1.0
   flutter_riverpod: ^1.0.3
-  win32: ^2.4.4
+  win32: ^2.5.2
   xml: ^5.3.1
   file_picker:
-  firebase_dart: ^1.0.5
+  firebase_dart: ^1.0.6
   firebase_dart_flutter:
-  firebase_core:
-  firebase_core_desktop:
+  firebase_core: 1.16.0
+  firebase_core_desktop: 0.1.1
   device_info_plus: ^3.2.2
-  sentry_flutter: ^6.4.0
+  sentry_flutter: ^6.5.1
   flutter_phoenix: ^1.0.0
-  protocol_handler: ^0.1.1
+  protocol_handler: ^0.1.2
 
-# The following adds the Cupertino Icons font to your application.
+  # The following adds the Cupertino Icons font to your application.
 # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
 
