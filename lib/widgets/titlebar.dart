@@ -1,12 +1,15 @@
 import 'dart:io';
 
+import 'package:clipboard_watcher/clipboard_watcher.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:protocol_handler/protocol_handler.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/main.dart';
+import 'package:wtnews/services/utility.dart';
 
 import '../pages/settings.dart';
 
@@ -47,6 +50,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
     trayManager.addListener(this);
     windowManager.addListener(this);
     protocolHandler.addListener(this);
+
   }
 
   @override
@@ -135,6 +139,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
   final bool _showWindowBelowTrayIcon = false;
   Future<void> _handleClickRestore() async {
     windowManager.restore();
+    await windowManager.setIcon('assets/app_icon.ico');
     windowManager.show();
   }
 
@@ -176,7 +181,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
 
   @override
   void onTrayIconRightMouseDown() {
-    TrayManager.instance.popUpContextMenu();
+    trayManager.popUpContextMenu();
   }
 
   @override
@@ -204,10 +209,11 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
   @override
   void onProtocolUrlReceived(String url) {
     if (url.contains('xml') && url.isNotEmpty) {
-      ref.read(customFeed.notifier).state = url;
+      ref.read(customFeed.notifier).state = url.replaceAll('wtnews:', '');
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('New custom feed url: $url')));
       prefs.setString('customFeed', url);
     }
   }
+
 }

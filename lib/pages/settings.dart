@@ -123,7 +123,7 @@ class _SettingsState extends ConsumerState<Settings> {
                         size: 40,
                       ),
                       label: Text(
-                        'Start at startup: ${ref.watch(isStartupEnabled) ? 'On' : 'Off'}',
+                        'Run at startup: ${ref.watch(isStartupEnabled) ? 'On' : 'Off'}',
                         style: const TextStyle(fontSize: 40),
                       )),
                   TextButton.icon(
@@ -138,7 +138,7 @@ class _SettingsState extends ConsumerState<Settings> {
                         size: 40,
                       ),
                       label: Text(
-                        'Minimize on startup: ${ref.watch(minimizeOnStart) ? 'On' : 'Off'}',
+                        'Minimize on start: ${ref.watch(minimizeOnStart) ? 'On' : 'Off'}',
                         style: const TextStyle(fontSize: 40),
                       )),
                   TextButton.icon(

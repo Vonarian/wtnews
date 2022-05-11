@@ -149,10 +149,6 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
     });
   }
 
-  String newSound = p.joinAll([
-    p.dirname(Platform.resolvedExecutable),
-    'data\\flutter_assets\\assets\\sound\\new.wav'
-  ]);
   String newMessage = p.joinAll([
     p.dirname(Platform.resolvedExecutable),
     'data\\flutter_assets\\assets\\sound\\message.wav'
@@ -361,7 +357,8 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
                                       ?.replaceAll('\n', '')
                                       .replaceAll('	', '') ??
                                   '',
-                              overflow: TextOverflow.ellipsis,
+                              overflow: TextOverflow.fade,
+                              maxLines: 2,
                               style: const TextStyle(
                                 color: Colors.white,
                               ),

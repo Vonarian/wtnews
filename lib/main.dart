@@ -27,6 +27,10 @@ String pathToUpdateShortcut =
     '${p.dirname(Platform.resolvedExecutable)}/data/flutter_assets/assets/manifest/updateShortcut.bat';
 String pathToVersion =
     '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\install\\version.txt';
+String newSound = p.joinAll([
+  p.dirname(Platform.resolvedExecutable),
+  'data\\flutter_assets\\assets\\sound\\new.wav'
+]);
 late SharedPreferences prefs;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +45,7 @@ Future<void> main() async {
     await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
     await windowManager.setResizable(true);
     await windowManager.setTitle('WTNews');
+    await windowManager.setIcon('assets/app_icon.ico');
     await windowManager.show();
   });
   await protocolHandler.register('wtnews');
@@ -79,13 +84,12 @@ Future<void> main() async {
           title: 'Hi!');
     }
     runApp(Phoenix(
-      child: ProviderScope(
+      child: const ProviderScope(
         child: MaterialApp(
           title: 'WTNews',
           themeMode: ThemeMode.dark,
           debugShowCheckedModeBanner: false,
-          home: const Loading(),
-          navigatorObservers: [SentryNavigatorObserver()],
+          home: Loading(),
         ),
       ),
     ));

@@ -1,3 +1,0 @@
-<Application Id="wtnews" EntryPoint="Windows.FullTrustApplication" Executable="wtnews.exe">
-    <uap:VisualElements DisplayName="WTNews" Square150x150Logo="Assets/Logo.png" Square44x44Logo="Assets/Logo.png" BackgroundColor="#333333" Description="WTNews" />
-</Application>
