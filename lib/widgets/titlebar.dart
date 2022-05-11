@@ -1,15 +1,12 @@
 import 'dart:io';
 
-import 'package:clipboard_watcher/clipboard_watcher.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:protocol_handler/protocol_handler.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:wtnews/main.dart';
-import 'package:wtnews/services/utility.dart';
+import 'package:wtnews/mainces/utility.dart';
 
 import '../pages/settings.dart';
 
@@ -50,7 +47,6 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
     trayManager.addListener(this);
     windowManager.addListener(this);
     protocolHandler.addListener(this);
-
   }
 
   @override
@@ -215,5 +211,4 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
       prefs.setString('customFeed', url);
     }
   }
-
 }
