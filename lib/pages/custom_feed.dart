@@ -7,7 +7,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
@@ -15,6 +14,7 @@ import 'package:win_toast/win_toast.dart';
 import 'package:wtnews/widgets/titlebar.dart';
 
 import '../main.dart';
+import '../providers.dart';
 import '../services/utility.dart';
 
 class CustomRSSView extends ConsumerStatefulWidget {
@@ -34,29 +34,21 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
 
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
-      try {
-        rssFeed = await getForum(ref.watch(customFeed) ?? '');
-        ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
-        setState(() {});
-      } catch (e, st) {
-        await Sentry.captureException(e, stackTrace: st);
-      }
+      rssFeed = await getForum(ref.watch(customFeed) ?? '');
+      ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
+      setState(() {});
     });
     Timer.periodic(const Duration(seconds: 15), (timer) async {
       if (!mounted) timer.cancel();
-      try {
-        rssFeed = await getForum(ref.watch(customFeed) ?? '');
-        setState(() {});
-      } catch (e, st) {
-        await Sentry.captureException(e, stackTrace: st);
-      }
+      rssFeed = await getForum(ref.read(customFeed) ?? '');
+      setState(() {});
     });
 
     Future.delayed(const Duration(seconds: 10), () {
       newItemTitle.addListener(() async {
         saveToPrefs();
         await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
-        if (ref.watch(playSound)) {
+        if (ref.read(playSound)) {
           AppUtil().playSound(newSound);
         }
       });

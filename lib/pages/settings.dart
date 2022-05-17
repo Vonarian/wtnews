@@ -9,6 +9,8 @@ import 'package:wtnews/pages/custom_feed.dart';
 import 'package:wtnews/widgets/feedback.dart' as fb;
 import 'package:wtnews/widgets/titlebar.dart';
 
+import '../providers.dart';
+
 class Settings extends ConsumerStatefulWidget {
   const Settings({Key? key}) : super(key: key);
 

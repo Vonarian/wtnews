@@ -7,6 +7,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:wtnews/main.dart';
 import 'package:wtnews/services/presence.dart';
 
+import '../providers.dart';
 import '../services/data_class.dart';
 
 class Feedback extends ConsumerStatefulWidget {

@@ -14,14 +14,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/loading.dart';
+import 'package:wtnews/providers.dart';
 import 'package:wtnews/services/dsn.dart';
 import 'package:wtnews/services/firebase_data.dart';
 
-final StateProvider<bool> isStartupEnabled = StateProvider((ref) => false);
-final StateProvider<bool> playSound = StateProvider((ref) => true);
-final StateProvider<bool> minimizeOnStart = StateProvider((ref) => false);
-final StateProvider<String?> customFeed = StateProvider((ref) => null);
-late final StateProvider<String?> userNameProvider;
 late FirebaseApp app;
 String pathToUpdateShortcut =
     '${p.dirname(Platform.resolvedExecutable)}/data/flutter_assets/assets/manifest/updateShortcut.bat';

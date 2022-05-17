@@ -6,7 +6,6 @@
 
 #include "generated_plugin_registrant.h"
 
-#include <clipboard_watcher/clipboard_watcher_plugin.h>
 #include <protocol_handler/protocol_handler_plugin.h>
 #include <sentry_flutter/sentry_flutter_plugin.h>
 #include <tray_manager/tray_manager_plugin.h>
@@ -15,8 +14,6 @@
 #include <window_manager/window_manager_plugin.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
-  ClipboardWatcherPluginRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("ClipboardWatcherPlugin"));
   ProtocolHandlerPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("ProtocolHandlerPlugin"));
   SentryFlutterPluginRegisterWithRegistrar(

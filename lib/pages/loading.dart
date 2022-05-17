@@ -8,6 +8,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/main.dart';
 
+import '../providers.dart';
 import '../services/github.dart';
 import '../widgets/titlebar.dart';
 import 'downloader.dart';

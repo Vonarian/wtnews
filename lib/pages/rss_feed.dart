@@ -17,6 +17,7 @@ import 'package:wtnews/services/presence.dart';
 import 'package:wtnews/widgets/titlebar.dart';
 
 import '../main.dart';
+import '../providers.dart';
 import '../services/data_class.dart';
 import '../services/utility.dart';
 

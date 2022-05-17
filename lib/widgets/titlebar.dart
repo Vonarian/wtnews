@@ -1,13 +1,21 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:protocol_handler/protocol_handler.dart';
 import 'package:tray_manager/tray_manager.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:webfeed/domain/rss_feed.dart';
+import 'package:webfeed/domain/rss_item.dart';
 import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:wtnews/mainces/utility.dart';
+import 'package:wtnews/providers.dart';
+import 'package:wtnews/services/utility.dart';
 
+import '../main.dart';
 import '../pages/settings.dart';
 
 class _MoveWindow extends StatelessWidget {
@@ -47,6 +55,75 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
     trayManager.addListener(this);
     windowManager.addListener(this);
     protocolHandler.addListener(this);
+    ref.read(checkDataMine.notifier).state =
+        prefs.getBool('checkDataMine') ?? false;
+    Timer.periodic(const Duration(seconds: 10), (timer) async {
+      if (ref.watch(checkDataMine)) {
+        rssFeed = await getDataMine();
+        if (rssFeed != null && rssFeed?.items != null) {
+          RssItem item = rssFeed!.items!.first;
+          if (item.description != null) {
+            String itemDescription = item.description!;
+            bool? isDataMine = (itemDescription.contains('Raw changes:') &&
+                    itemDescription.contains('→') &&
+                    itemDescription.contains('Current dev version')) ||
+                itemDescription.contains('	');
+            if (isDataMine) notify(item.pubDate!, item.link!);
+          }
+        }
+      }
+    });
+  }
+
+  Future<RssFeed> getDataMine() async {
+    Dio dio = Dio();
+    Response response = await dio
+        .get('https://forum.warthunder.com/index.php?/discover/704.xml');
+    RssFeed rssFeed = RssFeed.parse(response.data);
+    return rssFeed;
+  }
+
+  Future<void> notify(DateTime pubDate, String url) async {
+    if (prefs.getString('previous') != null) {
+      String? previous = prefs.getString('previous');
+
+      bool isNew = previous != pubDate.toString();
+      if (isNew) {
+        if (kDebugMode) {
+          print('isNew');
+          print(previous);
+          print(pubDate.toString());
+        }
+
+        AppUtil().playSound(newSound);
+        final toast = await WinToast.instance().showToast(
+          title: 'New Data Mine',
+          type: ToastType.text04,
+          subtitle: 'Click to launch in browser',
+        );
+        toast?.eventStream.listen((event) {
+          if (event is ActivatedEvent) {
+            launchUrl(Uri.parse(url));
+          }
+        });
+        await prefs.setString('previous', pubDate.toString());
+      }
+    } else {
+      if (kDebugMode) {
+        print('Null');
+      }
+      AppUtil().playSound(newSound);
+      final toast = await WinToast.instance().showToast(
+          title: 'New Data Mine',
+          type: ToastType.text04,
+          subtitle: 'New Data Mine from gszabi');
+      toast?.eventStream.listen((event) {
+        if (event is ActivatedEvent) {
+          launchUrl(Uri.parse(url));
+        }
+      });
+      await prefs.setString('previous', pubDate.toString());
+    }
   }
 
   @override
@@ -57,6 +134,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
     super.dispose();
   }
 
+  RssFeed? rssFeed;
   @override
   Widget build(BuildContext context) {
     return _MoveWindow(
@@ -97,6 +175,29 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
                     hoverColor: Colors.green,
                   )
                 : const SizedBox(),
+            const SizedBox(
+              width: 10,
+            ),
+            InkWell(
+              onTap: () async {
+                ref.read(checkDataMine.notifier).state =
+                    !ref.read(checkDataMine.notifier).state;
+                await prefs.setBool(
+                    'checkDataMine', ref.read(checkDataMine.notifier).state);
+                SnackBar snackBar = SnackBar(
+                    content: Text(
+                        'Data mine notifier: ${ref.read(checkDataMine.notifier).state ? 'on' : 'off'}'));
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(snackBar);
+              },
+              child: Image.asset(
+                'assets/gszabi.jpg',
+                height: 20,
+                width: 20,
+              ),
+              hoverColor: Colors.blue,
+            ),
             InkWell(
               onTap: () {
                 windowManager.minimize();
@@ -134,8 +235,8 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
 
   final bool _showWindowBelowTrayIcon = false;
   Future<void> _handleClickRestore() async {
-    windowManager.restore();
     await windowManager.setIcon('assets/app_icon.ico');
+    windowManager.restore();
     windowManager.show();
   }
 
@@ -178,6 +279,11 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
   @override
   void onTrayIconRightMouseDown() {
     trayManager.popUpContextMenu();
+  }
+
+  @override
+  void onWindowRestore() {
+    setState(() {});
   }
 
   @override
