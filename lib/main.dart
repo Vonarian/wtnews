@@ -5,6 +5,7 @@ import 'package:firebase_dart/firebase_dart.dart';
 import 'package:firebase_dart_flutter/firebase_dart_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -31,6 +32,8 @@ late SharedPreferences prefs;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
+  await Window.initialize();
+
   prefs = await SharedPreferences.getInstance();
   bool isStartupEnabled = prefs.getBool('startup') ?? false;
   userNameProvider = StateProvider((ref) => prefs.getString('userName'));
@@ -43,6 +46,11 @@ Future<void> main() async {
     await windowManager.setTitle('WTNews');
     await windowManager.setIcon('assets/app_icon.ico');
     await windowManager.show();
+    await Window.hideWindowControls();
+    await Window.setEffect(
+      effect: WindowEffect.aero,
+      color: Colors.black.withOpacity(0.45),
+    );
   });
   await protocolHandler.register('wtnews');
 

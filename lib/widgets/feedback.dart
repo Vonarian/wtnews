@@ -48,20 +48,6 @@ class _FeedbackState extends ConsumerState<Feedback> {
               (await deviceInfo.windowsInfo).computerName,
               prefs.getBool('startup') ?? false,
               File(pathToVersion).readAsStringSync());
-          if (!widget.onlyUserName) {
-            SentryId sentryId = await Sentry.captureMessage(
-                (await Navigator.of(context)
-                    .push(dialogBuilderFeedback(context)))!);
-            final feedback = SentryUserFeedback(
-              eventId: sentryId,
-              name: ref.watch(userNameProvider),
-            );
-            await Sentry.captureUserFeedback(feedback);
-            ScaffoldMessenger.of(context)
-              ..removeCurrentSnackBar()
-              ..showSnackBar(
-                  const SnackBar(content: Text('Feedback sent, thanks!')));
-          }
         } else {
           if (!widget.onlyUserName) {
             SentryId sentryId = await Sentry.captureMessage(

@@ -140,8 +140,7 @@ Route<String> dialogBuilderFeedback(BuildContext context) {
               },
               controller: feedBackController,
               decoration: const InputDecoration(
-                  hintText:
-                      'I like this part, I don\'t like that part, that part has issues'),
+                  hintText: 'Share what you think about the app.'),
             ),
             title: const Text('Send feedback'),
             actions: [

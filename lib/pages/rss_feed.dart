@@ -296,31 +296,9 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          ImageFiltered(
-              child: Container(
-                decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                  colors: [
-                    Colors.black,
-                    Colors.black,
-                    Colors.black,
-                    Colors.black87,
-                    Colors.black87,
-                    Colors.black87,
-                    Colors.black87,
-                    Colors.black87,
-                    Colors.black87,
-                    Colors.black,
-                    Colors.black,
-                    Colors.black,
-                  ],
-                )),
-              ),
-              imageFilter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0)),
           rssFeed != null
               ? Padding(
                   padding: const EdgeInsets.fromLTRB(0, 45, 0, 0),
@@ -347,27 +325,39 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
                                                       .contains('Dev Server')
                                                   ? Colors.redAccent
                                                   : Colors.teal;
-                          return ListTile(
-                            title: Text(
-                              data.title ?? 'No title',
-                              style: TextStyle(
-                                  color: color, fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Text(
-                              description
-                                      ?.replaceAll('\n', '')
-                                      .replaceAll('	', '') ??
-                                  '',
-                              overflow: TextOverflow.fade,
-                              maxLines: 2,
-                              style: const TextStyle(
-                                color: Colors.white,
+                          return Column(
+                            children: [
+                              ListTile(
+                                title: Text(
+                                  data.title ?? 'No title',
+                                  style: TextStyle(
+                                      color: color,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Text(
+                                  description
+                                          ?.replaceAll('\n', '')
+                                          .replaceAll('	', '') ??
+                                      '',
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                onTap: () async {
+                                  await launchUrl(Uri.parse(data.link ??
+                                      'https://Forum.Warthunder.com'));
+                                },
                               ),
-                            ),
-                            onTap: () async {
-                              await launchUrl(Uri.parse(
-                                  data.link ?? 'https://Forum.Warthunder.com'));
-                            },
+                              const Divider(
+                                height: 1,
+                                thickness: 1,
+                                indent: 15,
+                                endIndent: 19,
+                                color: Colors.grey,
+                              ),
+                            ],
                           );
                         } else {
                           return const Center(child: Text('No Data'));

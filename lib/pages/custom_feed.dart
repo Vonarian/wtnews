@@ -102,27 +102,6 @@ class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
   Widget build(BuildContext context) {
     return Material(
       child: Stack(children: [
-        ImageFiltered(
-            child: Container(
-              decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-                colors: [
-                  Colors.black,
-                  Colors.black,
-                  Colors.black,
-                  Colors.black87,
-                  Colors.black87,
-                  Colors.black87,
-                  Colors.black87,
-                  Colors.black,
-                  Colors.black,
-                  Colors.black,
-                ],
-              )),
-            ),
-            imageFilter: ImageFilter.blur(sigmaX: 14.0, sigmaY: 14.0)),
         Scaffold(
           appBar: AppBar(
             elevation: 0,

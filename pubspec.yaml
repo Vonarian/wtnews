@@ -50,6 +50,8 @@ dependencies:
   sentry_flutter: ^6.5.1
   flutter_phoenix: ^1.0.0
   protocol_handler: ^0.1.2
+  settings_ui: ^2.0.2
+  flutter_acrylic: ^1.0.0+2
 
   # The following adds the Cupertino Icons font to your application.
 # Use with the CupertinoIcons class for iOS style icons.

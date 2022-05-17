@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -122,28 +121,10 @@ class _LoadingState extends ConsumerState<Loading> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Stack(
-        children: [
-          ImageFiltered(
-              child: Container(
-                decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                  colors: [
-                    Colors.black,
-                    Colors.black,
-                    Colors.black,
-                    Colors.black87,
-                    Colors.black87,
-                    Colors.black,
-                    Colors.black,
-                    Colors.black,
-                  ],
-                )),
-              ),
-              imageFilter: ImageFilter.blur(sigmaX: 14.0, sigmaY: 14.0)),
-          const Center(
+        children: const [
+          Center(
             child: SizedBox(
               width: 150,
               height: 150,
@@ -152,7 +133,7 @@ class _LoadingState extends ConsumerState<Loading> {
               ),
             ),
           ),
-          const WindowTitleBar(isCustom: false),
+          WindowTitleBar(isCustom: false),
         ],
       ),
     );

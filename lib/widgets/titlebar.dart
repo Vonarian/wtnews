@@ -55,8 +55,11 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
     trayManager.addListener(this);
     windowManager.addListener(this);
     protocolHandler.addListener(this);
-    ref.read(checkDataMine.notifier).state =
-        prefs.getBool('checkDataMine') ?? false;
+    WidgetsBinding.instance?.addPostFrameCallback((_) async {
+      ref.read(checkDataMine.notifier).state =
+          prefs.getBool('checkDataMine') ?? false;
+    });
+
     Timer.periodic(const Duration(seconds: 10), (timer) async {
       if (ref.watch(checkDataMine)) {
         rssFeed = await getDataMine();
@@ -87,7 +90,8 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
     if (prefs.getString('previous') != null) {
       String? previous = prefs.getString('previous');
 
-      bool isNew = previous != pubDate.toString();
+      bool isNew =
+          previous != pubDate.toString() && pubDate.toString() != lastPubDate;
       if (isNew) {
         if (kDebugMode) {
           print('isNew');
@@ -108,6 +112,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
         });
         await prefs.setString('previous', pubDate.toString());
       }
+      lastPubDate = pubDate.toString();
     } else {
       if (kDebugMode) {
         print('Null');
@@ -123,6 +128,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
         }
       });
       await prefs.setString('previous', pubDate.toString());
+      lastPubDate = pubDate.toString();
     }
   }
 
@@ -134,6 +140,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
     super.dispose();
   }
 
+  String? lastPubDate;
   RssFeed? rssFeed;
   @override
   Widget build(BuildContext context) {
@@ -161,7 +168,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
                           pageBuilder: (c, a1, a2) => const Settings(),
                           transitionsBuilder: (c, anim, a2, child) =>
                               FadeTransition(opacity: anim, child: child),
-                          transitionDuration: const Duration(milliseconds: 500),
+                          transitionDuration: const Duration(milliseconds: 220),
                         ),
                       );
                     },
@@ -172,32 +179,9 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
                       margin: const EdgeInsets.fromLTRB(12, 2, 12, 12),
                       child: const Icon(Icons.settings, color: Colors.green),
                     ),
-                    hoverColor: Colors.green,
+                    hoverColor: Colors.green.withOpacity(0.1),
                   )
                 : const SizedBox(),
-            const SizedBox(
-              width: 10,
-            ),
-            InkWell(
-              onTap: () async {
-                ref.read(checkDataMine.notifier).state =
-                    !ref.read(checkDataMine.notifier).state;
-                await prefs.setBool(
-                    'checkDataMine', ref.read(checkDataMine.notifier).state);
-                SnackBar snackBar = SnackBar(
-                    content: Text(
-                        'Data mine notifier: ${ref.read(checkDataMine.notifier).state ? 'on' : 'off'}'));
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(snackBar);
-              },
-              child: Image.asset(
-                'assets/gszabi.jpg',
-                height: 20,
-                width: 20,
-              ),
-              hoverColor: Colors.blue,
-            ),
             InkWell(
               onTap: () {
                 windowManager.minimize();
@@ -208,7 +192,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
                 margin: const EdgeInsets.fromLTRB(12, 0, 10, 25.5),
                 child: const Icon(Icons.minimize_outlined, color: Colors.blue),
               ),
-              hoverColor: Colors.blue,
+              hoverColor: Colors.blue.withOpacity(0.1),
             ),
             InkWell(
                 onTap: () {
@@ -219,14 +203,14 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
                   alignment: Alignment.center,
                   width: 15,
                   height: 15,
-                  margin: const EdgeInsets.fromLTRB(12, 0, 14, 12),
+                  margin: const EdgeInsets.fromLTRB(12, 0, 18, 12),
                   child: const Icon(
                     Icons.close,
                     color: Colors.red,
                     size: 25,
                   ),
                 ),
-                hoverColor: Colors.red),
+                hoverColor: Colors.red.withOpacity(0.1)),
           ],
         ),
       ),
@@ -312,9 +296,10 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
   void onProtocolUrlReceived(String url) {
     if (url.contains('xml') && url.isNotEmpty) {
       ref.read(customFeed.notifier).state = url.replaceAll('wtnews:', '');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('New custom feed url: $url')));
-      prefs.setString('customFeed', url);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              'New custom feed url: ${ref.read(customFeed.notifier).state}')));
+      prefs.setString('customFeed', ref.read(customFeed.notifier).state!);
     }
   }
 }

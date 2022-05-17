@@ -3,12 +3,11 @@ import 'dart:async';
 import 'package:firebase_dart/database.dart';
 
 import '../main.dart';
+import 'firebase_data.dart';
 
 class PresenceService {
-  FirebaseDatabase database = FirebaseDatabase(
-      app: app,
-      databaseURL:
-          'https://wtnews-54364-default-rtdb.europe-west1.firebasedatabase.app');
+  FirebaseDatabase database =
+      FirebaseDatabase(app: app, databaseURL: dataBaseUrl);
   StreamSubscription? subscription;
   DatabaseReference? con;
   Future<void> configureUserPresence(
