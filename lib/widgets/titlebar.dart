@@ -59,21 +59,32 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
       ref.read(checkDataMine.notifier).state =
           prefs.getBool('checkDataMine') ?? false;
     });
-
+    lastPubDate.addListener(() async {
+      await notify(lastPubDate.value!, lastItemLink!);
+      await prefs.setString('previous', lastPubDate.value!);
+    });
     Timer.periodic(const Duration(seconds: 10), (timer) async {
       if (ref.watch(checkDataMine)) {
-        rssFeed = await getDataMine();
-        if (rssFeed != null && rssFeed?.items != null) {
-          RssItem item = rssFeed!.items!.first;
-          if (item.description != null) {
-            String itemDescription = item.description!;
-            bool? isDataMine = (itemDescription.contains('Raw changes:') &&
-                    itemDescription.contains('→') &&
-                    itemDescription.contains('Current dev version')) ||
-                itemDescription.contains('	');
-            if (isDataMine) notify(item.pubDate!, item.link!);
+        rssFeed = await getDataMine()
+            .timeout(const Duration(seconds: 10))
+            .whenComplete(() async {
+          if (rssFeed != null && rssFeed?.items != null) {
+            RssItem item = rssFeed!.items!.first;
+            if (item.description != null) {
+              String itemDescription = item.description!;
+              bool? isDataMine = (itemDescription.contains('Raw changes:') &&
+                      itemDescription.contains('→') &&
+                      itemDescription.contains('Current dev version')) ||
+                  itemDescription.contains('	');
+              if (isDataMine) {
+                if (lastPubDate.value != item.pubDate.toString()) {
+                  lastPubDate.value = item.pubDate.toString();
+                  lastItemLink = item.link;
+                }
+              }
+            }
           }
-        }
+        });
       }
     });
   }
@@ -86,17 +97,14 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
     return rssFeed;
   }
 
-  Future<void> notify(DateTime pubDate, String url) async {
+  Future<void> notify(String pubDate, String url) async {
     if (prefs.getString('previous') != null) {
-      String? previous = prefs.getString('previous');
-
-      bool isNew =
-          previous != pubDate.toString() && pubDate.toString() != lastPubDate;
-      if (isNew) {
+      if (prefs.getString('previous') != pubDate) {
+        String? previous = prefs.getString('previous');
         if (kDebugMode) {
           print('isNew');
           print(previous);
-          print(pubDate.toString());
+          print(pubDate);
         }
 
         AppUtil().playSound(newSound);
@@ -110,9 +118,8 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
             launchUrl(Uri.parse(url));
           }
         });
-        await prefs.setString('previous', pubDate.toString());
+        await prefs.setString('previous', pubDate);
       }
-      lastPubDate = pubDate.toString();
     } else {
       if (kDebugMode) {
         print('Null');
@@ -128,7 +135,6 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
         }
       });
       await prefs.setString('previous', pubDate.toString());
-      lastPubDate = pubDate.toString();
     }
   }
 
@@ -137,10 +143,12 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
     trayManager.removeListener(this);
     windowManager.removeListener(this);
     protocolHandler.removeListener(this);
+    lastPubDate.removeListener(() {});
     super.dispose();
   }
 
-  String? lastPubDate;
+  ValueNotifier<String?> lastPubDate = ValueNotifier(null);
+  String? lastItemLink;
   RssFeed? rssFeed;
   @override
   Widget build(BuildContext context) {

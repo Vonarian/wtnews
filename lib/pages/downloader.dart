@@ -52,14 +52,21 @@ class _DownloaderState extends State<Downloader>
     await windowManager.center();
     try {
       Data data = await Data.getData();
-
+      final deleteFile = File(p.joinAll(
+          [p.dirname(Platform.resolvedExecutable), 'data\\update.zip']));
+      final deleteFolder = Directory(
+          p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\out']));
+      if (await deleteFile.exists() || await deleteFolder.exists()) {
+        await deleteFile.delete(recursive: true);
+        await deleteFolder.delete(recursive: true);
+      }
       Dio dio = Dio();
       await dio.download(data.assets.last.browserDownloadUrl,
           '${p.dirname(Platform.resolvedExecutable)}/data/update.zip',
           onReceiveProgress: (downloaded, full) async {
         progress = downloaded / full * 100;
         setState(() {});
-      }).whenComplete(() async {
+      }, deleteOnError: true).whenComplete(() async {
         final File filePath =
             File('${p.dirname(Platform.resolvedExecutable)}/data/update.zip');
         final Uint8List bytes = await File(
@@ -96,7 +103,6 @@ class _DownloaderState extends State<Downloader>
             duration: const Duration(seconds: 10),
             content: Text(e.toString())));
       await Sentry.captureException(e, stackTrace: st);
-
       error = true;
       setState(() {});
     }
@@ -106,38 +112,44 @@ class _DownloaderState extends State<Downloader>
   double progress = 0;
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        backgroundColor: Colors.blueGrey,
-        body: Center(
-          child: SizedBox(
-              height: 200,
-              width: 200,
-              child: CircularPercentIndicator(
-                center: !error
-                    ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Downloading',
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onPanStart: (details) {
+        windowManager.startDragging();
+      },
+      child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Center(
+            child: SizedBox(
+                height: 200,
+                width: 200,
+                child: CircularPercentIndicator(
+                  center: !error
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'Downloading',
+                              style: TextStyle(fontSize: 15),
+                            ),
+                            Text(
+                              '${progress.toStringAsFixed(1)} %',
+                              style: const TextStyle(fontSize: 15),
+                            ),
+                          ],
+                        )
+                      : const Center(
+                          child: Text(
+                            'ERROR',
                             style: TextStyle(fontSize: 15),
                           ),
-                          Text(
-                            '${progress.toStringAsFixed(1)} %',
-                            style: const TextStyle(fontSize: 15),
-                          ),
-                        ],
-                      )
-                    : const Center(
-                        child: Text(
-                          'ERROR',
-                          style: TextStyle(fontSize: 15),
                         ),
-                      ),
-                backgroundColor: Colors.blue,
-                percent: double.parse(progress.toStringAsFixed(0)) / 100,
-                radius: 100,
-              )),
-        ));
+                  backgroundColor: Colors.blue,
+                  percent: double.parse(progress.toStringAsFixed(0)) / 100,
+                  radius: 100,
+                )),
+          )),
+    );
   }
 
   final bool _showWindowBelowTrayIcon = false;

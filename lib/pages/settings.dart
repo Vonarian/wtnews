@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
@@ -28,9 +27,9 @@ class _SettingsState extends ConsumerState<Settings> {
   void initState() {
     super.initState();
     WidgetsBinding.instance!.addPostFrameCallback((_) async {
-      ref.read(isStartupEnabled.notifier).state =
+      ref.read(startupEnabled.notifier).state =
           prefs.getBool('startup') ?? false;
-      if (ref.read(isStartupEnabled.notifier).state) {
+      if (ref.read(startupEnabled.notifier).state) {
         await Process.run(pathToUpdateShortcut, []);
       }
       ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? false;
@@ -86,7 +85,7 @@ class _SettingsState extends ConsumerState<Settings> {
             title: const Text('Main'),
             tiles: [
               SettingsTile.switchTile(
-                initialValue: ref.watch(isStartupEnabled),
+                initialValue: ref.watch(startupEnabled),
                 onToggle: (value) {
                   if (value) {
                     Process.run(pathToUpdateShortcut, []);
@@ -95,7 +94,7 @@ class _SettingsState extends ConsumerState<Settings> {
                     ref.read(minimizeOnStart.notifier).state = false;
                     prefs.setBool('minimize', false);
                   }
-                  ref.read(isStartupEnabled.notifier).state = value;
+                  ref.read(startupEnabled.notifier).state = value;
                   prefs.setBool('startup', value);
                 },
                 title: const Text('Run at Startup'),
@@ -125,10 +124,10 @@ class _SettingsState extends ConsumerState<Settings> {
           ),
           SettingsSection(tiles: [
             SettingsTile.switchTile(
-              initialValue: prefs.getBool('checkDataMine'),
+              initialValue: ref.watch(checkDataMine),
               onToggle: (value) async {
                 prefs.setBool('checkDataMine', value);
-                ref.read(playSound.notifier).state = value;
+                ref.read(checkDataMine.notifier).state = value;
               },
               title: const Text('DataMine Notifier'),
               leading: Image.asset(

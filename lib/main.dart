@@ -49,7 +49,7 @@ Future<void> main() async {
     await Window.hideWindowControls();
     await Window.setEffect(
       effect: WindowEffect.aero,
-      color: Colors.black.withOpacity(0.45),
+      color: Colors.black.withOpacity(0.55),
     );
   });
   await protocolHandler.register('wtnews');
@@ -73,7 +73,7 @@ Future<void> main() async {
         options.tracesSampleRate = 1.0;
         options.enableAutoSessionTracking = true;
         options.enableOutOfMemoryTracking = true;
-        options.reportPackages = false;
+        options.reportPackages = true;
         options.release = 'WTNews@${file.readAsStringSync()}';
         options.tracesSampler = (samplingContext) {
           return 1.0;
