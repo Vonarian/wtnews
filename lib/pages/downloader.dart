@@ -62,26 +62,26 @@ class _DownloaderState extends State<Downloader>
       }
       Dio dio = Dio();
       await dio.download(data.assets.last.browserDownloadUrl,
-          '${p.dirname(Platform.resolvedExecutable)}/data/update.zip',
+          '${p.dirname(Platform.resolvedExecutable)}\\data\\update.zip',
           onReceiveProgress: (downloaded, full) async {
         progress = downloaded / full * 100;
         setState(() {});
       }, deleteOnError: true).whenComplete(() async {
         final File filePath =
-            File('${p.dirname(Platform.resolvedExecutable)}/data/update.zip');
+            File('${p.dirname(Platform.resolvedExecutable)}\\data\\update.zip');
         final Uint8List bytes = await File(
-                '${p.dirname(Platform.resolvedExecutable)}/data/update.zip')
+                '${p.dirname(Platform.resolvedExecutable)}\\data\\update.zip')
             .readAsBytes();
         final archive = ZipDecoder().decodeBytes(bytes);
         for (final file in archive) {
           final filename = file.name;
           if (file.isFile) {
             final data = file.content as List<int>;
-            File(p.dirname(filePath.path) + '/out/$filename')
+            File(p.dirname(filePath.path) + '\\out\\$filename')
               ..createSync(recursive: true)
               ..writeAsBytesSync(data);
           } else {
-            Directory(p.dirname(filePath.path) + '/out/$filename')
+            Directory(p.dirname(filePath.path) + '\\out\\$filename')
                 .create(recursive: true);
           }
         }
