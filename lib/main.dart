@@ -49,12 +49,12 @@ Future<void> main() async {
     await windowManager.setResizable(true);
     await windowManager.setTitle('WTNews');
     await windowManager.setIcon('assets/app_icon.ico');
-    await windowManager.show();
     await Window.hideWindowControls();
     await Window.setEffect(
       effect: WindowEffect.aero,
       color: Colors.black.withOpacity(0.55),
     );
+    await windowManager.show();
   });
   await protocolHandler.register('wtnews');
 

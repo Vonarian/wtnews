@@ -20,10 +20,10 @@ class CustomRSSView extends ConsumerStatefulWidget {
   const CustomRSSView({Key? key}) : super(key: key);
 
   @override
-  _CustomRSSViewState createState() => _CustomRSSViewState();
+  CustomRSSViewState createState() => CustomRSSViewState();
 }
 
-class _CustomRSSViewState extends ConsumerState<CustomRSSView> {
+class CustomRSSViewState extends ConsumerState<CustomRSSView> {
   RssFeed? rssFeed;
 
   @override

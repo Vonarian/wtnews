@@ -20,10 +20,10 @@ class Settings extends ConsumerStatefulWidget {
   const Settings({Key? key}) : super(key: key);
 
   @override
-  _SettingsState createState() => _SettingsState();
+  SettingsState createState() => SettingsState();
 }
 
-class _SettingsState extends ConsumerState<Settings> {
+class SettingsState extends ConsumerState<Settings> {
   @override
   void initState() {
     super.initState();
@@ -73,7 +73,7 @@ class _SettingsState extends ConsumerState<Settings> {
 
   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
 
-  Widget settings() {
+  Widget settings(BuildContext context) {
     return CustomizedSettingsList(
         platform: DevicePlatform.web,
         brightness: Brightness.dark,
@@ -265,7 +265,7 @@ class _SettingsState extends ConsumerState<Settings> {
               elevation: 0,
             ),
             backgroundColor: Colors.transparent,
-            body: settings(),
+            body: settings(context),
           ),
           const WindowTitleBar(isCustom: true),
         ],

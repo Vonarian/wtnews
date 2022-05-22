@@ -54,7 +54,6 @@ dependencies:
   flutter_acrylic: ^1.0.0+2
   path: ^1.8.1
   ffi: ^1.2.1
-  loading_animation_widget: ^1.2.0+1
   hotkey_manager: ^0.1.7
   path_provider: ^2.0.10
 

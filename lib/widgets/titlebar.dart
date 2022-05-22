@@ -44,10 +44,10 @@ class WindowTitleBar extends ConsumerStatefulWidget {
   const WindowTitleBar({Key? key, required this.isCustom}) : super(key: key);
 
   @override
-  _WindowTitleBarState createState() => _WindowTitleBarState();
+  WindowTitleBarState createState() => WindowTitleBarState();
 }
 
-class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
+class WindowTitleBarState extends ConsumerState<WindowTitleBar>
     with tray.TrayListener, WindowListener, ProtocolListener {
   @override
   void initState() {

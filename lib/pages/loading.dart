@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:window_manager/window_manager.dart';
@@ -10,6 +9,7 @@ import 'package:wtnews/main.dart';
 
 import '../providers.dart';
 import '../services/github.dart';
+import '../widgets/custom_loading.dart';
 import '../widgets/titlebar.dart';
 import 'downloader.dart';
 import 'rss_feed.dart';
@@ -18,10 +18,10 @@ class Loading extends ConsumerStatefulWidget {
   const Loading({Key? key}) : super(key: key);
 
   @override
-  _LoadingState createState() => _LoadingState();
+  LoadingState createState() => LoadingState();
 }
 
-class _LoadingState extends ConsumerState<Loading> {
+class LoadingState extends ConsumerState<Loading> {
   @override
   void initState() {
     super.initState();
@@ -130,7 +130,17 @@ class _LoadingState extends ConsumerState<Loading> {
       body: Stack(
         children: [
           Center(
-            child: LoadingAnimationWidget.inkDrop(color: Colors.red, size: 150),
+            child: CustomLoadingAnimationWidget.inkDrop(
+                color: Color.lerp(Colors.red, Colors.amber, 0.77) ?? Colors.red,
+                size: 250,
+                strokeWidth: 15,
+                colors: [
+                  Colors.red,
+                  Colors.blue,
+                  Colors.green,
+                  Colors.amber,
+                  Colors.pink
+                ]),
           ),
           const WindowTitleBar(isCustom: false),
         ],

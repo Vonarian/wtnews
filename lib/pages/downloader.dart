@@ -8,7 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:tray_manager/tray_manager.dart';
+import 'package:tray_manager/tray_manager.dart' as tray;
 import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -18,16 +18,16 @@ class Downloader extends StatefulWidget {
   const Downloader({Key? key}) : super(key: key);
 
   @override
-  _DownloaderState createState() => _DownloaderState();
+  DownloaderState createState() => DownloaderState();
 }
 
-class _DownloaderState extends State<Downloader>
-    with WindowListener, TrayListener {
+class DownloaderState extends State<Downloader>
+    with WindowListener, tray.TrayListener {
   @override
   void initState() {
     super.initState();
     windowManager.addListener(this);
-    trayManager.addListener(this);
+    tray.trayManager.addListener(this);
     downloadUpdate();
   }
 
@@ -35,7 +35,7 @@ class _DownloaderState extends State<Downloader>
   void dispose() {
     super.dispose();
     windowManager.removeListener(this);
-    trayManager.removeListener(this);
+    tray.trayManager.removeListener(this);
   }
 
   Future<void> downloadUpdate() async {
@@ -164,15 +164,38 @@ class _DownloaderState extends State<Downloader>
 
   final bool _showWindowBelowTrayIcon = false;
   Future<void> _handleClickRestore() async {
+    await windowManager.setIcon('assets/app_icon.ico');
     windowManager.restore();
     windowManager.show();
+  }
+
+  Future<void> _trayInit() async {
+    await tray.trayManager.setIcon(
+      'assets/app_icon.ico',
+    );
+    tray.Menu menu = tray.Menu(items: [
+      tray.MenuItem(key: 'show-app', label: 'Show'),
+      tray.MenuItem.separator(),
+      tray.MenuItem(key: 'close-app', label: 'Exit'),
+    ]);
+    await tray.trayManager.setContextMenu(menu);
+  }
+
+  @override
+  void onWindowMinimize() {
+    windowManager.hide();
+    _trayInit();
+  }
+
+  void _trayUnInit() async {
+    await tray.trayManager.destroy();
   }
 
   @override
   void onTrayIconMouseDown() async {
     if (_showWindowBelowTrayIcon) {
       Size windowSize = await windowManager.getSize();
-      Rect trayIconBounds = await TrayManager.instance.getBounds();
+      Rect trayIconBounds = await tray.TrayManager.instance.getBounds();
       Size trayIconSize = trayIconBounds.size;
       Offset trayIconNewPosition = trayIconBounds.topLeft;
 
@@ -185,5 +208,28 @@ class _DownloaderState extends State<Downloader>
       await Future.delayed(const Duration(milliseconds: 100));
     }
     _handleClickRestore();
+    _trayUnInit();
+  }
+
+  @override
+  void onTrayIconRightMouseDown() {
+    tray.trayManager.popUpContextMenu();
+  }
+
+  @override
+  void onWindowRestore() {
+    setState(() {});
+  }
+
+  @override
+  void onTrayMenuItemClick(tray.MenuItem menuItem) async {
+    switch (menuItem.key) {
+      case 'show-app':
+        windowManager.show();
+        break;
+      case 'close-app':
+        windowManager.close();
+        break;
+    }
   }
 }

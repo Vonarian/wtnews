@@ -15,15 +15,25 @@ class OverlayMode extends ConsumerStatefulWidget {
   const OverlayMode({Key? key}) : super(key: key);
 
   @override
-  _OverlayModeState createState() => _OverlayModeState();
+  OverlayModeState createState() => OverlayModeState();
 }
 
-class _OverlayModeState extends ConsumerState<OverlayMode>
+class OverlayModeState extends ConsumerState<OverlayMode>
     with SingleTickerProviderStateMixin {
   @override
   initState() {
     super.initState();
     startHotkey();
+    Future.delayed(Duration.zero, () async {
+      if (mounted) {
+        rssFeed = await getForum();
+        if (rssFeed != null && title.value != rssFeed?.items?[0].title) {
+          title.value = rssFeed?.items![0].title;
+          setState(() {});
+        }
+        setState(() {});
+      }
+    });
     title.addListener(() async {
       AppUtil().playSound(newSound);
       await Future.delayed(const Duration(milliseconds: 3500));

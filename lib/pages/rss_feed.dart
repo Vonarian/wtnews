@@ -6,7 +6,6 @@ import 'package:dio/dio.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -20,15 +19,16 @@ import '../main.dart';
 import '../providers.dart';
 import '../services/data_class.dart';
 import '../services/utility.dart';
+import '../widgets/custom_loading.dart';
 
 class RSSView extends ConsumerStatefulWidget {
   const RSSView({Key? key}) : super(key: key);
 
   @override
-  _RSSViewState createState() => _RSSViewState();
+  RSSViewState createState() => RSSViewState();
 }
 
-class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
+class RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
   RssFeed? rssFeed;
   StreamSubscription? subscription;
   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
@@ -298,6 +298,10 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
   ValueNotifier<String?> newItemTitle = ValueNotifier(null);
   @override
   Widget build(BuildContext context) {
+    var foregroundColor =
+        Colors.black.withOpacity(0.55).computeLuminance() > 0.5
+            ? Colors.black
+            : Colors.white;
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
@@ -344,9 +348,9 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
                                       '',
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 2,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                  ),
+                                  style: TextStyle(
+                                      color: foregroundColor,
+                                      letterSpacing: 0.52),
                                 ),
                                 onTap: () async {
                                   await launchUrl(Uri.parse(data.link ??
@@ -368,8 +372,18 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
                       }),
                 )
               : Center(
-                  child: LoadingAnimationWidget.inkDrop(
-                      color: Colors.red, size: 150)),
+                  child: CustomLoadingAnimationWidget.inkDrop(
+                      color: Colors.red,
+                      size: 250,
+                      strokeWidth: 15,
+                      colors: [
+                        Colors.red,
+                        Colors.blue,
+                        Colors.green,
+                        Colors.amber,
+                        Colors.pink
+                      ]),
+                ),
           const WindowTitleBar(
             isCustom: false,
           )

@@ -17,10 +17,10 @@ class Feedback extends ConsumerStatefulWidget {
       : super(key: key);
 
   @override
-  _FeedbackState createState() => _FeedbackState();
+  FeedbackState createState() => FeedbackState();
 }
 
-class _FeedbackState extends ConsumerState<Feedback> {
+class FeedbackState extends ConsumerState<Feedback> {
   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
 
   @override
