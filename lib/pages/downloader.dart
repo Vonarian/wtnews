@@ -5,6 +5,7 @@ import 'package:archive/archive.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:tray_manager/tray_manager.dart';
@@ -49,26 +50,26 @@ class _DownloaderState extends State<Downloader>
     await windowManager.center();
     try {
       Data data = await Data.getData();
-      final deleteFile = File(p.joinAll(
-          [p.dirname(Platform.resolvedExecutable), 'data\\update.zip']));
-      final deleteFolder = Directory(
-          p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\out']));
+      Directory tempDir = await getTemporaryDirectory();
+      String tempPath = tempDir.path;
+      Directory tempWtnews =
+          await Directory('$tempPath\\WTNews').create(recursive: true);
+      final deleteFile = File(p.joinAll([tempWtnews.path, 'update.zip']));
+      final deleteFolder = Directory(p.joinAll([tempWtnews.path, 'out']));
       if (await deleteFile.exists() || await deleteFolder.exists()) {
         await deleteFile.delete(recursive: true);
         await deleteFolder.delete(recursive: true);
       }
       Dio dio = Dio();
-      await dio.download(data.assets.last.browserDownloadUrl,
-          '${p.dirname(Platform.resolvedExecutable)}\\data\\update.zip',
+      await dio.download(
+          data.assets.last.browserDownloadUrl, '${tempWtnews.path}\\update.zip',
           onReceiveProgress: (downloaded, full) async {
         progress = downloaded / full * 100;
         setState(() {});
       }, deleteOnError: true).whenComplete(() async {
-        final File filePath =
-            File('${p.dirname(Platform.resolvedExecutable)}\\data\\update.zip');
-        final Uint8List bytes = await File(
-                '${p.dirname(Platform.resolvedExecutable)}\\data\\update.zip')
-            .readAsBytes();
+        final File filePath = File('${tempWtnews.path}\\update.zip');
+        final Uint8List bytes =
+            await File('${tempWtnews.path}\\update.zip').readAsBytes();
         final archive = ZipDecoder().decodeBytes(bytes);
         for (final file in archive) {
           final filename = file.name;
@@ -100,9 +101,10 @@ class _DownloaderState extends State<Downloader>
         await Future.delayed(const Duration(seconds: 1));
         await Process.run(installer, []);
       }).timeout(const Duration(minutes: 8));
-    } catch (e, st) {    if (!mounted) return;
+    } catch (e, st) {
+      if (!mounted) return;
 
-    ScaffoldMessenger.of(context)
+      ScaffoldMessenger.of(context)
         ..removeCurrentSnackBar()
         ..showSnackBar(SnackBar(
             duration: const Duration(seconds: 10),
@@ -136,11 +138,13 @@ class _DownloaderState extends State<Downloader>
                           children: [
                             const Text(
                               'Downloading',
-                              style: TextStyle(fontSize: 15),
+                              style:
+                                  TextStyle(fontSize: 15, color: Colors.white),
                             ),
                             Text(
                               '${progress.toStringAsFixed(1)} %',
-                              style: const TextStyle(fontSize: 15),
+                              style: const TextStyle(
+                                  fontSize: 15, color: Colors.white),
                             ),
                           ],
                         )

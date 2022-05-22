@@ -56,6 +56,7 @@ dependencies:
   ffi: ^1.2.1
   loading_animation_widget: ^1.2.0+1
   hotkey_manager: ^0.1.7
+  path_provider: ^2.0.10
 
   # The following adds the Cupertino Icons font to your application.
 # Use with the CupertinoIcons class for iOS style icons.
