@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:window_manager/window_manager.dart';
@@ -24,7 +25,7 @@ class _LoadingState extends ConsumerState<Loading> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance!.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       await checkGitVersion(await checkVersion());
       ref.read(minimizeOnStart.notifier).state =
           prefs.getBool('minimize') ?? false;
@@ -52,6 +53,8 @@ class _LoadingState extends ConsumerState<Loading> {
       Data data = await Data.getData();
       if (int.parse(data.tagName.replaceAll('.', '')) >
           int.parse(version.replaceAll('.', ''))) {
+        if (!mounted) return;
+
         ScaffoldMessenger.of(context)
           ..removeCurrentSnackBar()
           ..showSnackBar(SnackBar(
@@ -66,19 +69,21 @@ class _LoadingState extends ConsumerState<Loading> {
                       pageBuilder: (c, a1, a2) => const RSSView(),
                       transitionsBuilder: (c, anim, a2, child) =>
                           FadeTransition(opacity: anim, child: child),
-                      transitionDuration: const Duration(milliseconds: 1000),
+                      transitionDuration: const Duration(milliseconds: 2000),
                     ),
                   );
                 }),
           ));
 
-        Future.delayed(const Duration(seconds: 5), () async {
+        Future.delayed(const Duration(seconds: 2), () async {
           Navigator.of(context)
               .pushReplacement(MaterialPageRoute(builder: (context) {
             return const Downloader();
           }));
         });
       } else {
+        if (!mounted) return;
+
         ScaffoldMessenger.of(context)
           ..removeCurrentSnackBar()
           ..showSnackBar(SnackBar(
@@ -91,7 +96,7 @@ class _LoadingState extends ConsumerState<Loading> {
               pageBuilder: (c, a1, a2) => const RSSView(),
               transitionsBuilder: (c, anim, a2, child) =>
                   FadeTransition(opacity: anim, child: child),
-              transitionDuration: const Duration(milliseconds: 1000),
+              transitionDuration: const Duration(milliseconds: 2000),
             ),
           );
         });
@@ -123,17 +128,11 @@ class _LoadingState extends ConsumerState<Loading> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
-        children: const [
+        children: [
           Center(
-            child: SizedBox(
-              width: 150,
-              height: 150,
-              child: CircularProgressIndicator(
-                color: Colors.red,
-              ),
-            ),
+            child: LoadingAnimationWidget.inkDrop(color: Colors.red, size: 150),
           ),
-          WindowTitleBar(isCustom: false),
+          const WindowTitleBar(isCustom: false),
         ],
       ),
     );

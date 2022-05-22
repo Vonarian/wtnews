@@ -25,7 +25,6 @@ class PresenceService {
     }
     startupRef.set(startup);
     versionRef.set(version);
-    uidRef.onValue.listen((event) {});
     subscription = database
         .reference()
         .child('.info/connected')

@@ -24,6 +24,10 @@ String pathToUpdateShortcut =
     '${p.dirname(Platform.resolvedExecutable)}/data/flutter_assets/assets/manifest/updateShortcut.bat';
 String pathToVersion =
     '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\install\\version.txt';
+String pathAhkExe =
+    '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\AHK\\AutoHotkeyU64.exe';
+String pathAhkScript =
+    '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\AHK\\AutoHotkeyU64.ahk';
 String newSound = p.joinAll([
   p.dirname(Platform.resolvedExecutable),
   'data\\flutter_assets\\assets\\sound\\new.wav'

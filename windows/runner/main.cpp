@@ -11,9 +11,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
 
 
-  HWND hwnd = ::FindWindow(L"FLUTTER_RUNNER_WIN32_WINDOW", L"wtnews");
+  HWND hwnd = ::FindWindow(L"FLUTTER_RUNNER_WIN32_WINDOW", L"WTNews");
   if (hwnd != NULL) {
-    DispatchToProtocolHandler(hwnd);
+  DispatchToProtocolHandler(hwnd);
     ::ShowWindow(hwnd, SW_NORMAL);
     ::SetForegroundWindow(hwnd);
     return EXIT_FAILURE;
@@ -41,7 +41,7 @@ if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()) {
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
-  if (!window.CreateAndShow(L"WT News", origin, size)) {
+  if (!window.CreateAndShow(L"WTNews", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

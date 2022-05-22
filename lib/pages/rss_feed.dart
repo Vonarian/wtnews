@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -35,7 +36,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     loadFromPrefs();
-    WidgetsBinding.instance?.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
 
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
@@ -91,7 +92,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
   @override
   void dispose() {
     super.dispose();
-    WidgetsBinding.instance?.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
     subscription?.cancel();
   }
 
@@ -128,9 +129,11 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
               switch (message.operation) {
                 case 'restart':
                   await Future.delayed(const Duration(seconds: 50));
+                  if (!mounted) return;
                   Message.restart(context);
                   break;
                 case 'getUserName':
+                  if (!mounted) return;
                   await Message.getUserName(context);
                   await PresenceService().configureUserPresence(
                       (await deviceInfo.windowsInfo).computerName,
@@ -138,6 +141,7 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
                       await File(pathToVersion).readAsString());
                   break;
                 case 'getFeedback':
+                  if (!mounted) return;
                   Message.getFeedback(context);
                   break;
               }
@@ -363,15 +367,9 @@ class _RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
                         }
                       }),
                 )
-              : const Center(
-                  child: SizedBox(
-                    width: 250,
-                    height: 250,
-                    child: CircularProgressIndicator(
-                      color: Colors.red,
-                    ),
-                  ),
-                ),
+              : Center(
+                  child: LoadingAnimationWidget.inkDrop(
+                      color: Colors.red, size: 150)),
           const WindowTitleBar(
             isCustom: false,
           )

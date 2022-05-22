@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:protocol_handler/protocol_handler.dart';
-import 'package:tray_manager/tray_manager.dart';
+import 'package:tray_manager/tray_manager.dart' as tray;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
@@ -48,14 +48,14 @@ class WindowTitleBar extends ConsumerStatefulWidget {
 }
 
 class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
-    with TrayListener, WindowListener, ProtocolListener {
+    with tray.TrayListener, WindowListener, ProtocolListener {
   @override
   void initState() {
     super.initState();
-    trayManager.addListener(this);
+    tray.trayManager.addListener(this);
     windowManager.addListener(this);
     protocolHandler.addListener(this);
-    WidgetsBinding.instance?.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(checkDataMine.notifier).state =
           prefs.getBool('checkDataMine') ?? false;
     });
@@ -118,7 +118,6 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
             launchUrl(Uri.parse(url));
           }
         });
-        await prefs.setString('previous', pubDate);
       }
     } else {
       if (kDebugMode) {
@@ -134,13 +133,12 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
           launchUrl(Uri.parse(url));
         }
       });
-      await prefs.setString('previous', pubDate.toString());
     }
   }
 
   @override
   void dispose() {
-    trayManager.removeListener(this);
+    tray.trayManager.removeListener(this);
     windowManager.removeListener(this);
     protocolHandler.removeListener(this);
     lastPubDate.removeListener(() {});
@@ -180,6 +178,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
                         ),
                       );
                     },
+                    hoverColor: Colors.green.withOpacity(0.1),
                     child: Container(
                       alignment: Alignment.center,
                       width: 15,
@@ -187,26 +186,26 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
                       margin: const EdgeInsets.fromLTRB(12, 2, 12, 12),
                       child: const Icon(Icons.settings, color: Colors.green),
                     ),
-                    hoverColor: Colors.green.withOpacity(0.1),
                   )
                 : const SizedBox(),
             InkWell(
               onTap: () {
                 windowManager.minimize();
               },
+              hoverColor: Colors.blue.withOpacity(0.1),
               child: Container(
                 width: 15,
                 height: 15,
                 margin: const EdgeInsets.fromLTRB(12, 0, 10, 25.5),
                 child: const Icon(Icons.minimize_outlined, color: Colors.blue),
               ),
-              hoverColor: Colors.blue.withOpacity(0.1),
             ),
             InkWell(
                 onTap: () {
                   windowManager.close();
                   exit(0);
                 },
+                hoverColor: Colors.red.withOpacity(0.1),
                 child: Container(
                   alignment: Alignment.center,
                   width: 15,
@@ -217,8 +216,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
                     color: Colors.red,
                     size: 25,
                   ),
-                ),
-                hoverColor: Colors.red.withOpacity(0.1)),
+                )),
           ],
         ),
       ),
@@ -233,26 +231,26 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
   }
 
   Future<void> _trayInit() async {
-    await trayManager.setIcon(
+    await tray.trayManager.setIcon(
       'assets/app_icon.ico',
     );
-    Menu menu = Menu(items: [
-      MenuItem(key: 'show-app', label: 'Show'),
-      MenuItem.separator(),
-      MenuItem(key: 'close-app', label: 'Exit'),
+    tray.Menu menu = tray.Menu(items: [
+      tray.MenuItem(key: 'show-app', label: 'Show'),
+      tray.MenuItem.separator(),
+      tray.MenuItem(key: 'close-app', label: 'Exit'),
     ]);
-    await trayManager.setContextMenu(menu);
+    await tray.trayManager.setContextMenu(menu);
   }
 
   void _trayUnInit() async {
-    await trayManager.destroy();
+    await tray.trayManager.destroy();
   }
 
   @override
   void onTrayIconMouseDown() async {
     if (_showWindowBelowTrayIcon) {
       Size windowSize = await windowManager.getSize();
-      Rect trayIconBounds = await TrayManager.instance.getBounds();
+      Rect trayIconBounds = await tray.TrayManager.instance.getBounds();
       Size trayIconSize = trayIconBounds.size;
       Offset trayIconNewPosition = trayIconBounds.topLeft;
 
@@ -270,7 +268,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
 
   @override
   void onTrayIconRightMouseDown() {
-    trayManager.popUpContextMenu();
+    tray.trayManager.popUpContextMenu();
   }
 
   @override
@@ -279,7 +277,7 @@ class _WindowTitleBarState extends ConsumerState<WindowTitleBar>
   }
 
   @override
-  void onTrayMenuItemClick(MenuItem menuItem) async {
+  void onTrayMenuItemClick(tray.MenuItem menuItem) async {
     switch (menuItem.key) {
       case 'show-app':
         windowManager.show();

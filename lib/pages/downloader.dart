@@ -37,9 +37,6 @@ class _DownloaderState extends State<Downloader>
     trayManager.removeListener(this);
   }
 
-  String logPath =
-      p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\logs\\']);
-
   Future<void> downloadUpdate() async {
     await WinToast.instance().showToast(
         type: ToastType.text04,
@@ -77,11 +74,11 @@ class _DownloaderState extends State<Downloader>
           final filename = file.name;
           if (file.isFile) {
             final data = file.content as List<int>;
-            File(p.dirname(filePath.path) + '\\out\\$filename')
+            File('${p.dirname(filePath.path)}\\out\\$filename')
               ..createSync(recursive: true)
               ..writeAsBytesSync(data);
           } else {
-            Directory(p.dirname(filePath.path) + '\\out\\$filename')
+            Directory('${p.dirname(filePath.path)}\\out\\$filename')
                 .create(recursive: true);
           }
         }
@@ -94,16 +91,25 @@ class _DownloaderState extends State<Downloader>
           'install',
           'installer.bat'
         ]));
+
+        await WinToast.instance().showToast(
+            type: ToastType.text04,
+            title: 'Update process starting in a moment',
+            subtitle:
+                'Do not close the application until the update process is finished');
+        await Future.delayed(const Duration(seconds: 1));
         await Process.run(installer, []);
       }).timeout(const Duration(minutes: 8));
-    } catch (e, st) {
-      ScaffoldMessenger.of(context)
+    } catch (e, st) {    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
         ..removeCurrentSnackBar()
         ..showSnackBar(SnackBar(
             duration: const Duration(seconds: 10),
             content: Text(e.toString())));
       await Sentry.captureException(e, stackTrace: st);
       error = true;
+      await windowManager.setSize(const Size(600, 600));
       setState(() {});
     }
   }

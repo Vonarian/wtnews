@@ -14,6 +14,7 @@ import 'package:wtnews/widgets/titlebar.dart';
 import '../providers.dart';
 import '../services/data_class.dart';
 import '../widgets/settings_list_custom.dart';
+import 'overlay.dart';
 
 class Settings extends ConsumerStatefulWidget {
   const Settings({Key? key}) : super(key: key);
@@ -26,7 +27,7 @@ class _SettingsState extends ConsumerState<Settings> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance!.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(startupEnabled.notifier).state =
           prefs.getBool('startup') ?? false;
       if (ref.read(startupEnabled.notifier).state) {
@@ -122,57 +123,70 @@ class _SettingsState extends ConsumerState<Settings> {
               ),
             ],
           ),
-          SettingsSection(tiles: [
-            SettingsTile.switchTile(
-              initialValue: ref.watch(checkDataMine),
-              onToggle: (value) async {
-                prefs.setBool('checkDataMine', value);
-                ref.read(checkDataMine.notifier).state = value;
-              },
-              title: const Text('DataMine Notifier'),
-              leading: Image.asset(
-                'assets/gszabi.jpg',
-                width: 30,
-                height: 30,
+          SettingsSection(
+            title: const Text('Additional'),
+            tiles: [
+              SettingsTile.switchTile(
+                initialValue: ref.watch(checkDataMine),
+                onToggle: (value) async {
+                  prefs.setBool('checkDataMine', value);
+                  ref.read(checkDataMine.notifier).state = value;
+                },
+                title: const Text('DataMine Notifier'),
+                leading: Image.asset(
+                  'assets/gszabi.jpg',
+                  width: 30,
+                  height: 30,
+                ),
               ),
-            ),
-            SettingsTile(
-              title: const Text('Set Custom Feed Url'),
-              leading: const Icon(Icons.rss_feed),
-              onPressed: (ctx) async {
-                ref.read(customFeed.notifier).state =
-                    (await Navigator.of(context).push(dialogBuilderUrl(
-                        context, ref.watch(customFeed) ?? '')));
-                await prefs.setString(
-                    'customFeed', ref.watch(customFeed) ?? '');
-              },
-            ),
-            SettingsTile.navigation(
-              title: const Text('Switch to Custom Feed'),
-              leading: const Icon(Icons.rss_feed),
-              onPressed: (ctx) async {
-                if (ref.read(customFeed.notifier).state != null &&
-                    ref.read(customFeed.notifier).state!.isNotEmpty) {
-                  Navigator.of(context).push(MaterialPageRoute(
-                      builder: (context) => const CustomRSSView()));
-                } else {
-                  await showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                            title: const Text('Error'),
-                            content: const Text(
-                                'Please set custom feed url first :)'),
-                            actions: <Widget>[
-                              TextButton(
-                                child: const Text('OK'),
-                                onPressed: () => Navigator.of(context).pop(),
-                              )
-                            ],
-                          ));
-                }
-              },
-            ),
-          ], title: const Text('Additional')),
+              SettingsTile(
+                title: const Text('Set Custom Feed Url'),
+                leading: const Icon(Icons.rss_feed),
+                onPressed: (ctx) async {
+                  ref.read(customFeed.notifier).state =
+                      (await Navigator.of(context).push(dialogBuilderUrl(
+                          context, ref.watch(customFeed) ?? '')));
+                  await prefs.setString(
+                      'customFeed', ref.watch(customFeed) ?? '');
+                },
+              ),
+              SettingsTile.navigation(
+                title: const Text('Switch to Custom Feed'),
+                leading: const Icon(Icons.rss_feed),
+                onPressed: (ctx) async {
+                  if (ref.read(customFeed.notifier).state != null &&
+                      ref.read(customFeed.notifier).state!.isNotEmpty) {
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => const CustomRSSView()));
+                  } else {
+                    await showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                              title: const Text('Error'),
+                              content: const Text(
+                                  'Please set custom feed url first :)'),
+                              actions: <Widget>[
+                                TextButton(
+                                  child: const Text('OK'),
+                                  onPressed: () => Navigator.of(context).pop(),
+                                )
+                              ],
+                            ));
+                  }
+                },
+              ),
+              SettingsTile.navigation(
+                title: const Text('Switch to Overlay Mode'),
+                leading: const Icon(Icons.desktop_windows),
+                onPressed: (ctx) {
+                  Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const OverlayMode()));
+                },
+              ),
+            ],
+          ),
           SettingsSection(title: const Text('Misc'), tiles: [
             SettingsTile(
               title: const Text('Set Username'),
@@ -210,6 +224,7 @@ class _SettingsState extends ConsumerState<Settings> {
                   );
 
                   await Sentry.captureUserFeedback(feedback);
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context)
                     ..removeCurrentSnackBar()
                     ..showSnackBar(const SnackBar(

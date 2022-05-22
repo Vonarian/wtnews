@@ -12,16 +12,16 @@ class AppUtil {
     //Get this App Document Directory
 
     //App Document Directory + folder name
-    final Directory _appDocDirFolder = Directory(path);
+    final Directory appDocDirFolder = Directory(path);
 
     try {
-      if (await _appDocDirFolder.exists()) {
+      if (await appDocDirFolder.exists()) {
         //if folder already exists return path
-        return _appDocDirFolder.path;
+        return appDocDirFolder.path;
       } else {
         //if folder not exists create folder and then return its path
         final Directory finalDir =
-            await _appDocDirFolder.create(recursive: true);
+            await appDocDirFolder.create(recursive: true);
         return finalDir.path;
       }
     } catch (e) {
