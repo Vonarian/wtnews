@@ -85,7 +85,9 @@ Future<void> main() async {
       },
     );
     if (prefs.getString('userName') != null &&
-        prefs.getString('userName') != '') {
+        prefs.getString('userName') != '' &&
+        prefs.getBool('additionalNotif') != null &&
+        prefs.getBool('additionalNotif')!) {
       WinToast.instance().showToast(
           type: ToastType.text04,
           subtitle: 'Welcome back ${prefs.getString('userName')} :)',

@@ -28,7 +28,8 @@ class RSSView extends ConsumerStatefulWidget {
   RSSViewState createState() => RSSViewState();
 }
 
-class RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
+class RSSViewState extends ConsumerState<RSSView>
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   RssFeed? rssFeed;
   StreamSubscription? subscription;
   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
@@ -308,68 +309,168 @@ class RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
         children: [
           rssFeed != null
               ? Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 45, 0, 0),
-                  child: ListView.builder(
-                      itemCount: rssFeed?.items?.length,
-                      itemBuilder: (context, index) {
-                        newItemTitle.value = rssFeed?.items?.first.title;
-                        newItemUrl = rssFeed?.items?.first.link;
-                        RssItem? data = rssFeed?.items?[index];
-                        String? description = data?.description;
-                        if (data != null) {
-                          Color color = data.title!.contains('Development')
-                              ? Colors.red
-                              : data.title!.contains('Event')
-                                  ? Colors.blue
-                                  : data.title!.contains('Video')
-                                      ? Colors.amber
-                                      : data.title!.contains('It’s fixed!')
-                                          ? Colors.deepPurpleAccent
-                                          : data.title!.contains('Update') &&
-                                                  !data.title!.contains('Dev ')
-                                              ? Colors.cyanAccent
+                  padding: const EdgeInsets.fromLTRB(20, 45, 20, 0),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final maxWidth = constraints.maxWidth;
+
+                      if (maxWidth < 1200) {
+                        return AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 700),
+                          child: ListView.builder(
+                              itemCount: rssFeed?.items?.length,
+                              itemBuilder: (context, index) {
+                                newItemTitle.value =
+                                    rssFeed?.items?.first.title;
+                                newItemUrl = rssFeed?.items?.first.link;
+                                RssItem? data = rssFeed?.items?[index];
+                                String? description = data?.description;
+                                if (data != null) {
+                                  Color color = data.title!
+                                          .contains('Development')
+                                      ? Colors.red
+                                      : data.title!.contains('Event')
+                                          ? Colors.blue
+                                          : data.title!.contains('Video')
+                                              ? Colors.amber
                                               : data.title!
-                                                      .contains('Dev Server')
-                                                  ? Colors.redAccent
-                                                  : Colors.teal;
-                          return Column(
-                            children: [
-                              ListTile(
-                                title: Text(
-                                  data.title ?? 'No title',
-                                  style: TextStyle(
-                                      color: color,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                subtitle: Text(
-                                  description
-                                          ?.replaceAll('\n', '')
-                                          .replaceAll('	', '') ??
-                                      '',
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 2,
-                                  style: TextStyle(
-                                      color: foregroundColor,
-                                      letterSpacing: 0.52),
-                                ),
-                                onTap: () async {
-                                  await launchUrl(Uri.parse(data.link ??
-                                      'https://Forum.Warthunder.com'));
-                                },
-                              ),
-                              const Divider(
-                                height: 1,
-                                thickness: 1,
-                                indent: 15,
-                                endIndent: 19,
-                                color: Colors.grey,
-                              ),
-                            ],
-                          );
-                        } else {
-                          return const Center(child: Text('No Data'));
-                        }
-                      }),
+                                                      .contains('It’s fixed!')
+                                                  ? Colors.deepPurpleAccent
+                                                  : data.title!.contains(
+                                                              'Update') &&
+                                                          !data.title!
+                                                              .contains('Dev ')
+                                                      ? Colors.cyanAccent
+                                                      : data.title!.contains(
+                                                              'Dev Server')
+                                                          ? Colors.redAccent
+                                                          : Colors.teal;
+                                  return Column(
+                                    children: [
+                                      ListTile(
+                                        title: Text(
+                                          data.title ?? 'No title',
+                                          style: TextStyle(
+                                              color: color,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        subtitle: Text(
+                                          description
+                                                  ?.replaceAll('\n', '')
+                                                  .replaceAll('	', '') ??
+                                              '',
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 2,
+                                          style: TextStyle(
+                                              color: foregroundColor,
+                                              letterSpacing: 0.52),
+                                        ),
+                                        onTap: () async {
+                                          await launchUrl(Uri.parse(data.link ??
+                                              'https://Forum.Warthunder.com'));
+                                        },
+                                      ),
+                                      const Divider(
+                                        height: 1,
+                                        thickness: 1,
+                                        indent: 15,
+                                        endIndent: 19,
+                                        color: Colors.grey,
+                                      ),
+                                    ],
+                                  );
+                                } else {
+                                  return const Center(child: Text('No Data'));
+                                }
+                              }),
+                        );
+                      } else {
+                        return AnimatedSwitcher(
+                          switchInCurve: Curves.easeIn,
+                          switchOutCurve: Curves.easeOut,
+                          transitionBuilder: (child, animation) {
+                            return SlideTransition(
+                              position: Tween<Offset>(
+                                      begin: const Offset(0, 1),
+                                      end: const Offset(0, 0))
+                                  .animate(animation),
+                              child: child,
+                            );
+                          },
+                          duration: const Duration(milliseconds: 800),
+                          child: GridView.builder(
+                              itemCount: rssFeed?.items?.length,
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2, mainAxisExtent: 80),
+                              itemBuilder: (context, index) {
+                                newItemTitle.value =
+                                    rssFeed?.items?.first.title;
+                                newItemUrl = rssFeed?.items?.first.link;
+                                RssItem? data = rssFeed?.items?[index];
+                                String? description = data?.description;
+                                if (data != null) {
+                                  Color color = data.title!
+                                          .contains('Development')
+                                      ? Colors.red
+                                      : data.title!.contains('Event')
+                                          ? Colors.blue
+                                          : data.title!.contains('Video')
+                                              ? Colors.amber
+                                              : data.title!
+                                                      .contains('It’s fixed!')
+                                                  ? Colors.deepPurpleAccent
+                                                  : data.title!.contains(
+                                                              'Update') &&
+                                                          !data.title!
+                                                              .contains('Dev ')
+                                                      ? Colors.cyanAccent
+                                                      : data.title!.contains(
+                                                              'Dev Server')
+                                                          ? Colors.redAccent
+                                                          : Colors.teal;
+                                  return Column(
+                                    children: [
+                                      ListTile(
+                                        title: Text(
+                                          data.title ?? 'No title',
+                                          style: TextStyle(
+                                              color: color,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        subtitle: Text(
+                                          description
+                                                  ?.replaceAll('\n', '')
+                                                  .replaceAll('	', '') ??
+                                              '',
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 2,
+                                          style: TextStyle(
+                                              color: foregroundColor,
+                                              letterSpacing: 0.52),
+                                        ),
+                                        onTap: () async {
+                                          await launchUrl(Uri.parse(data.link ??
+                                              'https://Forum.Warthunder.com'));
+                                        },
+                                      ),
+                                      const Divider(
+                                        height: 1,
+                                        thickness: 1,
+                                        indent: 15,
+                                        endIndent: 19,
+                                        color: Colors.grey,
+                                      ),
+                                    ],
+                                  );
+                                } else {
+                                  return const Center(child: Text('No Data'));
+                                }
+                              }),
+                        );
+                      }
+                    },
+                  ),
                 )
               : Center(
                   child: CustomLoadingAnimationWidget.inkDrop(
@@ -379,6 +480,8 @@ class RSSViewState extends ConsumerState<RSSView> with WidgetsBindingObserver {
                       colors: [
                         Colors.red,
                         Colors.blue,
+                        Colors.green,
+                        Colors.green,
                         Colors.green,
                         Colors.amber,
                         Colors.pink

@@ -33,7 +33,10 @@ class SettingsState extends ConsumerState<Settings> {
       if (ref.read(startupEnabled.notifier).state) {
         await Process.run(pathToUpdateShortcut, []);
       }
+
       ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? false;
+      ref.read(additionalNotif.notifier).state =
+          prefs.getBool('additionalNotif') ?? false;
       ref.read(customFeed.notifier).state = prefs.getString('customFeed');
     });
   }
@@ -111,10 +114,10 @@ class SettingsState extends ConsumerState<Settings> {
                 leading: const Icon(Icons.settings),
               ),
               SettingsTile.switchTile(
-                initialValue: prefs.getBool('playSound'),
+                initialValue: ref.watch(playSound),
                 onToggle: (value) {
-                  prefs.setBool('playSound', value);
                   ref.read(playSound.notifier).state = value;
+                  prefs.setBool('playSound', value);
                 },
                 title: const Text('Play Sound'),
                 leading: Icon(ref.watch(playSound)
@@ -138,6 +141,15 @@ class SettingsState extends ConsumerState<Settings> {
                   width: 30,
                   height: 30,
                 ),
+              ),
+              SettingsTile.switchTile(
+                initialValue: ref.watch(additionalNotif),
+                onToggle: (value) {
+                  ref.read(additionalNotif.notifier).state = value;
+                  prefs.setBool('additionalNotif', value);
+                },
+                title: const Text('Tray and Greeting Notifications'),
+                leading: const Icon(Icons.notifications_active),
               ),
               SettingsTile(
                 title: const Text('Set Custom Feed Url'),

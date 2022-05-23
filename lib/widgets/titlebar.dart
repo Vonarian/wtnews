@@ -160,10 +160,14 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
           children: [
             !widget.isCustom
                 ? Expanded(
-                    child: Image.asset(
-                    'assets/app_icon.ico',
-                    alignment: Alignment.centerLeft,
-                  ))
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 27.0),
+                      child: Image.asset(
+                        'assets/app_icon.ico',
+                        alignment: Alignment.centerLeft,
+                      ),
+                    ),
+                  )
                 : const SizedBox(),
             !widget.isCustom
                 ? InkWell(
@@ -292,10 +296,13 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
   void onWindowMinimize() {
     windowManager.hide();
     _trayInit();
-    WinToast.instance().showToast(
-        type: ToastType.text04,
-        title: 'WTNews is minimized to tray',
-        subtitle: 'Check tray to open app again');
+    if (prefs.getBool('additionalNotif') != null &&
+        prefs.getBool('additionalNotif')!) {
+      WinToast.instance().showToast(
+          type: ToastType.text04,
+          title: 'WTNews is minimized to tray',
+          subtitle: 'Check tray to open app again');
+    }
   }
 
   @override
