@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import 'package:protocol_handler/protocol_handler.dart';
 import 'package:tray_manager/tray_manager.dart' as tray;
 import 'package:url_launcher/url_launcher.dart';
@@ -12,11 +13,13 @@ import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
 import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:wtnews/pages/downloader.dart';
 import 'package:wtnews/providers.dart';
 import 'package:wtnews/services/utility.dart';
 
 import '../main.dart';
 import '../pages/settings.dart';
+import '../services/presence.dart';
 
 class _MoveWindow extends StatelessWidget {
   const _MoveWindow({Key? key, required this.child}) : super(key: key);
@@ -56,6 +59,7 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
     windowManager.addListener(this);
     protocolHandler.addListener(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      future = autoUpdateCheck(context);
       ref.read(checkDataMine.notifier).state =
           prefs.getBool('checkDataMine') ?? false;
     });
@@ -63,10 +67,16 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
       await notify(lastPubDate.value!, lastItemLink!);
       await prefs.setString('previous', lastPubDate.value!);
     });
+
+    Timer.periodic(const Duration(seconds: 35), (timer) async {
+      future = autoUpdateCheck(context);
+      setState(() {});
+    });
+
     Timer.periodic(const Duration(seconds: 10), (timer) async {
       if (ref.watch(checkDataMine)) {
         rssFeed = await getDataMine()
-            .timeout(const Duration(seconds: 10))
+            .timeout(const Duration(seconds: 25))
             .whenComplete(() async {
           if (rssFeed != null && rssFeed?.items != null) {
             RssItem item = rssFeed!.items!.first;
@@ -87,6 +97,22 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
         });
       }
     });
+  }
+
+  Future<bool?> autoUpdateCheck(BuildContext ctx) async {
+    final File file = File(
+        '${p.dirname(Platform.resolvedExecutable)}/data/flutter_assets/assets/install/version.txt');
+    final int currentVersion =
+        int.parse((await file.readAsString()).replaceAll('.', ''));
+    final String? version = (await PresenceService().getVersion());
+    if (version != null) {
+      ref.read(versionProvider.notifier).state = version;
+      final int serverVersion = int.parse(version.replaceAll('.', ''));
+      if (serverVersion > currentVersion) {
+        return true;
+      }
+    }
+    return null;
   }
 
   Future<RssFeed> getDataMine() async {
@@ -146,6 +172,7 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
   }
 
   ValueNotifier<String?> lastPubDate = ValueNotifier(null);
+  Future<bool?>? future;
   String? lastItemLink;
   RssFeed? rssFeed;
   @override
@@ -192,6 +219,35 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
                     ),
                   )
                 : const SizedBox(),
+            FutureBuilder<bool?>(
+                future: future,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    if (snapshot.data as bool) {
+                      return Center(
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => const Downloader()));
+                          },
+                          hoverColor: Colors.blue.withOpacity(0.1),
+                          child: Container(
+                            width: 15,
+                            height: 15,
+                            margin: const EdgeInsets.fromLTRB(12, 8, 10, 25.5),
+                            child: const Icon(Icons.update, color: Colors.blue),
+                          ),
+                        ),
+                      );
+                    } else {
+                      return const SizedBox();
+                    }
+                  } else {
+                    return const SizedBox();
+                  }
+                }),
             InkWell(
               onTap: () {
                 windowManager.minimize();

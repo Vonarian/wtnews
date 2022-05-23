@@ -6,4 +6,5 @@ final StateProvider<bool> minimizeOnStart = StateProvider((ref) => false);
 final StateProvider<bool> checkDataMine = StateProvider((ref) => false);
 final StateProvider<bool> additionalNotif = StateProvider((ref) => false);
 final StateProvider<String?> customFeed = StateProvider((ref) => null);
+final versionProvider = StateProvider<String?>((ref) => null);
 late final StateProvider<String?> userNameProvider;

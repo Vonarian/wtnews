@@ -41,6 +41,12 @@ class PresenceService {
     });
   }
 
+  Future<String?> getVersion() async {
+    final versionRef = database.reference().child('version');
+    String? version = (await versionRef.once()).value;
+    return version;
+  }
+
   void connect() {
     database.goOnline();
   }

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:blinking_text/blinking_text.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:wtnews/main.dart';
 import 'package:wtnews/pages/custom_feed.dart';
+import 'package:wtnews/pages/downloader.dart';
 import 'package:wtnews/services/presence.dart';
 import 'package:wtnews/widgets/titlebar.dart';
 
@@ -124,6 +126,56 @@ class SettingsState extends ConsumerState<Settings> {
                     ? Icons.volume_up_outlined
                     : Icons.volume_off_rounded),
               ),
+              ref.watch(versionProvider) != null &&
+                      int.parse(
+                              ref.watch(versionProvider)!.replaceAll('.', '')) >
+                          int.parse(File(pathToVersion)
+                              .readAsStringSync()
+                              .replaceAll('.', ''))
+                  ? SettingsTile(
+                      title: const BlinkText(
+                        'Download & Install Update',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red,
+                        ),
+                        duration: Duration(seconds: 2),
+                      ),
+                      leading: const Icon(
+                        Icons.update,
+                        color: Colors.red,
+                      ),
+                      onPressed: (ctx) {
+                        Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const Downloader()));
+                      },
+                    )
+                  : SettingsTile(
+                      title: const Text(
+                        'Download & Install Update',
+                        style:
+                            TextStyle(decoration: TextDecoration.lineThrough),
+                      ),
+                      leading: const Icon(Icons.update),
+                      onPressed: (ctx) {
+                        showDialog(
+                            context: ctx,
+                            builder: (ctx) => AlertDialog(
+                                  title: const Text('Update'),
+                                  content: const Text(
+                                      'There is no update available at this time.'),
+                                  actions: <Widget>[
+                                    TextButton(
+                                      child: const Text('OK'),
+                                      onPressed: () => Navigator.pop(ctx),
+                                    ),
+                                  ],
+                                ));
+                      },
+                    ),
             ],
           ),
           SettingsSection(
@@ -277,7 +329,36 @@ class SettingsState extends ConsumerState<Settings> {
               elevation: 0,
             ),
             backgroundColor: Colors.transparent,
-            body: settings(context),
+            body: Flex(
+              direction: Axis.vertical,
+              children: [
+                Text(
+                  'Current Version: ${File(pathToVersion).readAsStringSync()}',
+                  style: const TextStyle(
+                    fontSize: 19,
+                    color: Colors.red,
+                  ),
+                ),
+                ref.watch(versionProvider) != null &&
+                        int.parse(ref
+                                .watch(versionProvider)!
+                                .replaceAll('.', '')) >
+                            int.parse(File(pathToVersion)
+                                .readAsStringSync()
+                                .replaceAll('.', ''))
+                    ? BlinkText(
+                        'Latest version: ${ref.watch(versionProvider)}',
+                        style: const TextStyle(
+                          fontSize: 19,
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        duration: const Duration(seconds: 2),
+                      )
+                    : const SizedBox(),
+                Expanded(child: settings(context)),
+              ],
+            ),
           ),
           const WindowTitleBar(isCustom: true),
         ],
