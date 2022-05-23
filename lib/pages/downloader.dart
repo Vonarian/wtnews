@@ -54,10 +54,8 @@ class DownloaderState extends State<Downloader>
       String tempPath = tempDir.path;
       Directory tempWtnews =
           await Directory('$tempPath\\WTNews').create(recursive: true);
-      final deleteFile = File(p.joinAll([tempWtnews.path, 'update.zip']));
       final deleteFolder = Directory(p.joinAll([tempWtnews.path, 'out']));
-      if (await deleteFile.exists() || await deleteFolder.exists()) {
-        await deleteFile.delete(recursive: true);
+      if (await deleteFolder.exists()) {
         await deleteFolder.delete(recursive: true);
       }
       Dio dio = Dio();
@@ -107,11 +105,19 @@ class DownloaderState extends State<Downloader>
       ScaffoldMessenger.of(context)
         ..removeCurrentSnackBar()
         ..showSnackBar(SnackBar(
-            duration: const Duration(seconds: 10),
-            content: Text(e.toString())));
+          duration: const Duration(seconds: 10),
+          content: Text(e.toString()),
+          action: SnackBarAction(
+            onPressed: () {
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (context) => const Downloader()));
+            },
+            label: 'Retry',
+          ),
+        ));
+      await windowManager.setSize(const Size(600, 600));
       await Sentry.captureException(e, stackTrace: st);
       error = true;
-      await windowManager.setSize(const Size(600, 600));
       setState(() {});
     }
   }

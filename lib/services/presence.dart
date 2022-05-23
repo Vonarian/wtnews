@@ -34,9 +34,9 @@ class PresenceService {
         con = myConnectionsRef;
         con?.onDisconnect().set(false);
         con?.set(true);
-
+        DateTime dateTime = DateTime.now().toUtc();
         lastOnlineRef.onDisconnect().set(
-            '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} - ${DateTime.now().hour}:${DateTime.now().minute}');
+            '${dateTime.day}/${dateTime.month}/${dateTime.year} - ${dateTime.hour}:${dateTime.minute} GMT');
       }
     });
   }
