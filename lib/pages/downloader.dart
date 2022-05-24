@@ -13,6 +13,7 @@ import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../services/github.dart';
+import '../widgets/custom_loading.dart';
 
 class Downloader extends StatefulWidget {
   const Downloader({Key? key}) : super(key: key);
@@ -96,8 +97,19 @@ class DownloaderState extends State<Downloader>
             title: 'Update process starting in a moment',
             subtitle:
                 'Do not close the application until the update process is finished');
+        text = 'Installing';
+        setState(() {});
+
         await Future.delayed(const Duration(seconds: 1));
-        await Process.run(installer, []);
+        await Process.start('powershell.exe', [
+          'Add-AppPackage',
+          '-Path',
+          "'${tempWtnews.path}\\out\\WTNews.msix'"
+        ]);
+        await Future.delayed(const Duration(seconds: 2));
+        await Process.run(installer, [], runInShell: true);
+
+        // await Process.run(installer, []);
       }).timeout(const Duration(minutes: 8));
     } catch (e, st) {
       if (!mounted) return;
@@ -118,10 +130,12 @@ class DownloaderState extends State<Downloader>
       await windowManager.setSize(const Size(600, 600));
       await Sentry.captureException(e, stackTrace: st);
       error = true;
+      text = 'ERROR!';
       setState(() {});
     }
   }
 
+  String text = 'Downloading';
   bool error = false;
   double progress = 0;
   @override
@@ -135,35 +149,66 @@ class DownloaderState extends State<Downloader>
           backgroundColor: Colors.transparent,
           body: Center(
             child: SizedBox(
-                height: 200,
-                width: 200,
-                child: CircularPercentIndicator(
-                  center: !error
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'Downloading',
-                              style:
-                                  TextStyle(fontSize: 15, color: Colors.white),
+              height: 200,
+              width: 200,
+              child: text == 'Downloading'
+                  ? CircularPercentIndicator(
+                      center: !error
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  text,
+                                  style: const TextStyle(
+                                      fontSize: 15, color: Colors.white),
+                                ),
+                                Text(
+                                  '${progress.toStringAsFixed(1)} %',
+                                  style: const TextStyle(
+                                      fontSize: 15, color: Colors.white),
+                                ),
+                              ],
+                            )
+                          : const Center(
+                              child: Text(
+                                'ERROR',
+                                style: TextStyle(fontSize: 15),
+                              ),
                             ),
-                            Text(
-                              '${progress.toStringAsFixed(1)} %',
-                              style: const TextStyle(
-                                  fontSize: 15, color: Colors.white),
-                            ),
-                          ],
-                        )
-                      : const Center(
-                          child: Text(
-                            'ERROR',
-                            style: TextStyle(fontSize: 15),
+                      backgroundColor: Colors.blue,
+                      percent: double.parse(progress.toStringAsFixed(0)) / 100,
+                      radius: 100,
+                    )
+                  : Center(
+                      child: Stack(
+                        children: [
+                          CustomLoadingAnimationWidget.inkDrop(
+                              color:
+                                  Color.lerp(Colors.red, Colors.amber, 0.77) ??
+                                      Colors.red,
+                              size: 150,
+                              strokeWidth: 10,
+                              colors: [
+                                Colors.red,
+                                Colors.blue,
+                                Colors.green,
+                                Colors.amber,
+                                Colors.pink
+                              ]),
+                          Text(
+                            text,
+                            style: const TextStyle(
+                                fontSize: 15, color: Colors.white),
                           ),
-                        ),
-                  backgroundColor: Colors.blue,
-                  percent: double.parse(progress.toStringAsFixed(0)) / 100,
-                  radius: 100,
-                )),
+                          Text(
+                            '${progress.toStringAsFixed(1)} %',
+                            style: const TextStyle(
+                                fontSize: 15, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
           )),
     );
   }

@@ -387,7 +387,7 @@ class RSSViewState extends ConsumerState<RSSView>
                       } else {
                         return AnimatedSwitcher(
                           switchInCurve: Curves.easeIn,
-                          switchOutCurve: Curves.easeOut,
+                          switchOutCurve: Curves.bounceOut,
                           transitionBuilder: (child, animation) {
                             return SlideTransition(
                               position: Tween<Offset>(

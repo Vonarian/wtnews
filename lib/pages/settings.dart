@@ -133,6 +133,7 @@ class SettingsState extends ConsumerState<Settings> {
                               .readAsStringSync()
                               .replaceAll('.', ''))
                   ? SettingsTile(
+                      description: const Text('Update Available'),
                       title: const BlinkText(
                         'Download & Install Update',
                         style: TextStyle(
@@ -154,6 +155,7 @@ class SettingsState extends ConsumerState<Settings> {
                       },
                     )
                   : SettingsTile(
+                      description: const Text('There is no update available'),
                       title: const Text(
                         'Download & Install Update',
                         style:
@@ -240,6 +242,8 @@ class SettingsState extends ConsumerState<Settings> {
                 },
               ),
               SettingsTile.navigation(
+                description:
+                    const Text('Mostly compatible with newest Windows builds'),
                 title: const Text('Switch to Overlay Mode'),
                 leading: const Icon(Icons.desktop_windows),
                 onPressed: (ctx) {
@@ -253,6 +257,7 @@ class SettingsState extends ConsumerState<Settings> {
           ),
           SettingsSection(title: const Text('Misc'), tiles: [
             SettingsTile(
+              description: const Text('Used to contact the client'),
               title: const Text('Set Username'),
               leading: const Icon(Icons.account_circle),
               onPressed: (ctx) async {
@@ -274,25 +279,28 @@ class SettingsState extends ConsumerState<Settings> {
               },
             ),
             SettingsTile(
+              description: const Text('Used to contact the developer'),
               title: const Text('Send Feedback to Vonarian'),
               leading: const Icon(Icons.favorite),
               onPressed: (ctx) async {
                 if (ref.watch(userNameProvider) != null ||
                     ref.watch(userNameProvider)!.isNotEmpty) {
-                  SentryId sentryId = await Sentry.captureMessage(
-                      (await Navigator.of(context)
-                          .push(dialogBuilderFeedback(context))));
-                  final feedback = SentryUserFeedback(
-                    eventId: sentryId,
-                    name: ref.watch(userNameProvider),
-                  );
+                  String? message = (await Navigator.of(context)
+                      .push(dialogBuilderFeedback(context)));
+                  if (message != null && message.isNotEmpty) {
+                    SentryId sentryId = await Sentry.captureMessage(message);
+                    final feedback = SentryUserFeedback(
+                      eventId: sentryId,
+                      name: ref.watch(userNameProvider),
+                    );
 
-                  await Sentry.captureUserFeedback(feedback);
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context)
-                    ..removeCurrentSnackBar()
-                    ..showSnackBar(const SnackBar(
-                        content: Text('Feedback sent, thanks!')));
+                    await Sentry.captureUserFeedback(feedback);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context)
+                      ..removeCurrentSnackBar()
+                      ..showSnackBar(const SnackBar(
+                          content: Text('Feedback sent, thanks!')));
+                  }
                 } else {
                   await showDialog(
                       context: context,
