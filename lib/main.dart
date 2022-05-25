@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:firebase_dart/firebase_dart.dart';
 import 'package:firebase_dart_flutter/firebase_dart_flutter.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
@@ -39,11 +38,7 @@ Future<void> main() async {
   await Window.initialize();
   prefs = await SharedPreferences.getInstance();
 
-  bool isStartupEnabled = prefs.getBool('startup') ?? false;
   userNameProvider = StateProvider((ref) => prefs.getString('userName'));
-  if (isStartupEnabled && !kDebugMode) {
-    Process.runSync(pathToUpdateShortcut, []);
-  }
   windowManager.waitUntilReadyToShow().then((_) async {
     await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
     await windowManager.setResizable(true);

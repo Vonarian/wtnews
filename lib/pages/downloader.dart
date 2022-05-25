@@ -198,17 +198,20 @@ class DownloaderState extends State<Downloader>
                                 ]),
                           ),
                           Center(
-                            child: Text(
-                              text,
-                              style: const TextStyle(
-                                  fontSize: 15, color: Colors.white),
-                            ),
-                          ),
-                          Center(
-                            child: Text(
-                              '${progress.toStringAsFixed(1)} %',
-                              style: const TextStyle(
-                                  fontSize: 15, color: Colors.white),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  text,
+                                  style: const TextStyle(
+                                      fontSize: 15, color: Colors.white),
+                                ),
+                                Text(
+                                  '${progress.toStringAsFixed(1)} %',
+                                  style: const TextStyle(
+                                      fontSize: 15, color: Colors.white),
+                                ),
+                              ],
                             ),
                           ),
                         ],
