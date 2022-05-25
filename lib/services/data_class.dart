@@ -49,11 +49,6 @@ class Message {
 
   static void restart(BuildContext context) {
     Phoenix.rebirth(context);
-    ScaffoldMessenger.of(context)
-      ..removeCurrentSnackBar()
-      ..showSnackBar(const SnackBar(
-        content: Text('Application will be restarted in 50 seconds'),
-      ));
   }
 
   static Future<void> getUserName(BuildContext context) async {

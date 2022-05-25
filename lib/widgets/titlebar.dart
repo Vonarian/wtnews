@@ -106,7 +106,9 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
         int.parse((await file.readAsString()).replaceAll('.', ''));
     final String? version = (await PresenceService().getVersion());
     if (version != null) {
-      ref.read(versionProvider.notifier).state = version;
+      if (version != ref.read(versionProvider.notifier).state) {
+        ref.read(versionProvider.notifier).state = version;
+      }
       final int serverVersion = int.parse(version.replaceAll('.', ''));
       if (serverVersion > currentVersion) {
         return true;
@@ -177,9 +179,26 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
   RssFeed? rssFeed;
   @override
   Widget build(BuildContext context) {
+    ref.listen<StateController<String?>>(versionProvider.state,
+        (previous, next) async {
+      if ((await autoUpdateCheck(context) ?? false) &&
+          previous != null &&
+          previous != next) {
+        var toast = await WinToast.instance().showToast(
+            type: ToastType.text04,
+            title: 'Update Available',
+            subtitle: 'Click here to update');
+        toast?.eventStream.listen((event) {
+          if (event is ActivatedEvent) {
+            Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (context) => const Downloader()));
+          }
+        });
+      }
+    });
     return _MoveWindow(
       child: SizedBox(
-        width: MediaQuery.of(context).size.width,
+        width: double.infinity,
         height: 40,
         child: Flex(
           direction: Axis.horizontal,
@@ -237,7 +256,8 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
                             width: 15,
                             height: 15,
                             margin: const EdgeInsets.fromLTRB(12, 8, 10, 25.5),
-                            child: const Icon(Icons.update, color: Colors.blue),
+                            child:
+                                const Icon(Icons.update, color: Colors.amber),
                           ),
                         ),
                       );

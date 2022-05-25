@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_dart/database.dart';
+import 'package:intl/intl.dart';
 
 import '../main.dart';
 import 'firebase_data.dart';
@@ -34,9 +35,9 @@ class PresenceService {
         con = myConnectionsRef;
         con?.onDisconnect().set(false);
         con?.set(true);
-        DateTime dateTime = DateTime.now().toUtc();
-        lastOnlineRef.onDisconnect().set(
-            '${dateTime.day}/${dateTime.month}/${dateTime.year} - ${dateTime.hour}:${dateTime.minute} GMT');
+        DateFormat f = DateFormat('E, d MMM yyyy HH:mm:ss');
+        String date = "${f.format(DateTime.now().toUtc())} GMT";
+        lastOnlineRef.onDisconnect().set(date);
       }
     });
   }

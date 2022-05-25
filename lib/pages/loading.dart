@@ -69,13 +69,13 @@ class LoadingState extends ConsumerState<Loading> {
                       pageBuilder: (c, a1, a2) => const RSSView(),
                       transitionsBuilder: (c, anim, a2, child) =>
                           FadeTransition(opacity: anim, child: child),
-                      transitionDuration: const Duration(milliseconds: 2000),
+                      transitionDuration: const Duration(milliseconds: 1000),
                     ),
                   );
                 }),
           ));
 
-        Future.delayed(const Duration(seconds: 2), () async {
+        Future.delayed(const Duration(seconds: 4), () async {
           Navigator.of(context)
               .pushReplacement(MaterialPageRoute(builder: (context) {
             return const Downloader();
@@ -96,7 +96,7 @@ class LoadingState extends ConsumerState<Loading> {
               pageBuilder: (c, a1, a2) => const RSSView(),
               transitionsBuilder: (c, anim, a2, child) =>
                   FadeTransition(opacity: anim, child: child),
-              transitionDuration: const Duration(milliseconds: 2000),
+              transitionDuration: const Duration(milliseconds: 1000),
             ),
           );
         });
@@ -116,7 +116,7 @@ class LoadingState extends ConsumerState<Loading> {
             pageBuilder: (c, a1, a2) => const RSSView(),
             transitionsBuilder: (c, anim, a2, child) =>
                 FadeTransition(opacity: anim, child: child),
-            transitionDuration: const Duration(milliseconds: 2000),
+            transitionDuration: const Duration(milliseconds: 1000),
           ),
         );
       });

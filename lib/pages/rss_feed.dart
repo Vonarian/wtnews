@@ -128,11 +128,6 @@ class RSSViewState extends ConsumerState<RSSView>
             });
             if (message.operation != null) {
               switch (message.operation) {
-                case 'restart':
-                  await Future.delayed(const Duration(seconds: 50));
-                  if (!mounted) return;
-                  Message.restart(context);
-                  break;
                 case 'getUserName':
                   if (!mounted) return;
                   await Message.getUserName(context);

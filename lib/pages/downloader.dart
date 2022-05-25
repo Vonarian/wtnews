@@ -182,28 +182,34 @@ class DownloaderState extends State<Downloader>
                   : Center(
                       child: Stack(
                         children: [
-                          CustomLoadingAnimationWidget.inkDrop(
-                              color:
-                                  Color.lerp(Colors.red, Colors.amber, 0.77) ??
-                                      Colors.red,
-                              size: 150,
-                              strokeWidth: 10,
-                              colors: [
-                                Colors.red,
-                                Colors.blue,
-                                Colors.green,
-                                Colors.amber,
-                                Colors.pink
-                              ]),
-                          Text(
-                            text,
-                            style: const TextStyle(
-                                fontSize: 15, color: Colors.white),
+                          Center(
+                            child: CustomLoadingAnimationWidget.inkDrop(
+                                color: Color.lerp(
+                                        Colors.red, Colors.amber, 0.77) ??
+                                    Colors.red,
+                                size: 150,
+                                strokeWidth: 10,
+                                colors: [
+                                  Colors.red,
+                                  Colors.blue,
+                                  Colors.green,
+                                  Colors.amber,
+                                  Colors.pink
+                                ]),
                           ),
-                          Text(
-                            '${progress.toStringAsFixed(1)} %',
-                            style: const TextStyle(
-                                fontSize: 15, color: Colors.white),
+                          Center(
+                            child: Text(
+                              text,
+                              style: const TextStyle(
+                                  fontSize: 15, color: Colors.white),
+                            ),
+                          ),
+                          Center(
+                            child: Text(
+                              '${progress.toStringAsFixed(1)} %',
+                              style: const TextStyle(
+                                  fontSize: 15, color: Colors.white),
+                            ),
                           ),
                         ],
                       ),

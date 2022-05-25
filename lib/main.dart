@@ -37,8 +37,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
   await Window.initialize();
-
   prefs = await SharedPreferences.getInstance();
+
   bool isStartupEnabled = prefs.getBool('startup') ?? false;
   userNameProvider = StateProvider((ref) => prefs.getString('userName'));
   if (isStartupEnabled && !kDebugMode) {
