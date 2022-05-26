@@ -99,17 +99,7 @@ class DownloaderState extends State<Downloader>
                 'Do not close the application until the update process is finished');
         text = 'Installing';
         setState(() {});
-
-        await Future.delayed(const Duration(seconds: 1));
-        await Process.start('powershell.exe', [
-          'Add-AppPackage',
-          '-Path',
-          "'${tempWtnews.path}\\out\\WTNews.msix'"
-        ]);
-        await Future.delayed(const Duration(seconds: 2));
-        await Process.run(installer, [], runInShell: true);
-
-        // await Process.run(installer, []);
+        await Process.run(installer, [tempWtnews.path]);
       }).timeout(const Duration(minutes: 8));
     } catch (e, st) {
       if (!mounted) return;

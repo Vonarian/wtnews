@@ -426,28 +426,31 @@ class RSSViewState extends ConsumerState<RSSView>
                                                           : Colors.teal;
                                   return Column(
                                     children: [
-                                      ListTile(
-                                        title: Text(
-                                          data.title ?? 'No title',
-                                          style: TextStyle(
-                                              color: color,
-                                              fontWeight: FontWeight.bold),
+                                      Flexible(
+                                        child: ListTile(
+                                          title: Text(
+                                            data.title ?? 'No title',
+                                            style: TextStyle(
+                                                color: color,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          subtitle: Text(
+                                            description
+                                                    ?.replaceAll('\n', '')
+                                                    .replaceAll('	', '') ??
+                                                '',
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 2,
+                                            style: TextStyle(
+                                                color: foregroundColor,
+                                                letterSpacing: 0.52),
+                                          ),
+                                          onTap: () async {
+                                            await launchUrl(Uri.parse(data
+                                                    .link ??
+                                                'https://Forum.Warthunder.com'));
+                                          },
                                         ),
-                                        subtitle: Text(
-                                          description
-                                                  ?.replaceAll('\n', '')
-                                                  .replaceAll('	', '') ??
-                                              '',
-                                          overflow: TextOverflow.ellipsis,
-                                          maxLines: 2,
-                                          style: TextStyle(
-                                              color: foregroundColor,
-                                              letterSpacing: 0.52),
-                                        ),
-                                        onTap: () async {
-                                          await launchUrl(Uri.parse(data.link ??
-                                              'https://Forum.Warthunder.com'));
-                                        },
                                       ),
                                       const Divider(
                                         height: 1,

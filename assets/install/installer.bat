@@ -1,6 +1,8 @@
 @echo off
 taskkill /F /IM wtnews.exe
-timeout 1
+set arg1=%1
+powershell.exe Add-AppPackage -Path '%arg1%\out\WTNews.msix'
+timeout 3
 powershell.exe Start-Process -FilePath 'wtnews.exe' -WorkingDirectory "(Get-AppxPackage -Name 'WTNews').InstallLocation"
 for /f "delims=" %%a in ('powershell %~dp0\getPath.ps1') do Set "$Value=%%a"
 if exist '%userprofile%\Start Menu\Programs\Startup\WTNews.lnk' (
