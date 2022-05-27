@@ -4,7 +4,14 @@ set arg1=%1
 powershell.exe Add-AppPackage -Path '%arg1%\out\WTNews.msix'
 timeout 3
 powershell.exe Start-Process -FilePath 'wtnews.exe' -WorkingDirectory "(Get-AppxPackage -Name 'WTNews').InstallLocation"
-for /f "delims=" %%a in ('powershell %~dp0\getPath.ps1') do Set "$Value=%%a"
 if exist '%userprofile%\Start Menu\Programs\Startup\WTNews.lnk' (
-powershell "$s=(New-Object -COM WScript.Shell).CreateShortcut('%userprofile%\Start Menu\Programs\Startup\WTNews.lnk');$s.TargetPath='%$Value%\wtnews.exe';$s.Arguments='connect';$s.IconLocation='%$Value%\wtnews.exe';$s.WorkingDirectory='%$Value%';$s.WindowStyle=7;$s.Save()"
+SET currentDirectory=%~dp0
+PUSHD %currentDirectory%
+CD ..
+CD ..
+CD ..
+CD ..
+SET MNIST_DIR=%CD%
+SET appExeDir=%MNIST_DIR%
+powershell "$s=(New-Object -COM WScript.Shell).CreateShortcut('%userprofile%\Start Menu\Programs\Startup\WTNews.lnk');$s.TargetPath='%appExeDir%\wtnews.exe';$s.Arguments='connect';$s.IconLocation='%userprofile%\Start Menu\Programs\WTNews.lnk';$s.WorkingDirectory='%appExeDir%';$s.WindowStyle=7;$s.Save()"
 )

@@ -122,7 +122,11 @@ class OverlayModeState extends ConsumerState<OverlayMode>
       height: 75,
       alignment: Alignment.topRight,
       child: rssFeed != null
-          ? notification(context, title.value as String)
+          ? AnimatedSwitcher(
+              duration: const Duration(milliseconds: 500),
+              switchInCurve: Curves.easeIn,
+              switchOutCurve: Curves.easeOut,
+              child: notification(context, title.value!))
           : const SizedBox(),
     );
   }

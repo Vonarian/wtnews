@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:blinking_text/blinking_text.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
@@ -108,7 +109,11 @@ class DownloaderState extends State<Downloader>
         ..removeCurrentSnackBar()
         ..showSnackBar(SnackBar(
           duration: const Duration(seconds: 10),
-          content: Text(e.toString()),
+          content: BlinkText(
+            e.toString(),
+            endColor: Colors.red,
+            duration: const Duration(milliseconds: 300),
+          ),
           action: SnackBarAction(
             onPressed: () {
               Navigator.pushReplacement(context,
@@ -117,7 +122,7 @@ class DownloaderState extends State<Downloader>
             label: 'Retry',
           ),
         ));
-      await windowManager.setSize(const Size(600, 600));
+      windowManager.setSize(const Size(600, 600));
       await Sentry.captureException(e, stackTrace: st);
       error = true;
       text = 'ERROR!';

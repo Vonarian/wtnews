@@ -208,9 +208,17 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
                 ? Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(left: 27.0),
-                      child: Image.asset(
-                        'assets/app_icon.ico',
+                      child: Align(
                         alignment: Alignment.centerLeft,
+                        child: GestureDetector(
+                          child: Image.asset(
+                            'assets/app_icon.ico',
+                          ),
+                          onTap: () {
+                            launchUrl(Uri.parse(
+                                'https://forum.warthunder.com/index.php?/topic/549057-wtnews-get-notified-of-forum-news/'));
+                          },
+                        ),
                       ),
                     ),
                   )

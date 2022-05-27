@@ -20,7 +20,7 @@ import 'package:wtnews/services/firebase_data.dart';
 
 late FirebaseApp app;
 String pathToUpdateShortcut =
-    '${p.dirname(Platform.resolvedExecutable)}/data/flutter_assets/assets/manifest/updateShortcut.bat';
+    '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\manifest\\updateShortcut.bat';
 String pathToVersion =
     '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\install\\version.txt';
 String pathAhkExe =

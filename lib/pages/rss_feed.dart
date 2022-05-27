@@ -5,6 +5,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -315,9 +316,9 @@ class RSSViewState extends ConsumerState<RSSView>
                           child: ListView.builder(
                               itemCount: rssFeed?.items?.length,
                               itemBuilder: (context, index) {
+                                newItemUrl = rssFeed?.items?.first.link;
                                 newItemTitle.value =
                                     rssFeed?.items?.first.title;
-                                newItemUrl = rssFeed?.items?.first.link;
                                 RssItem? data = rssFeed?.items?[index];
                                 String? description = data?.description;
                                 if (data != null) {
@@ -399,9 +400,9 @@ class RSSViewState extends ConsumerState<RSSView>
                                   const SliverGridDelegateWithFixedCrossAxisCount(
                                       crossAxisCount: 2, mainAxisExtent: 80),
                               itemBuilder: (context, index) {
+                                newItemUrl = rssFeed?.items?.first.link;
                                 newItemTitle.value =
                                     rssFeed?.items?.first.title;
-                                newItemUrl = rssFeed?.items?.first.link;
                                 RssItem? data = rssFeed?.items?[index];
                                 String? description = data?.description;
                                 if (data != null) {
@@ -449,6 +450,17 @@ class RSSViewState extends ConsumerState<RSSView>
                                             await launchUrl(Uri.parse(data
                                                     .link ??
                                                 'https://Forum.Warthunder.com'));
+                                          },
+                                          onLongPress: () {
+                                            Clipboard.setData(
+                                                ClipboardData(text: data.link));
+                                            ScaffoldMessenger.of(context)
+                                              ..hideCurrentSnackBar()
+                                              ..showSnackBar(const SnackBar(
+                                                content: Text(
+                                                    'Link Copied to Clipboard'),
+                                                duration: Duration(seconds: 1),
+                                              ));
                                           },
                                         ),
                                       ),
