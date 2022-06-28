@@ -1,2 +1,2 @@
-$V=(Get-AppxPackage -Name 'WTNews').InstallLocation;
+$V = (Get-AppxPackage -Name 'WTNews').InstallLocation;
 Write-Output $V

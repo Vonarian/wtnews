@@ -1,69 +1,65 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_dart/firebase_dart.dart';
 import 'package:firebase_dart_flutter/firebase_dart_flutter.dart';
-import 'package:flutter/material.dart';
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
-import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:protocol_handler/protocol_handler.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:system_theme/system_theme.dart';
 import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/loading.dart';
 import 'package:wtnews/providers.dart';
 import 'package:wtnews/services/dsn.dart';
 import 'package:wtnews/services/firebase_data.dart';
+import 'package:wtnews/widgets/top_widget.dart';
 
 late FirebaseApp app;
 String pathToUpdateShortcut =
     '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\manifest\\updateShortcut.bat';
 String pathToVersion =
     '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\install\\version.txt';
-String pathAhkExe =
-    '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\AHK\\AutoHotkeyU64.exe';
-String pathAhkScript =
-    '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\AHK\\AutoHotkeyU64.ahk';
 String newSound = p.joinAll([
   p.dirname(Platform.resolvedExecutable),
   'data\\flutter_assets\\assets\\sound\\new.wav'
 ]);
 late SharedPreferences prefs;
-Future<void> main() async {
+final provider = MyProvider();
+final deviceInfo = DeviceInfoPlugin();
+
+Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
   await Window.initialize();
   prefs = await SharedPreferences.getInstance();
-
-  userNameProvider = StateProvider((ref) => prefs.getString('userName'));
+  provider.userNameProvider =
+      StateProvider((ref) => prefs.getString('userName'));
   windowManager.waitUntilReadyToShow().then((_) async {
-    await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
     await windowManager.setResizable(true);
     await windowManager.setTitle('WTNews');
     await windowManager.setIcon('assets/app_icon.ico');
-    await Window.hideWindowControls();
     await Window.setEffect(
       effect: WindowEffect.aero,
-      color: Colors.black.withOpacity(0.55),
+      color: SystemTheme.isDarkMode
+          ? Colors.black.withOpacity(0.31)
+          : Colors.white.withOpacity(0.31),
     );
     await windowManager.show();
   });
-  await protocolHandler.register('wtnews');
-
   await WinToast.instance().initialize(
       appName: 'WTNews', productName: 'WTNews', companyName: 'Vonarian');
   await FirebaseDartFlutter.setup();
   app = await Firebase.initializeApp(
       options: FirebaseOptions.fromMap(firebaseConfig), name: 'wtnews-54364');
   runZonedGuarded(() async {
-    Sentry.configureScope(
-      (scope) => scope.user = SentryUser(
-          username: prefs.getString('userName'),
-          ipAddress: scope.user?.ipAddress),
-    );
+    Sentry.configureScope((scope) => scope.setUser(SentryUser(
+        username: prefs.getString('userName'),
+        ipAddress: scope.user?.ipAddress)));
     final file = File(pathToVersion);
 
     await SentryFlutter.init(
@@ -88,15 +84,8 @@ Future<void> main() async {
           subtitle: 'Welcome back ${prefs.getString('userName')} :)',
           title: 'Hi!');
     }
-    runApp(Phoenix(
-      child: const ProviderScope(
-        child: MaterialApp(
-          title: 'WTNews',
-          themeMode: ThemeMode.dark,
-          debugShowCheckedModeBanner: false,
-          home: Loading(),
-        ),
-      ),
+    runApp(ProviderScope(
+      child: App(startup: args.contains('startup'), child: const Loading()),
     ));
   }, (exception, stackTrace) async {
     await Sentry.captureException(exception, stackTrace: stackTrace);

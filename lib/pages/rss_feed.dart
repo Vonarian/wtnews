@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_dart/database.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -13,14 +11,12 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
 import 'package:win_toast/win_toast.dart';
+import 'package:wtnews/pages/settings.dart';
 import 'package:wtnews/services/presence.dart';
-import 'package:wtnews/widgets/titlebar.dart';
 
 import '../main.dart';
-import '../providers.dart';
 import '../services/data_class.dart';
 import '../services/utility.dart';
-import '../widgets/custom_loading.dart';
 
 class RSSView extends ConsumerStatefulWidget {
   const RSSView({Key? key}) : super(key: key);
@@ -33,7 +29,7 @@ class RSSViewState extends ConsumerState<RSSView>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   RssFeed? rssFeed;
   StreamSubscription? subscription;
-  DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+
   @override
   void initState() {
     super.initState();
@@ -49,7 +45,8 @@ class RSSViewState extends ConsumerState<RSSView>
             prefs.getBool('startup') ?? false,
             File(pathToVersion).readAsStringSync());
         rssFeed = await getForum();
-        ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
+        ref.read(provider.playSound.notifier).state =
+            prefs.getBool('playSound') ?? true;
       } catch (e, st) {
         await Sentry.captureException(e, stackTrace: st);
       }
@@ -70,7 +67,7 @@ class RSSViewState extends ConsumerState<RSSView>
         saveToPrefs();
         try {
           await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
-          if (ref.watch(playSound)) AppUtil().playSound(newSound);
+          if (ref.watch(provider.playSound)) AppUtil().playSound(newSound);
         } catch (e, st) {
           await Sentry.captureException(e, stackTrace: st);
         }
@@ -131,7 +128,7 @@ class RSSViewState extends ConsumerState<RSSView>
               switch (message.operation) {
                 case 'getUserName':
                   if (!mounted) return;
-                  await Message.getUserName(context);
+                  await Message.getUserName(context, data, ref);
                   await PresenceService().configureUserPresence(
                       (await deviceInfo.windowsInfo).computerName,
                       prefs.getBool('startup') ?? false,
@@ -139,7 +136,7 @@ class RSSViewState extends ConsumerState<RSSView>
                   break;
                 case 'getFeedback':
                   if (!mounted) return;
-                  Message.getFeedback(context);
+                  Message.getFeedback(context, data, mounted);
                   break;
               }
             }
@@ -156,6 +153,7 @@ class RSSViewState extends ConsumerState<RSSView>
   ]);
   String logPath =
       p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\logs']);
+
   void loadFromPrefs() {
     newItemTitle.value = prefs.getString('lastTitle');
   }
@@ -293,214 +291,120 @@ class RSSViewState extends ConsumerState<RSSView>
 
   String? newItemUrl;
   ValueNotifier<String?> newItemTitle = ValueNotifier(null);
+  int index = 0;
+
   @override
   Widget build(BuildContext context) {
-    var foregroundColor =
-        Colors.black.withOpacity(0.55).computeLuminance() > 0.5
-            ? Colors.black
-            : Colors.white;
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          rssFeed != null
-              ? Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 45, 20, 0),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final maxWidth = constraints.maxWidth;
-
-                      if (maxWidth < 1200) {
-                        return AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 700),
-                          child: ListView.builder(
-                              itemCount: rssFeed?.items?.length,
-                              itemBuilder: (context, index) {
-                                newItemUrl = rssFeed?.items?.first.link;
-                                newItemTitle.value =
-                                    rssFeed?.items?.first.title;
-                                RssItem? data = rssFeed?.items?[index];
-                                String? description = data?.description;
-                                if (data != null) {
-                                  Color color = data.title!
-                                          .contains('Development')
-                                      ? Colors.red
-                                      : data.title!.contains('Event')
-                                          ? Colors.blue
-                                          : data.title!.contains('Video')
-                                              ? Colors.amber
-                                              : data.title!
-                                                      .contains('It’s fixed!')
-                                                  ? Colors.deepPurpleAccent
-                                                  : data.title!.contains(
-                                                              'Update') &&
-                                                          !data.title!
-                                                              .contains('Dev ')
-                                                      ? Colors.cyanAccent
-                                                      : data.title!.contains(
-                                                              'Dev Server')
-                                                          ? Colors.redAccent
-                                                          : Colors.teal;
-                                  return Column(
-                                    children: [
-                                      ListTile(
-                                        title: Text(
-                                          data.title ?? 'No title',
-                                          style: TextStyle(
-                                              color: color,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        subtitle: Text(
-                                          description
-                                                  ?.replaceAll('\n', '')
-                                                  .replaceAll('	', '') ??
-                                              '',
-                                          overflow: TextOverflow.ellipsis,
-                                          maxLines: 2,
-                                          style: TextStyle(
-                                              color: foregroundColor,
-                                              letterSpacing: 0.52),
-                                        ),
-                                        onTap: () async {
-                                          await launchUrl(Uri.parse(data.link ??
-                                              'https://Forum.Warthunder.com'));
-                                        },
-                                      ),
-                                      const Divider(
-                                        height: 1,
-                                        thickness: 1,
-                                        indent: 15,
-                                        endIndent: 19,
-                                        color: Colors.grey,
-                                      ),
-                                    ],
-                                  );
-                                } else {
-                                  return const Center(child: Text('No Data'));
-                                }
-                              }),
-                        );
-                      } else {
-                        return AnimatedSwitcher(
-                          switchInCurve: Curves.easeIn,
-                          switchOutCurve: Curves.bounceOut,
-                          transitionBuilder: (child, animation) {
-                            return SlideTransition(
-                              position: Tween<Offset>(
-                                      begin: const Offset(0, 1),
-                                      end: const Offset(0, 0))
-                                  .animate(animation),
-                              child: child,
-                            );
-                          },
-                          duration: const Duration(milliseconds: 800),
-                          child: GridView.builder(
-                              itemCount: rssFeed?.items?.length,
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2, mainAxisExtent: 80),
-                              itemBuilder: (context, index) {
-                                newItemUrl = rssFeed?.items?.first.link;
-                                newItemTitle.value =
-                                    rssFeed?.items?.first.title;
-                                RssItem? data = rssFeed?.items?[index];
-                                String? description = data?.description;
-                                if (data != null) {
-                                  Color color = data.title!
-                                          .contains('Development')
-                                      ? Colors.red
-                                      : data.title!.contains('Event')
-                                          ? Colors.blue
-                                          : data.title!.contains('Video')
-                                              ? Colors.amber
-                                              : data.title!
-                                                      .contains('It’s fixed!')
-                                                  ? Colors.deepPurpleAccent
-                                                  : data.title!.contains(
-                                                              'Update') &&
-                                                          !data.title!
-                                                              .contains('Dev ')
-                                                      ? Colors.cyanAccent
-                                                      : data.title!.contains(
-                                                              'Dev Server')
-                                                          ? Colors.redAccent
-                                                          : Colors.teal;
-                                  return Column(
-                                    children: [
-                                      Flexible(
-                                        child: ListTile(
-                                          title: Text(
-                                            data.title ?? 'No title',
-                                            style: TextStyle(
-                                                color: color,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                          subtitle: Text(
-                                            description
-                                                    ?.replaceAll('\n', '')
-                                                    .replaceAll('	', '') ??
-                                                '',
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 2,
-                                            style: TextStyle(
-                                                color: foregroundColor,
-                                                letterSpacing: 0.52),
-                                          ),
-                                          onTap: () async {
-                                            await launchUrl(Uri.parse(data
-                                                    .link ??
-                                                'https://Forum.Warthunder.com'));
-                                          },
-                                          onLongPress: () {
-                                            Clipboard.setData(
-                                                ClipboardData(text: data.link));
-                                            ScaffoldMessenger.of(context)
-                                              ..hideCurrentSnackBar()
-                                              ..showSnackBar(const SnackBar(
-                                                content: Text(
-                                                    'Link Copied to Clipboard'),
-                                                duration: Duration(seconds: 1),
-                                              ));
-                                          },
-                                        ),
-                                      ),
-                                      const Divider(
-                                        height: 1,
-                                        thickness: 1,
-                                        indent: 15,
-                                        endIndent: 19,
-                                        color: Colors.grey,
-                                      ),
-                                    ],
-                                  );
-                                } else {
-                                  return const Center(child: Text('No Data'));
-                                }
-                              }),
-                        );
-                      }
-                    },
-                  ),
-                )
-              : Center(
-                  child: CustomLoadingAnimationWidget.inkDrop(
-                      color: Colors.red,
-                      size: 250,
-                      strokeWidth: 15,
-                      colors: [
-                        Colors.red,
-                        Colors.blue,
-                        Colors.green,
-                        Colors.green,
-                        Colors.green,
-                        Colors.amber,
-                        Colors.pink
-                      ]),
+    final theme = FluentTheme.of(context);
+    return NavigationView(
+      appBar: NavigationAppBar(
+        title: Text(
+          'WTNews',
+          style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: theme.accentColor.lighter),
+        ),
+        automaticallyImplyLeading: false,
+      ),
+      pane: NavigationPane(
+        selected: index,
+        displayMode: PaneDisplayMode.auto,
+        onChanged: (newIndex) {
+          setState(() {
+            index = newIndex;
+          });
+        },
+        items: [
+          PaneItem(
+            icon: const Icon(FluentIcons.home),
+            title: const Text(
+              'Home',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          PaneItem(
+              icon: const Icon(FluentIcons.settings),
+              title: const Text(
+                'Settings',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
                 ),
-          const WindowTitleBar(
-            isCustom: false,
-          )
+              )),
         ],
+      ),
+      content: Padding(
+        padding: const EdgeInsets.only(left: 8.0),
+        child: NavigationBody(
+          index: index,
+          children: [
+            ScaffoldPage(
+              padding: EdgeInsets.zero,
+              content: rssFeed != null
+                  ? AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 700),
+                      child: ListView.builder(
+                          itemCount: rssFeed?.items?.length,
+                          itemBuilder: (context, index) {
+                            newItemUrl = rssFeed?.items?.first.link;
+                            newItemTitle.value = rssFeed?.items?.first.title;
+                            RssItem? data = rssFeed?.items?[index];
+                            String? description = data?.description;
+                            if (data != null) {
+                              return Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  GestureDetector(
+                                    child: ListTile(
+                                      title: Text(
+                                        data.title ?? 'No title',
+                                        style: TextStyle(
+                                            color: theme.accentColor.lightest,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      subtitle: Text(
+                                        description
+                                                ?.replaceAll('\n', '')
+                                                .replaceAll('	', '') ??
+                                            '',
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 2,
+                                        style: const TextStyle(
+                                            letterSpacing: 0.52, fontSize: 14),
+                                      ),
+                                      contentPadding: EdgeInsets.zero,
+                                      isThreeLine: true,
+                                    ),
+                                    onTap: () {
+                                      if (data.link != null) {
+                                        launchUrl(Uri.parse(data.link!));
+                                      }
+                                    },
+                                  ),
+                                  const Divider(),
+                                ],
+                              );
+                            } else {
+                              return const Center(child: Text('No Data'));
+                            }
+                          }))
+                  : Center(
+                      child: Center(
+                          child: SizedBox(
+                        width: 100,
+                        height: 100,
+                        child: ProgressRing(
+                          strokeWidth: 10,
+                          activeColor: theme.accentColor,
+                        ),
+                      )),
+                    ),
+            ),
+            const Settings(),
+          ],
+        ),
       ),
     );
   }

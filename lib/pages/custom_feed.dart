@@ -13,7 +13,6 @@ import 'package:win_toast/win_toast.dart';
 import 'package:wtnews/widgets/titlebar.dart';
 
 import '../main.dart';
-import '../providers.dart';
 import '../services/utility.dart';
 
 class CustomRSSView extends ConsumerStatefulWidget {
@@ -33,13 +32,14 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
 
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
-      rssFeed = await getForum(ref.watch(customFeed) ?? '');
-      ref.read(playSound.notifier).state = prefs.getBool('playSound') ?? true;
+      rssFeed = await getForum(ref.watch(provider.customFeed) ?? '');
+      ref.read(provider.playSound.notifier).state =
+          prefs.getBool('playSound') ?? true;
       setState(() {});
     });
     Timer.periodic(const Duration(seconds: 15), (timer) async {
       if (!mounted) timer.cancel();
-      rssFeed = await getForum(ref.read(customFeed) ?? '');
+      rssFeed = await getForum(ref.read(provider.customFeed) ?? '');
       setState(() {});
     });
 
@@ -47,7 +47,7 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
       newItemTitle.addListener(() async {
         saveToPrefs();
         await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
-        if (ref.read(playSound)) {
+        if (ref.read(provider.playSound)) {
           AppUtil().playSound(newSound);
         }
       });
@@ -60,6 +60,7 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
   ]);
   String logPath =
       p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\logs']);
+
   Future<void> loadFromPrefs() async {
     newItemTitle.value = prefs.getString('lastTitleCustom');
   }
@@ -97,6 +98,7 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
 
   String newItemUrl = '';
   ValueNotifier<String?> newItemTitle = ValueNotifier(null);
+
   @override
   Widget build(BuildContext context) {
     return Material(

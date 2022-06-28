@@ -4,7 +4,8 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:blinking_text/blinking_text.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/material.dart' show SnackBarAction;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -14,7 +15,6 @@ import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../services/github.dart';
-import '../widgets/custom_loading.dart';
 
 class Downloader extends StatefulWidget {
   const Downloader({Key? key}) : super(key: key);
@@ -105,23 +105,22 @@ class DownloaderState extends State<Downloader>
     } catch (e, st) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-        ..removeCurrentSnackBar()
-        ..showSnackBar(SnackBar(
-          duration: const Duration(seconds: 10),
-          content: BlinkText(
-            e.toString(),
-            endColor: Colors.red,
-            duration: const Duration(milliseconds: 300),
-          ),
-          action: SnackBarAction(
-            onPressed: () {
-              Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (context) => const Downloader()));
-            },
-            label: 'Retry',
-          ),
-        ));
+      showSnackbar(
+          context,
+          Snackbar(
+            content: BlinkText(
+              e.toString(),
+              endColor: Colors.red,
+              duration: const Duration(milliseconds: 300),
+            ),
+            action: SnackBarAction(
+              onPressed: () {
+                Navigator.pushReplacement(context,
+                    FluentPageRoute(builder: (context) => const Downloader()));
+              },
+              label: 'Retry',
+            ),
+          ));
       windowManager.setSize(const Size(600, 600));
       await Sentry.captureException(e, stackTrace: st);
       error = true;
@@ -133,6 +132,7 @@ class DownloaderState extends State<Downloader>
   String text = 'Downloading';
   bool error = false;
   double progress = 0;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -140,84 +140,71 @@ class DownloaderState extends State<Downloader>
       onPanStart: (details) {
         windowManager.startDragging();
       },
-      child: Scaffold(
-          backgroundColor: Colors.transparent,
-          body: Center(
-            child: SizedBox(
-              height: 200,
-              width: 200,
-              child: text == 'Downloading'
-                  ? CircularPercentIndicator(
-                      center: !error
-                          ? Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  text,
-                                  style: const TextStyle(
-                                      fontSize: 15, color: Colors.white),
-                                ),
-                                Text(
-                                  '${progress.toStringAsFixed(1)} %',
-                                  style: const TextStyle(
-                                      fontSize: 15, color: Colors.white),
-                                ),
-                              ],
-                            )
-                          : const Center(
-                              child: Text(
-                                'ERROR',
-                                style: TextStyle(fontSize: 15),
-                              ),
+      child: ScaffoldPage(
+          content: Center(
+        child: SizedBox(
+          height: 200,
+          width: 200,
+          child: text == 'Downloading'
+              ? CircularPercentIndicator(
+                  center: !error
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              text,
+                              style: const TextStyle(
+                                  fontSize: 15, color: Colors.white),
                             ),
-                      backgroundColor: Colors.blue,
-                      percent: double.parse(progress.toStringAsFixed(0)) / 100,
-                      radius: 100,
-                    )
-                  : Center(
-                      child: Stack(
-                        children: [
-                          Center(
-                            child: CustomLoadingAnimationWidget.inkDrop(
-                                color: Color.lerp(
-                                        Colors.red, Colors.amber, 0.77) ??
-                                    Colors.red,
-                                size: 150,
-                                strokeWidth: 10,
-                                colors: [
-                                  Colors.red,
-                                  Colors.blue,
-                                  Colors.green,
-                                  Colors.amber,
-                                  Colors.pink
-                                ]),
-                          ),
-                          Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  text,
-                                  style: const TextStyle(
-                                      fontSize: 15, color: Colors.white),
-                                ),
-                                Text(
-                                  '${progress.toStringAsFixed(1)} %',
-                                  style: const TextStyle(
-                                      fontSize: 15, color: Colors.white),
-                                ),
-                              ],
+                            Text(
+                              '${progress.toStringAsFixed(1)} %',
+                              style: const TextStyle(
+                                  fontSize: 15, color: Colors.white),
                             ),
+                          ],
+                        )
+                      : const Center(
+                          child: Text(
+                            'ERROR',
+                            style: TextStyle(fontSize: 15),
                           ),
-                        ],
+                        ),
+                  backgroundColor: Colors.blue,
+                  percent: double.parse(progress.toStringAsFixed(0)) / 100,
+                  radius: 100,
+                )
+              : Center(
+                  child: Stack(
+                    children: [
+                      const Center(
+                          child: ProgressRing(
+                        strokeWidth: 10,
+                      )),
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              text,
+                              style: const TextStyle(
+                                  fontSize: 15, color: Colors.white),
+                            ),
+                            Text(
+                              '${progress.toStringAsFixed(1)} %',
+                              style: const TextStyle(
+                                  fontSize: 15, color: Colors.white),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-            ),
-          )),
+                    ],
+                  ),
+                ),
+        ),
+      )),
     );
   }
 
-  final bool _showWindowBelowTrayIcon = false;
   Future<void> _handleClickRestore() async {
     await windowManager.setIcon('assets/app_icon.ico');
     windowManager.restore();
@@ -248,20 +235,6 @@ class DownloaderState extends State<Downloader>
 
   @override
   void onTrayIconMouseDown() async {
-    if (_showWindowBelowTrayIcon) {
-      Size windowSize = await windowManager.getSize();
-      Rect trayIconBounds = await tray.TrayManager.instance.getBounds();
-      Size trayIconSize = trayIconBounds.size;
-      Offset trayIconNewPosition = trayIconBounds.topLeft;
-
-      Offset newPosition = Offset(
-        trayIconNewPosition.dx - ((windowSize.width - trayIconSize.width) / 2),
-        trayIconNewPosition.dy,
-      );
-
-      windowManager.setPosition(newPosition);
-      await Future.delayed(const Duration(milliseconds: 100));
-    }
     _handleClickRestore();
     _trayUnInit();
   }

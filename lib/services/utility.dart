@@ -21,7 +21,7 @@ class AppUtil {
       } else {
         //if folder not exists create folder and then return its path
         final Directory finalDir =
-            await appDocDirFolder.create(recursive: true);
+        await appDocDirFolder.create(recursive: true);
         return finalDir.path;
       }
     } catch (e) {
@@ -31,8 +31,8 @@ class AppUtil {
   }
 
   ///Will save error and stack trace to a text file with given [e], [stackTrace] and [location].
-  static Future<void> logAndSaveToText(
-      String filePath, String e, String stackTrace, String location) async {
+  static Future<void> logAndSaveToText(String filePath, String e,
+      String stackTrace, String location) async {
     await createFolderInAppDocDir(p.dirname(filePath));
     final File file = File(filePath);
     if (await file.exists()) {

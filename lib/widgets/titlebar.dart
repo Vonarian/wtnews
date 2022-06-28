@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import 'package:protocol_handler/protocol_handler.dart';
 import 'package:tray_manager/tray_manager.dart' as tray;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
@@ -14,7 +13,6 @@ import 'package:webfeed/domain/rss_item.dart';
 import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/downloader.dart';
-import 'package:wtnews/providers.dart';
 import 'package:wtnews/services/utility.dart';
 
 import '../main.dart';
@@ -24,6 +22,7 @@ import '../services/presence.dart';
 class _MoveWindow extends StatelessWidget {
   const _MoveWindow({Key? key, required this.child}) : super(key: key);
   final Widget child;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -44,6 +43,7 @@ class _MoveWindow extends StatelessWidget {
 
 class WindowTitleBar extends ConsumerStatefulWidget {
   final bool isCustom;
+
   const WindowTitleBar({Key? key, required this.isCustom}) : super(key: key);
 
   @override
@@ -51,16 +51,15 @@ class WindowTitleBar extends ConsumerStatefulWidget {
 }
 
 class WindowTitleBarState extends ConsumerState<WindowTitleBar>
-    with tray.TrayListener, WindowListener, ProtocolListener {
+    with tray.TrayListener, WindowListener {
   @override
   void initState() {
     super.initState();
     tray.trayManager.addListener(this);
     windowManager.addListener(this);
-    protocolHandler.addListener(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       future = autoUpdateCheck(context);
-      ref.read(checkDataMine.notifier).state =
+      ref.read(provider.checkDataMine.notifier).state =
           prefs.getBool('checkDataMine') ?? false;
     });
     lastPubDate.addListener(() async {
@@ -74,7 +73,7 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
     });
 
     Timer.periodic(const Duration(seconds: 10), (timer) async {
-      if (ref.watch(checkDataMine)) {
+      if (ref.watch(provider.checkDataMine)) {
         rssFeed = await getDataMine()
             .timeout(const Duration(seconds: 25))
             .whenComplete(() async {
@@ -106,8 +105,8 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
         int.parse((await file.readAsString()).replaceAll('.', ''));
     final String? version = (await PresenceService().getVersion());
     if (version != null) {
-      if (version != ref.read(versionProvider.notifier).state) {
-        ref.read(versionProvider.notifier).state = version;
+      if (version != ref.read(provider.versionProvider.notifier).state) {
+        ref.read(provider.versionProvider.notifier).state = version;
       }
       final int serverVersion = int.parse(version.replaceAll('.', ''));
       if (serverVersion > currentVersion) {
@@ -168,7 +167,6 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
   void dispose() {
     tray.trayManager.removeListener(this);
     windowManager.removeListener(this);
-    protocolHandler.removeListener(this);
     lastPubDate.removeListener(() {});
     super.dispose();
   }
@@ -177,9 +175,10 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
   Future<bool?>? future;
   String? lastItemLink;
   RssFeed? rssFeed;
+
   @override
   Widget build(BuildContext context) {
-    ref.listen<StateController<String?>>(versionProvider.state,
+    ref.listen<StateController<String?>>(provider.versionProvider.state,
         (previous, next) async {
       if ((await autoUpdateCheck(context) ?? false) &&
           previous != null &&
@@ -311,7 +310,6 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
     );
   }
 
-  final bool _showWindowBelowTrayIcon = false;
   Future<void> _handleClickRestore() async {
     await windowManager.setIcon('assets/app_icon.ico');
     windowManager.restore();
@@ -336,20 +334,6 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
 
   @override
   void onTrayIconMouseDown() async {
-    if (_showWindowBelowTrayIcon) {
-      Size windowSize = await windowManager.getSize();
-      Rect trayIconBounds = await tray.TrayManager.instance.getBounds();
-      Size trayIconSize = trayIconBounds.size;
-      Offset trayIconNewPosition = trayIconBounds.topLeft;
-
-      Offset newPosition = Offset(
-        trayIconNewPosition.dx - ((windowSize.width - trayIconSize.width) / 2),
-        trayIconNewPosition.dy,
-      );
-
-      windowManager.setPosition(newPosition);
-      await Future.delayed(const Duration(milliseconds: 100));
-    }
     _handleClickRestore();
     _trayUnInit();
   }
@@ -386,17 +370,6 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
           type: ToastType.text04,
           title: 'WTNews is minimized to tray',
           subtitle: 'Check tray to open app again');
-    }
-  }
-
-  @override
-  void onProtocolUrlReceived(String url) {
-    if (url.contains('xml') && url.isNotEmpty) {
-      ref.read(customFeed.notifier).state = url.replaceAll('wtnews:', '');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              'New custom feed url: ${ref.read(customFeed.notifier).state}')));
-      prefs.setString('customFeed', ref.read(customFeed.notifier).state!);
     }
   }
 }
