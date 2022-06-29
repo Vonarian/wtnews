@@ -3,14 +3,13 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
 import 'package:win_toast/win_toast.dart';
-import 'package:wtnews/widgets/titlebar.dart';
 
 import '../main.dart';
 import '../services/utility.dart';
@@ -32,6 +31,9 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
 
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
+      if (ref.read(provider.customFeed) == null) {
+        await dialog();
+      }
       rssFeed = await getForum(ref.watch(provider.customFeed) ?? '');
       ref.read(provider.playSound.notifier).state =
           prefs.getBool('playSound') ?? true;
@@ -68,7 +70,7 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
   Future<void> sendNotification(
       {required String? newTitle, required String url}) async {
     if (newTitle != null) {
-      var toast = await WinToast.instance().showToast(
+      var toast = await winToast.showToast(
           type: ToastType.text04,
           title: 'New content in the feed',
           subtitle: newTitle);
@@ -80,13 +82,54 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
     }
   }
 
+  Future<void> dialog() async {
+    TextEditingController controller = TextEditingController();
+    await showDialog(
+        context: context,
+        builder: (context) {
+          return ContentDialog(
+            title: const Text('Enter RSS Feed URL'),
+            content: TextFormBox(
+              onChanged: (value) {},
+              validator: (value) {
+                if (value != null) {
+                  return 'Username can\'t be empty';
+                }
+                if (value!.isEmpty) {
+                  return 'Username can\'t be empty';
+                }
+                return null;
+              },
+              controller: controller,
+            ),
+            actions: [
+              Button(
+                child: const Text('Save'),
+                onPressed: () async {
+                  ref.read(provider.customFeed.notifier).state =
+                      controller.text;
+                  await prefs.setString('customFeed', controller.text);
+                  if (!mounted) return;
+                  Navigator.of(context).pop();
+                },
+              ),
+              Button(
+                child: const Text('Cancel'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        });
+  }
+
   Future<void> saveToPrefs() async {
     await prefs.setString('lastTitleCustom', newItemTitle.value ?? '');
   }
 
   Future<RssFeed> getForum(String url) async {
     try {
-      Dio dio = Dio();
       Response response = await dio.get(url);
       RssFeed rssFeed = RssFeed.parse(response.data);
       return rssFeed;
@@ -101,66 +144,73 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      child: Stack(children: [
-        Scaffold(
-          appBar: AppBar(
-            elevation: 0,
-            backgroundColor: Colors.transparent,
+    var theme = FluentTheme.of(context);
+    return ScaffoldPage(
+      padding: EdgeInsets.zero,
+      header: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          HoverButton(
+            builder: (context, set) => Text('Change feed URL',
+                style: TextStyle(fontSize: 18, color: Colors.red)),
+            onPressed: () async {
+              await dialog();
+              setState(() {});
+            },
           ),
-          backgroundColor: Colors.transparent,
-          body: rssFeed != null
-              ? Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-                  child: ListView.builder(
-                      itemCount: rssFeed?.items?.length,
-                      itemBuilder: (context, index) {
-                        newItemTitle.value = rssFeed?.items?.first.title;
-                        newItemUrl = rssFeed?.items?.first.link ?? '';
-                        RssItem? data = rssFeed?.items?[index];
-                        String? description = data?.description;
-                        if (data != null) {
-                          Color color = Colors.red;
-                          return ListTile(
-                            title: Text(
-                              data.title ?? 'No title',
-                              style: TextStyle(
-                                  color: color, fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Text(
-                              description
-                                      ?.replaceAll('\n', '')
-                                      .replaceAll('	', '') ??
-                                  '',
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                              ),
-                            ),
-                            onTap: () async {
-                              await launchUrl(Uri.parse(
-                                  data.link ?? 'https://Forum.Warthunder.com'));
-                            },
-                          );
-                        } else {
-                          return const Center(child: Text('No Data'));
-                        }
-                      }),
-                )
-              : const Center(
-                  child: SizedBox(
-                    width: 250,
-                    height: 250,
-                    child: CircularProgressIndicator(
-                      color: Colors.red,
+        ],
+      ),
+      content: rssFeed != null
+          ? ListView.builder(
+              itemCount: rssFeed?.items?.length,
+              itemBuilder: (context, index) {
+                newItemTitle.value = rssFeed?.items?.first.title;
+                newItemUrl = rssFeed?.items?.first.link ?? '';
+                RssItem? data = rssFeed?.items?[index];
+                String? description = data?.description;
+                if (data != null) {
+                  return HoverButton(
+                    builder: (context, set) => ListTile(
+                      title: Text(
+                        data.title ?? 'No title',
+                        style: TextStyle(
+                            color: theme.accentColor.lightest,
+                            fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                      ),
+                      subtitle: Text(
+                        description?.replaceAll('\n', '').replaceAll('	', '') ??
+                            '',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        style:
+                            const TextStyle(letterSpacing: 0.52, fontSize: 14),
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                      isThreeLine: true,
                     ),
-                  ),
+                    onPressed: () {
+                      if (data.link != null) {
+                        launchUrl(Uri.parse(data.link!));
+                      }
+                    },
+                    focusEnabled: true,
+                    cursor: SystemMouseCursors.click,
+                  );
+                } else {
+                  return const Center(child: Text('No Data'));
+                }
+              })
+          : Center(
+              child: SizedBox(
+                width: 100,
+                height: 100,
+                child: ProgressRing(
+                  strokeWidth: 10,
+                  activeColor: theme.accentColor,
                 ),
-        ),
-        const WindowTitleBar(
-          isCustom: true,
-        )
-      ]),
+              ),
+            ),
     );
   }
 }

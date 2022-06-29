@@ -141,7 +141,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     _trayInit();
     if (prefs.getBool('additionalNotif') != null &&
         prefs.getBool('additionalNotif')!) {
-      WinToast.instance().showToast(
+      winToast.showToast(
           type: ToastType.text04,
           title: 'WTNews is minimized to tray',
           subtitle: 'Check tray to open app again');

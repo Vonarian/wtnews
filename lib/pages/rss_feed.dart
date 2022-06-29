@@ -11,12 +11,14 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
 import 'package:win_toast/win_toast.dart';
+import 'package:wtnews/pages/custom_feed.dart';
 import 'package:wtnews/pages/settings.dart';
 import 'package:wtnews/services/presence.dart';
 
 import '../main.dart';
 import '../services/data_class.dart';
 import '../services/utility.dart';
+import 'datamine.dart';
 
 class RSSView extends ConsumerStatefulWidget {
   const RSSView({Key? key}) : super(key: key);
@@ -113,7 +115,7 @@ class RSSViewState extends ConsumerState<RSSView>
         if (prefs.getInt('id') != message.id) {
           if (message.device == (await deviceInfo.windowsInfo).computerName ||
               message.device == null) {
-            var toast = await WinToast.instance().showToast(
+            var toast = await winToast.showToast(
                 type: ToastType.text04,
                 title: message.title,
                 subtitle: message.subtitle);
@@ -162,7 +164,7 @@ class RSSViewState extends ConsumerState<RSSView>
       {required String? newTitle, required String? url}) async {
     if (newTitle != null) {
       if (newTitle.contains('Development')) {
-        var toast = await WinToast.instance().showToast(
+        var toast = await winToast.showToast(
             type: ToastType.text04, title: 'New DevBlog!!', subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
@@ -172,7 +174,7 @@ class RSSViewState extends ConsumerState<RSSView>
           }
         });
       } else if (newTitle.contains('Event')) {
-        var toast = await WinToast.instance().showToast(
+        var toast = await winToast.showToast(
             type: ToastType.text04, title: 'New Event!!', subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
@@ -182,7 +184,7 @@ class RSSViewState extends ConsumerState<RSSView>
           }
         });
       } else if (newTitle.contains('Video')) {
-        var toast = await WinToast.instance().showToast(
+        var toast = await winToast.showToast(
             type: ToastType.text04, title: 'New Video!!', subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
@@ -192,7 +194,7 @@ class RSSViewState extends ConsumerState<RSSView>
           }
         });
       } else if (newTitle.contains('It’s fixed!')) {
-        var toast = await WinToast.instance().showToast(
+        var toast = await winToast.showToast(
             type: ToastType.text04,
             title: 'New It\'s fixed!!',
             subtitle: newTitle);
@@ -204,7 +206,7 @@ class RSSViewState extends ConsumerState<RSSView>
           }
         });
       } else if (newTitle.contains('Update') && !newTitle.contains('Dev ')) {
-        var toast = await WinToast.instance().showToast(
+        var toast = await winToast.showToast(
             type: ToastType.text04, title: 'New Update!!', subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
@@ -214,7 +216,7 @@ class RSSViewState extends ConsumerState<RSSView>
           }
         });
       } else if (newTitle.contains('Dev ')) {
-        var toast = await WinToast.instance().showToast(
+        var toast = await winToast.showToast(
             type: ToastType.text04,
             title: 'New Dev related content!!',
             subtitle: newTitle);
@@ -226,7 +228,7 @@ class RSSViewState extends ConsumerState<RSSView>
           }
         });
       } else if (newTitle.toLowerCase().contains('dev server opening')) {
-        var toast = await WinToast.instance().showToast(
+        var toast = await winToast.showToast(
             type: ToastType.text04,
             title: 'Dev Server Opening!!',
             subtitle: newTitle);
@@ -238,7 +240,7 @@ class RSSViewState extends ConsumerState<RSSView>
           }
         });
       } else if (newTitle.contains('Planned Battle Rating')) {
-        var toast = await WinToast.instance().showToast(
+        var toast = await winToast.showToast(
             type: ToastType.text04,
             title: 'Planned BR changes!!',
             subtitle: newTitle);
@@ -250,7 +252,7 @@ class RSSViewState extends ConsumerState<RSSView>
           }
         });
       } else if (newTitle.contains('Economic')) {
-        var toast = await WinToast.instance().showToast(
+        var toast = await winToast.showToast(
             type: ToastType.text04,
             title: 'Something new about economics!!',
             subtitle: newTitle);
@@ -262,7 +264,7 @@ class RSSViewState extends ConsumerState<RSSView>
           }
         });
       } else {
-        var toast = await WinToast.instance().showToast(
+        var toast = await winToast.showToast(
             type: ToastType.text04,
             title: 'New content in the official forums',
             subtitle: newTitle);
@@ -282,7 +284,6 @@ class RSSViewState extends ConsumerState<RSSView>
   }
 
   Future<RssFeed> getForum() async {
-    Dio dio = Dio();
     Response response = await dio
         .get('https://forum.warthunder.com/index.php?/discover/693.xml');
     RssFeed rssFeed = RssFeed.parse(response.data);
@@ -333,6 +334,22 @@ class RSSViewState extends ConsumerState<RSSView>
                   fontWeight: FontWeight.bold,
                 ),
               )),
+          PaneItem(
+              icon: const Icon(FluentIcons.database),
+              title: const Text(
+                'DataMine',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              )),
+          PaneItem(
+              icon: const Icon(FluentIcons.news),
+              title: const Text(
+                'Custom Feed',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              )),
         ],
       ),
       content: Padding(
@@ -356,8 +373,8 @@ class RSSViewState extends ConsumerState<RSSView>
                               return Column(
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
-                                  GestureDetector(
-                                    child: ListTile(
+                                  HoverButton(
+                                    builder: (context, set) => ListTile(
                                       title: Text(
                                         data.title ?? 'No title',
                                         style: TextStyle(
@@ -377,11 +394,13 @@ class RSSViewState extends ConsumerState<RSSView>
                                       contentPadding: EdgeInsets.zero,
                                       isThreeLine: true,
                                     ),
-                                    onTap: () {
+                                    onPressed: () {
                                       if (data.link != null) {
                                         launchUrl(Uri.parse(data.link!));
                                       }
                                     },
+                                    focusEnabled: true,
+                                    cursor: SystemMouseCursors.click,
                                   ),
                                   const Divider(),
                                 ],
@@ -391,18 +410,19 @@ class RSSViewState extends ConsumerState<RSSView>
                             }
                           }))
                   : Center(
-                      child: Center(
-                          child: SizedBox(
+                      child: SizedBox(
                         width: 100,
                         height: 100,
                         child: ProgressRing(
                           strokeWidth: 10,
                           activeColor: theme.accentColor,
                         ),
-                      )),
+                      ),
                     ),
             ),
             const Settings(),
+            const DataMine(),
+            const CustomRSSView(),
           ],
         ),
       ),

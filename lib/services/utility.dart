@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
@@ -21,7 +22,7 @@ class AppUtil {
       } else {
         //if folder not exists create folder and then return its path
         final Directory finalDir =
-        await appDocDirFolder.create(recursive: true);
+            await appDocDirFolder.create(recursive: true);
         return finalDir.path;
       }
     } catch (e) {
@@ -31,8 +32,8 @@ class AppUtil {
   }
 
   ///Will save error and stack trace to a text file with given [e], [stackTrace] and [location].
-  static Future<void> logAndSaveToText(String filePath, String e,
-      String stackTrace, String location) async {
+  static Future<void> logAndSaveToText(
+      String filePath, String e, String stackTrace, String location) async {
     await createFolderInAppDocDir(p.dirname(filePath));
     final File file = File(filePath);
     if (await file.exists()) {
@@ -57,6 +58,18 @@ class AppUtil {
     var encoder = ZipFileEncoder();
     encoder.zipDirectory(Directory(path), filename: 'log.zip');
     return '$path\\log.zip';
+  }
+
+  static Future<String> runPowerShellScript(
+      String scriptPath, List<String> argumentsToScript) async {
+    var process = await Process.start(
+        'Powershell.exe', [...argumentsToScript, '-File', scriptPath]);
+    String finalString = '';
+
+    await for (var line in process.stdout.transform(utf8.decoder)) {
+      finalString += line;
+    }
+    return finalString;
   }
 
   ///Plays a wav file with given [path].

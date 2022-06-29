@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:settings_ui/settings_ui.dart';
 import 'package:wtnews/main.dart';
 import 'package:wtnews/pages/downloader.dart';
+import 'package:wtnews/services/utility.dart';
 
 import '../services/data_class.dart';
 
@@ -24,8 +25,10 @@ class SettingsState extends ConsumerState<Settings> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(provider.startupEnabled.notifier).state =
           prefs.getBool('startup') ?? false;
+
       if (ref.read(provider.startupEnabled.notifier).state) {
-        await Process.run(pathToUpdateShortcut, []);
+        await AppUtil.runPowerShellScript(
+            pathToShortcut, ['-ExecutionPolicy', 'Bypass', '-NonInteractive']);
       }
 
       ref.read(provider.playSound.notifier).state =
@@ -34,6 +37,8 @@ class SettingsState extends ConsumerState<Settings> {
           prefs.getBool('additionalNotif') ?? false;
       ref.read(provider.customFeed.notifier).state =
           prefs.getString('customFeed');
+      ref.read(provider.checkDataMine.notifier).state =
+          prefs.getBool('checkDataMine') ?? false;
     });
   }
 
@@ -56,9 +61,10 @@ class SettingsState extends ConsumerState<Settings> {
             tiles: [
               SettingsTile.switchTile(
                 initialValue: ref.watch(provider.startupEnabled),
-                onToggle: (value) {
+                onToggle: (value) async {
                   if (value) {
-                    Process.run(pathToUpdateShortcut, []);
+                    await AppUtil.runPowerShellScript(pathToShortcut,
+                        ['-ExecutionPolicy', 'Bypass', '-NonInteractive']);
                   } else {
                     Process.run(pathToRemoveShortcut, []);
                     ref.read(provider.minimizeOnStart.notifier).state = false;
@@ -162,6 +168,7 @@ class SettingsState extends ConsumerState<Settings> {
                   width: 30,
                   height: 30,
                 ),
+                trailing: Icon(FluentIcons.info, color: theme.accentColor),
               ),
               SettingsTile.switchTile(
                 initialValue: ref.watch(provider.additionalNotif),
@@ -170,8 +177,6 @@ class SettingsState extends ConsumerState<Settings> {
                   prefs.setBool('additionalNotif', value);
                 },
                 title: const Text('Tray and Greeting Notifications'),
-                leading:
-                    Icon(FluentIcons.skype_message, color: theme.accentColor),
               ),
             ],
           ),
@@ -185,35 +190,10 @@ class SettingsState extends ConsumerState<Settings> {
                 Message.getUserName(context, null, ref);
               },
             ),
-            SettingsTile(
-              description: const Text('Used to contact the developer'),
-              title: const Text('Send Feedback to Vonarian'),
-              leading: Icon(FluentIcons.add_favorite, color: theme.accentColor),
-              onPressed: (ctx) async {
-                if (ref.watch(provider.userNameProvider) != null) {
-                  Message.getFeedback(ctx, null, mounted);
-                } else {
-                  await showDialog(
-                      context: ctx,
-                      builder: (context) => ContentDialog(
-                            title: const Text('Error'),
-                            content: const Text('Please set username first :)'),
-                            actions: <Widget>[
-                              TextButton(
-                                child: const Text('OK'),
-                                onPressed: () => Navigator.of(context).pop(),
-                              )
-                            ],
-                          ));
-                }
-              },
-            ),
           ]),
         ]);
   }
 
-  String pathToAddShortcut =
-      '${p.dirname(Platform.resolvedExecutable)}/data/flutter_assets/assets/manifest/addShortcut.bat';
   String pathToRemoveShortcut =
       '${p.dirname(Platform.resolvedExecutable)}/data/flutter_assets/assets/manifest/removeShortcut.bat';
 

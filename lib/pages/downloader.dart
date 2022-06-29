@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:blinking_text/blinking_text.dart';
-import 'package:dio/dio.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' show SnackBarAction;
 import 'package:path/path.dart' as p;
@@ -14,6 +13,7 @@ import 'package:tray_manager/tray_manager.dart' as tray;
 import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../main.dart';
 import '../services/github.dart';
 
 class Downloader extends StatefulWidget {
@@ -41,7 +41,7 @@ class DownloaderState extends State<Downloader>
   }
 
   Future<void> downloadUpdate() async {
-    await WinToast.instance().showToast(
+    await winToast.showToast(
         type: ToastType.text04,
         title: 'Updating WTNews...',
         subtitle:
@@ -60,7 +60,7 @@ class DownloaderState extends State<Downloader>
       if (await deleteFolder.exists()) {
         await deleteFolder.delete(recursive: true);
       }
-      Dio dio = Dio();
+
       await dio.download(
           data.assets.last.browserDownloadUrl, '${tempWtnews.path}\\update.zip',
           onReceiveProgress: (downloaded, full) async {
@@ -93,7 +93,7 @@ class DownloaderState extends State<Downloader>
           'installer.bat'
         ]));
 
-        await WinToast.instance().showToast(
+        await winToast.showToast(
             type: ToastType.text04,
             title: 'Update process starting in a moment',
             subtitle:

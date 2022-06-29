@@ -117,7 +117,6 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
   }
 
   Future<RssFeed> getDataMine() async {
-    Dio dio = Dio();
     Response response = await dio
         .get('https://forum.warthunder.com/index.php?/discover/704.xml');
     RssFeed rssFeed = RssFeed.parse(response.data);
@@ -135,7 +134,7 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
         }
 
         AppUtil().playSound(newSound);
-        final toast = await WinToast.instance().showToast(
+        final toast = await winToast.showToast(
           title: 'New Data Mine',
           type: ToastType.text04,
           subtitle: 'Click to launch in browser',
@@ -151,7 +150,7 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
         print('Null');
       }
       AppUtil().playSound(newSound);
-      final toast = await WinToast.instance().showToast(
+      final toast = await winToast.showToast(
           title: 'New Data Mine',
           type: ToastType.text04,
           subtitle: 'New Data Mine from gszabi');
@@ -183,7 +182,7 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
       if ((await autoUpdateCheck(context) ?? false) &&
           previous != null &&
           previous != next) {
-        var toast = await WinToast.instance().showToast(
+        var toast = await winToast.showToast(
             type: ToastType.text04,
             title: 'Update Available',
             subtitle: 'Click here to update');
@@ -366,7 +365,7 @@ class WindowTitleBarState extends ConsumerState<WindowTitleBar>
     _trayInit();
     if (prefs.getBool('additionalNotif') != null &&
         prefs.getBool('additionalNotif')!) {
-      WinToast.instance().showToast(
+      winToast.showToast(
           type: ToastType.text04,
           title: 'WTNews is minimized to tray',
           subtitle: 'Check tray to open app again');

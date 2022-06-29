@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 
+import '../main.dart';
+
 Data networkFromJson(String str) => Data.fromJson(json.decode(str));
 
 String networkToJson(Data data) => json.encode(data.toJson());
@@ -89,7 +91,6 @@ class Data {
       };
 
   static Future<Data> getData() async {
-    Dio dio = Dio();
     Response response = await dio
         .get('https://api.github.com/repos/Vonarian/WTNews/releases/latest');
     Data data = Data.fromJson(response.data);
