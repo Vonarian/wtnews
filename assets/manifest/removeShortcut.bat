@@ -1,1 +1,1 @@
-del "%userprofile%\Start Menu\Programs\Startup\WTNews.lnk"
+del "%userprofile%\Start Menu\Programs\Startup\WTNewsShortcut.bat"

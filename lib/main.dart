@@ -6,7 +6,6 @@ import 'package:dio/dio.dart';
 import 'package:firebase_dart/firebase_dart.dart';
 import 'package:firebase_dart_flutter/firebase_dart_flutter.dart';
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -19,22 +18,23 @@ import 'package:wtnews/pages/loading.dart';
 import 'package:wtnews/providers.dart';
 import 'package:wtnews/services/dsn.dart';
 import 'package:wtnews/services/firebase_data.dart';
-import 'package:wtnews/services/utility.dart';
 import 'package:wtnews/widgets/top_widget.dart';
 
-late FirebaseApp app;
-String pathToVersion =
+late final FirebaseApp app;
+final String pathToVersion =
     '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\install\\version.txt';
-String pathToShortcut =
-    '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\install\\addShortcut.ps1';
-String newSound = p.joinAll([
+final String pathToEcho =
+    '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\manifest\\echo.bat';
+final String pathToShortcut =
+    '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\manifest\\WTNewsShortcut.bat';
+final String newSound = p.joinAll([
   p.dirname(Platform.resolvedExecutable),
   'data\\flutter_assets\\assets\\sound\\new.wav'
 ]);
-late SharedPreferences prefs;
+late final SharedPreferences prefs;
 final provider = MyProvider();
 final deviceInfo = DeviceInfoPlugin();
-Dio dio = Dio();
+final Dio dio = Dio();
 final winToast = WinToast.instance();
 
 Future<void> main(List<String> args) async {
@@ -63,12 +63,6 @@ Future<void> main(List<String> args) async {
 
     await windowManager.show();
   });
-  if (prefs.getBool('startup') ?? false) {
-    if (!kDebugMode) {
-      await AppUtil.runPowerShellScript(
-          pathToShortcut, ['-ExecutionPolicy', 'Bypass', '-NonInteractive']);
-    }
-  }
   await winToast.initialize(
       appName: 'WTNews', productName: 'WTNews', companyName: 'Vonarian');
   await FirebaseDartFlutter.setup();

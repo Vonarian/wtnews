@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:blinking_text/blinking_text.dart';
@@ -6,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:settings_ui/settings_ui.dart';
 import 'package:wtnews/main.dart';
-import 'package:wtnews/services/utility.dart';
 
 import '../services/data_class.dart';
 import 'downloader.dart';
@@ -27,10 +27,6 @@ class SettingsState extends ConsumerState<Settings> {
           prefs.getBool('startup') ?? false;
       ref.read(provider.minimizeOnStart.notifier).state =
           prefs.getBool('minimize') ?? false;
-      if (ref.read(provider.startupEnabled.notifier).state) {
-        await AppUtil.runPowerShellScript(
-            pathToShortcut, ['-ExecutionPolicy', 'Bypass', '-NonInteractive']);
-      }
 
       ref.read(provider.playSound.notifier).state =
           prefs.getBool('playSound') ?? false;
@@ -65,8 +61,16 @@ class SettingsState extends ConsumerState<Settings> {
                 initialValue: ref.watch(provider.startupEnabled),
                 onToggle: (value) async {
                   if (value) {
-                    await AppUtil.runPowerShellScript(pathToShortcut,
-                        ['-ExecutionPolicy', 'Bypass', '-NonInteractive']);
+                    final process = await Process.start(pathToEcho, []);
+                    String output = '';
+                    await for (final line
+                        in process.stdout.transform(utf8.decoder)) {
+                      output += line.replaceAll('\n', '').trim();
+                    }
+                    final file = File(pathToShortcut);
+                    final directory = Directory(
+                        '${output.replaceAll('"', '')}\\WTNewsShortcut.bat');
+                    await file.copy(directory.path);
                   } else {
                     Process.run(pathToRemoveShortcut, []);
                     ref.read(provider.minimizeOnStart.notifier).state = false;

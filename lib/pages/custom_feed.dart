@@ -27,10 +27,11 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
   @override
   void initState() {
     super.initState();
-    loadFromPrefs();
 
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
+      await loadFromPrefs();
+
       if (ref.read(provider.customFeed) == null) {
         await dialog();
       }
@@ -90,7 +91,6 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
           return ContentDialog(
             title: const Text('Enter RSS Feed URL'),
             content: TextFormBox(
-              onChanged: (value) {},
               validator: (value) {
                 if (value != null) {
                   return 'Username can\'t be empty';
@@ -101,6 +101,13 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
                 return null;
               },
               controller: controller,
+              onFieldSubmitted: (value) async {
+                ref.read(provider.customFeed.notifier).state = value;
+                await prefs.setString('customFeed', value);
+                if (!mounted) return;
+                Navigator.of(context).pop();
+                rssFeed = await getForum(value);
+              },
             ),
             actions: [
               Button(
