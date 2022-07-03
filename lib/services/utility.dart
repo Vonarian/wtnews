@@ -3,7 +3,6 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
-import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:win32/win32.dart';
 
@@ -77,18 +76,9 @@ class AppUtil {
     final fileBool = File(path).existsSync();
 
     if (!fileBool) {
-      if (kDebugMode) {
-        print('WAV file missing.');
-      }
     } else {
       final soundFile = TEXT(path);
-      final result = PlaySound(soundFile, NULL, SND_FILENAME | SND_SYNC);
-
-      if (result != TRUE) {
-        if (kDebugMode) {
-          print('Sound playback failed.');
-        }
-      }
+      PlaySound(soundFile, NULL, SND_FILENAME | SND_SYNC);
       free(soundFile);
     }
   }
