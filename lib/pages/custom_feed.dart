@@ -50,7 +50,7 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
         saveToPrefs();
         await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
         if (ref.read(provider.playSound)) {
-          AppUtil().playSound(newSound);
+          AppUtil.playSound(newSound);
         }
       });
     });
@@ -60,10 +60,10 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
     p.dirname(Platform.resolvedExecutable),
     'data\\flutter_assets\\assets\\sound\\new.wav'
   ]);
-  String logPath =
-      p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\logs']);
 
   Future<void> loadFromPrefs() async {
+    ref.read(provider.customFeed.notifier).state =
+        prefs.getString('customFeed');
     newItemTitle.value = prefs.getString('lastTitleCustom');
   }
 

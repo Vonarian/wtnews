@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_dart/firebase_dart.dart';
 import 'package:fluent_ui/fluent_ui.dart' show Brightness, Color, Colors;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webfeed/domain/rss_feed.dart';
+import 'package:wtnews/services/firebase.dart';
 
 class MyProvider {
   final StateProvider<bool> startupEnabled = StateProvider((ref) => false);
@@ -32,4 +34,11 @@ class MyProvider {
     }
     return rssFeed;
   });
+  final versionFBProvider = StreamProvider<String>(
+    (ref) async* {
+      await for (Event e in PresenceService().getVersion()) {
+        yield e.snapshot.value.toString();
+      }
+    },
+  );
 }

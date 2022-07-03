@@ -66,7 +66,7 @@ class DataMineState extends ConsumerState<DataMine> {
           print(pubDate);
         }
 
-        AppUtil().playSound(newSound);
+        AppUtil.playSound(newSound);
         final toast = await winToast.showToast(
           title: 'New Data Mine',
           type: ToastType.text04,
@@ -82,7 +82,7 @@ class DataMineState extends ConsumerState<DataMine> {
       if (kDebugMode) {
         print('Null');
       }
-      AppUtil().playSound(newSound);
+      AppUtil.playSound(newSound);
       final toast = await winToast.showToast(
           title: 'New Data Mine',
           type: ToastType.text04,

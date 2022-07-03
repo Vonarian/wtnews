@@ -43,10 +43,10 @@ class PresenceService {
     });
   }
 
-  Future<String?> getVersion() async {
+  Stream<Event> getVersion() {
     final versionRef = database.reference().child('version');
-    String? version = (await versionRef.once()).value;
-    return version;
+    final sub = versionRef.onValue;
+    return sub;
   }
 
   void connect() {

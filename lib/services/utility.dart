@@ -73,7 +73,7 @@ class AppUtil {
   }
 
   ///Plays a wav file with given [path].
-  void playSound(String path) {
+  static void playSound(String path) {
     final fileBool = File(path).existsSync();
 
     if (!fileBool) {

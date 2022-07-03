@@ -13,7 +13,7 @@ import 'package:webfeed/domain/rss_item.dart';
 import 'package:win_toast/win_toast.dart';
 import 'package:wtnews/pages/custom_feed.dart';
 import 'package:wtnews/pages/settings.dart';
-import 'package:wtnews/services/presence.dart';
+import 'package:wtnews/services/firebase.dart';
 
 import '../main.dart';
 import '../services/data_class.dart';
@@ -69,7 +69,7 @@ class RSSViewState extends ConsumerState<RSSView>
         saveToPrefs();
         try {
           await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
-          if (ref.watch(provider.playSound)) AppUtil().playSound(newSound);
+          if (ref.watch(provider.playSound)) AppUtil.playSound(newSound);
         } catch (e, st) {
           await Sentry.captureException(e, stackTrace: st);
         }

@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:wtnews/services/presence.dart';
+import 'package:wtnews/services/firebase.dart';
 
 import '../main.dart';
 

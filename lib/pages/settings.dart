@@ -6,10 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:settings_ui/settings_ui.dart';
 import 'package:wtnews/main.dart';
-import 'package:wtnews/pages/downloader.dart';
 import 'package:wtnews/services/utility.dart';
 
 import '../services/data_class.dart';
+import 'downloader.dart';
 
 class Settings extends ConsumerStatefulWidget {
   const Settings({Key? key}) : super(key: key);
@@ -25,7 +25,8 @@ class SettingsState extends ConsumerState<Settings> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(provider.startupEnabled.notifier).state =
           prefs.getBool('startup') ?? false;
-
+      ref.read(provider.minimizeOnStart.notifier).state =
+          prefs.getBool('minimize') ?? false;
       if (ref.read(provider.startupEnabled.notifier).state) {
         await AppUtil.runPowerShellScript(
             pathToShortcut, ['-ExecutionPolicy', 'Bypass', '-NonInteractive']);
@@ -44,6 +45,7 @@ class SettingsState extends ConsumerState<Settings> {
 
   Widget settings(BuildContext context) {
     final theme = FluentTheme.of(context);
+    final firebaseVersion = ref.watch(provider.versionFBProvider);
     return SettingsList(
         platform: DevicePlatform.web,
         brightness: theme.brightness,
@@ -79,9 +81,9 @@ class SettingsState extends ConsumerState<Settings> {
               ),
               SettingsTile.switchTile(
                 initialValue: ref.watch(provider.minimizeOnStart),
-                onToggle: (value) {
+                onToggle: (value) async {
                   ref.read(provider.minimizeOnStart.notifier).state = value;
-                  prefs.setBool('minimize', value);
+                  await prefs.setBool('minimize', value);
                 },
                 title: const Text('Minimize on Startup'),
                 leading: Icon(FluentIcons.settings, color: theme.accentColor),
@@ -99,58 +101,108 @@ class SettingsState extends ConsumerState<Settings> {
                         : FluentIcons.volume_disabled,
                     color: theme.accentColor),
               ),
-              ref.watch(provider.versionProvider) != null &&
-                      int.parse(ref
-                              .watch(provider.versionProvider)!
-                              .replaceAll('.', '')) >
-                          int.parse(File(pathToVersion)
-                              .readAsStringSync()
-                              .replaceAll('.', ''))
-                  ? SettingsTile(
-                      description: const Text('Update Available'),
-                      title: BlinkText(
-                        'Download & Install Update',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
-                        ),
-                        duration: const Duration(seconds: 2),
+              firebaseVersion.when(data: (data) {
+                int fbVersion = int.parse(data.replaceAll('.', ''));
+                int currentVersion = int.parse(
+                    File(pathToVersion).readAsStringSync().replaceAll('.', ''));
+                final bool updateAvailable = fbVersion > currentVersion;
+                if (updateAvailable) {
+                  return SettingsTile(
+                    description: Text('v$data available'),
+                    title: BlinkText(
+                      'Download & Install Update',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
                       ),
-                      leading: Icon(FluentIcons.update_restore,
-                          color: theme.accentColor),
-                      onPressed: (ctx) {
-                        Navigator.pushReplacement(
-                            context,
-                            FluentPageRoute(
-                                builder: (context) => const Downloader()));
-                      },
-                    )
-                  : SettingsTile(
-                      description: const Text('There is no update available'),
-                      title: const Text(
-                        'Download & Install Update',
-                        style:
-                            TextStyle(decoration: TextDecoration.lineThrough),
-                      ),
-                      leading: Icon(FluentIcons.update_restore,
-                          color: theme.accentColor),
-                      onPressed: (ctx) {
-                        showDialog(
-                            context: ctx,
-                            builder: (ctx) => ContentDialog(
-                                  title: const Text('Update'),
-                                  content: const Text(
-                                      'There is no update available at this time.'),
-                                  actions: <Widget>[
-                                    TextButton(
-                                      child: const Text('OK'),
-                                      onPressed: () => Navigator.pop(ctx),
-                                    ),
-                                  ],
-                                ));
-                      },
+                      duration: const Duration(seconds: 2),
                     ),
+                    leading: Icon(FluentIcons.update_restore,
+                        color: theme.accentColor),
+                    onPressed: (ctx) {
+                      Navigator.pushReplacement(
+                          context,
+                          FluentPageRoute(
+                              builder: (context) => const Downloader()));
+                    },
+                  );
+                } else {
+                  return SettingsTile(
+                    description: const Text('There is no update available'),
+                    title: const Text(
+                      'Download & Install Update',
+                      style: TextStyle(decoration: TextDecoration.lineThrough),
+                    ),
+                    leading: Icon(FluentIcons.update_restore,
+                        color: theme.accentColor),
+                    onPressed: (ctx) {
+                      showDialog(
+                          context: ctx,
+                          builder: (ctx) => ContentDialog(
+                                title: const Text('Update'),
+                                content: const Text(
+                                    'There is no update available at this time.'),
+                                actions: <Widget>[
+                                  TextButton(
+                                    child: const Text('OK'),
+                                    onPressed: () => Navigator.pop(ctx),
+                                  ),
+                                ],
+                              ));
+                    },
+                  );
+                }
+              }, error: (e, st) {
+                return SettingsTile(
+                  description: const Text('Error fetching version'),
+                  title: const Text(
+                    'Download & Install Update',
+                    style: TextStyle(decoration: TextDecoration.lineThrough),
+                  ),
+                  leading: Icon(FluentIcons.update_restore,
+                      color: theme.accentColor),
+                  onPressed: (ctx) {
+                    showDialog(
+                        context: ctx,
+                        builder: (ctx) => ContentDialog(
+                              title: const Text('Update'),
+                              content: const Text(
+                                  'Error fetching version. Please try again later.'),
+                              actions: <Widget>[
+                                TextButton(
+                                  child: const Text('OK'),
+                                  onPressed: () => Navigator.pop(ctx),
+                                ),
+                              ],
+                            ));
+                  },
+                );
+              }, loading: () {
+                return SettingsTile(
+                  description: const Text('Fetching version...'),
+                  title: const Text(
+                    'Download & Install Update',
+                    style: TextStyle(decoration: TextDecoration.lineThrough),
+                  ),
+                  leading: Icon(FluentIcons.update_restore,
+                      color: theme.accentColor),
+                  onPressed: (ctx) {
+                    showDialog(
+                        context: ctx,
+                        builder: (ctx) => ContentDialog(
+                              title: const Text('Update'),
+                              content: const Text('Fetching version...'),
+                              actions: <Widget>[
+                                TextButton(
+                                  child: const Text('OK'),
+                                  onPressed: () => Navigator.pop(ctx),
+                                ),
+                              ],
+                            ));
+                  },
+                );
+              }),
             ],
           ),
           SettingsSection(

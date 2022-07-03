@@ -60,15 +60,15 @@ Future<void> main(List<String> args) async {
           color: const Color(0xCC222222),
           dark: true);
     }
-    if (prefs.getBool('startup') ?? false) {
-      if (!kDebugMode) {
-        await AppUtil.runPowerShellScript(
-            pathToShortcut, ['-ExecutionPolicy', 'Bypass', '-NonInteractive']);
-      }
-    }
+
     await windowManager.show();
   });
-
+  if (prefs.getBool('startup') ?? false) {
+    if (!kDebugMode) {
+      await AppUtil.runPowerShellScript(
+          pathToShortcut, ['-ExecutionPolicy', 'Bypass', '-NonInteractive']);
+    }
+  }
   await winToast.initialize(
       appName: 'WTNews', productName: 'WTNews', companyName: 'Vonarian');
   await FirebaseDartFlutter.setup();
@@ -89,7 +89,7 @@ Future<void> main(List<String> args) async {
         options.reportPackages = true;
         options.release = 'WTNews@${file.readAsStringSync()}';
         options.tracesSampler = (samplingContext) {
-          return 1.0;
+          return 0.6;
         };
       },
     );
