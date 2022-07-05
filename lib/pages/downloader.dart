@@ -49,6 +49,7 @@ class DownloaderState extends State<Downloader>
     await windowManager.setMinimumSize(const Size(230, 300));
     await windowManager.setMaximumSize(const Size(600, 600));
     await windowManager.setSize(const Size(230, 300));
+    await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
     await windowManager.center();
     try {
       Data data = await Data.getData();
@@ -100,7 +101,7 @@ class DownloaderState extends State<Downloader>
                 'Do not close the application until the update process is finished');
         text = 'Installing';
         setState(() {});
-        await Process.run(installer, [tempWtnews.path]);
+        await Process.run(installer, [tempWtnews.path], runInShell: true);
       }).timeout(const Duration(minutes: 8));
     } catch (e, st) {
       if (!mounted) return;
@@ -120,6 +121,7 @@ class DownloaderState extends State<Downloader>
               },
               label: 'Retry',
             ),
+            extended: true,
           ));
       windowManager.setSize(const Size(600, 600));
       await Sentry.captureException(e, stackTrace: st);

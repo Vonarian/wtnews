@@ -36,6 +36,7 @@ final provider = MyProvider();
 final deviceInfo = DeviceInfoPlugin();
 final Dio dio = Dio();
 final winToast = WinToast.instance();
+late final String appVersion;
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,7 +73,7 @@ Future<void> main(List<String> args) async {
     Sentry.configureScope((scope) => scope.setUser(SentryUser(
         username: prefs.getString('userName'),
         ipAddress: scope.user?.ipAddress)));
-    final file = File(pathToVersion);
+    appVersion = await File(pathToVersion).readAsString();
 
     await SentryFlutter.init(
       (options) {
@@ -81,7 +82,7 @@ Future<void> main(List<String> args) async {
         options.enableAutoSessionTracking = true;
         options.enableOutOfMemoryTracking = true;
         options.reportPackages = true;
-        options.release = 'WTNews@${file.readAsStringSync()}';
+        options.release = 'WTNews@$appVersion';
         options.tracesSampler = (samplingContext) {
           return 0.6;
         };

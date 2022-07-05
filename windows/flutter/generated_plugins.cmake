@@ -5,7 +5,6 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   dynamic_color
   flutter_acrylic
-  hotkey_manager
   screen_retriever
   sentry_flutter
   system_theme

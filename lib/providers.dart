@@ -36,8 +36,15 @@ class MyProvider {
   });
   final versionFBProvider = StreamProvider<String>(
     (ref) async* {
-      await for (Event e in PresenceService().getVersion()) {
+      await for (Event e in presenceService.getVersion()) {
         yield e.snapshot.value.toString();
+      }
+    },
+  );
+  final devMessageProvider = StreamProvider<String?>(
+    (ref) async* {
+      await for (Event e in presenceService.getDevMessage()) {
+        yield e.snapshot.value as String?;
       }
     },
   );

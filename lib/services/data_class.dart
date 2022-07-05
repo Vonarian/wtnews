@@ -1,5 +1,4 @@
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,13 +16,12 @@ class Message {
   final String? device;
 
   @override
-  const Message(
-      {required this.title,
-      required this.subtitle,
-      required this.id,
-      this.url,
-      this.operation,
-      this.device});
+  const Message({required this.title,
+    required this.subtitle,
+    required this.id,
+    this.url,
+    this.operation,
+    this.device});
 
   @override
   String toString() {
@@ -52,8 +50,8 @@ class Message {
     );
   }
 
-  static Future<void> getUserName(
-      BuildContext context, data, WidgetRef ref) async {
+  static Future<void> getUserName(BuildContext context, data,
+      WidgetRef ref) async {
     if (prefs.getString('userName') == null ||
         prefs.getString('userName') == '') {
       try {
@@ -66,8 +64,8 @@ class Message {
     }
   }
 
-  static Future<void> getFeedback(
-      BuildContext context, data, bool mounted) async {
+  static Future<void> getFeedback(BuildContext context, data,
+      bool mounted) async {
     try {
       if (prefs.getString('userName') != null &&
           prefs.getString('userName') != '') {
@@ -106,17 +104,18 @@ ContentDialog dialogBuilderUserName(BuildContext context, data, WidgetRef ref) {
           onPressed: () async {
             Navigator.of(context).pop();
             Sentry.configureScope(
-              (scope) => scope.user = SentryUser(
+                  (scope) async =>
+              await scope.setUser(SentryUser(
                   username: ref.watch(provider.userNameProvider),
-                  ipAddress: scope.user?.ipAddress),
+                  ipAddress: scope.user?.ipAddress)),
             );
 
             await prefs.setString(
                 'userName', ref.watch(provider.userNameProvider) ?? '');
-            await PresenceService().configureUserPresence(
+            await presenceService.configureUserPresence(
                 (await deviceInfo.windowsInfo).computerName,
                 prefs.getBool('startup') ?? false,
-                File(pathToVersion).readAsStringSync());
+                appVersion);
           },
           child: const Text('Save'))
     ],
@@ -160,8 +159,12 @@ ContentDialog dialogBuilderFeedback(BuildContext context, data, bool mounted) {
 
               await Sentry.captureUserFeedback(feedback);
               if (!mounted) return;
-              showSnackbar(context,
-                  const Snackbar(content: Text('Feedback sent, thanks!')));
+              showSnackbar(
+                  context,
+                  const Snackbar(
+                    content: Text('Feedback sent, thanks!'),
+                    extended: true,
+                  ));
             }
           },
           child: const Text('Save'))

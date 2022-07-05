@@ -49,6 +49,12 @@ class PresenceService {
     return sub;
   }
 
+  Stream<Event> getDevMessage() {
+    final versionRef = database.reference().child('message');
+    final sub = versionRef.onValue;
+    return sub;
+  }
+
   void connect() {
     database.goOnline();
   }
@@ -60,3 +66,5 @@ class PresenceService {
     database.goOffline();
   }
 }
+
+final PresenceService presenceService = PresenceService();

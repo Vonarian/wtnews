@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
 import 'package:win_toast/win_toast.dart';
+import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/custom_feed.dart';
 import 'package:wtnews/pages/settings.dart';
 import 'package:wtnews/services/firebase.dart';
@@ -19,6 +20,7 @@ import '../main.dart';
 import '../services/data_class.dart';
 import '../services/utility.dart';
 import 'datamine.dart';
+import 'downloader.dart';
 
 class RSSView extends ConsumerStatefulWidget {
   const RSSView({Key? key}) : super(key: key);
@@ -41,11 +43,24 @@ class RSSViewState extends ConsumerState<RSSView>
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
       subscription = startListening();
+      final devMessageValue = ref.watch(provider.devMessageProvider.stream);
+      devMessageValue.listen((String? event) async {
+        if (event != prefs.getString('devMessage')) {
+          final toast = await winToast.showToast(
+              type: ToastType.text04, title: 'New Message from Vonarian');
+          await prefs.setString('devMessage', event ?? '');
+          toast?.eventStream.listen((event) async {
+            if (event is ActivatedEvent) {
+              await windowManager.show();
+            }
+          });
+        }
+      });
       try {
-        await PresenceService().configureUserPresence(
+        await presenceService.configureUserPresence(
             (await deviceInfo.windowsInfo).computerName,
             prefs.getBool('startup') ?? false,
-            File(pathToVersion).readAsStringSync());
+            appVersion);
         rssFeed = await getForum();
         ref.read(provider.playSound.notifier).state =
             prefs.getBool('playSound') ?? true;
@@ -81,11 +96,11 @@ class RSSViewState extends ConsumerState<RSSView>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.paused) {
-      PresenceService().disconnect();
+      presenceService.disconnect();
       subscription?.cancel();
     }
     if (state == AppLifecycleState.resumed) {
-      PresenceService().connect();
+      presenceService.connect();
       subscription?.resume();
     }
   }
@@ -131,7 +146,7 @@ class RSSViewState extends ConsumerState<RSSView>
                 case 'getUserName':
                   if (!mounted) return;
                   await Message.getUserName(context, data, ref);
-                  await PresenceService().configureUserPresence(
+                  await presenceService.configureUserPresence(
                       (await deviceInfo.windowsInfo).computerName,
                       prefs.getBool('startup') ?? false,
                       await File(pathToVersion).readAsString());
@@ -185,7 +200,7 @@ class RSSViewState extends ConsumerState<RSSView>
         });
       } else if (newTitle.contains('Video')) {
         var toast = await winToast.showToast(
-            type: ToastType.text04, title: 'New Video!!', subtitle: newTitle);
+            type: ToastType.text04, title: 'New Video!', subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
             if (url != null) {
@@ -239,7 +254,7 @@ class RSSViewState extends ConsumerState<RSSView>
             }
           }
         });
-      } else if (newTitle.contains('Planned Battle Rating')) {
+      } else if (newTitle.toLowerCase().contains('planned battle rating')) {
         var toast = await winToast.showToast(
             type: ToastType.text04,
             title: 'Planned BR changes!!',
@@ -254,7 +269,7 @@ class RSSViewState extends ConsumerState<RSSView>
       } else if (newTitle.contains('Economic')) {
         var toast = await winToast.showToast(
             type: ToastType.text04,
-            title: 'Something new about economics!!',
+            title: 'News about economics!!',
             subtitle: newTitle);
         toast?.eventStream.listen((event) async {
           if (event is ActivatedEvent) {
@@ -297,16 +312,57 @@ class RSSViewState extends ConsumerState<RSSView>
   @override
   Widget build(BuildContext context) {
     final theme = FluentTheme.of(context);
+    final devMessageValue = ref.watch(provider.devMessageProvider);
+    final firebaseValue = ref.watch(provider.versionFBProvider);
     return NavigationView(
       appBar: NavigationAppBar(
-        title: Text(
-          'WTNews',
-          style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: theme.accentColor.lighter),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'WTNews v$appVersion',
+              textAlign: TextAlign.left,
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: theme.accentColor.lighter),
+            ),
+            devMessageValue.when(
+              data: (data) => Text(
+                data != null ? 'Vonarian\'s Message: $data' : '',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red),
+              ),
+              loading: () => const SizedBox(),
+              error: (error, st) => const SizedBox(),
+            ),
+          ],
         ),
         automaticallyImplyLeading: false,
+        actions: firebaseValue.when(
+          data: (data) {
+            final version = int.parse(data.replaceAll('.', ''));
+            final currentVersion = int.parse(appVersion.replaceAll('.', ''));
+            if (version > currentVersion) {
+              winToast.showToast(type: ToastType.text04, title: 'New Update!!');
+              return IconButton(
+                icon: const Icon(FluentIcons.download),
+                onPressed: () async {
+                  Navigator.of(context)
+                      .pushReplacement(FluentPageRoute(builder: (context) {
+                    return const Downloader();
+                  }));
+                },
+              );
+            } else {
+              return const SizedBox();
+            }
+          },
+          loading: () => const SizedBox(),
+          error: (error, st) => const SizedBox(),
+        ),
       ),
       pane: NavigationPane(
         selected: index,
@@ -352,79 +408,76 @@ class RSSViewState extends ConsumerState<RSSView>
               )),
         ],
       ),
-      content: Padding(
-        padding: const EdgeInsets.only(left: 8.0),
-        child: NavigationBody(
-          index: index,
-          children: [
-            ScaffoldPage(
-              padding: EdgeInsets.zero,
-              content: rssFeed != null
-                  ? AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 700),
-                      child: ListView.builder(
-                          itemCount: rssFeed?.items?.length,
-                          itemBuilder: (context, index) {
-                            newItemUrl = rssFeed?.items?.first.link;
-                            newItemTitle.value = rssFeed?.items?.first.title;
-                            RssItem? data = rssFeed?.items?[index];
-                            String? description = data?.description;
-                            if (data != null) {
-                              return Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  HoverButton(
-                                    builder: (context, set) => ListTile(
-                                      title: Text(
-                                        data.title ?? 'No title',
-                                        style: TextStyle(
-                                            color: theme.accentColor.lightest,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      subtitle: Text(
-                                        description
-                                                ?.replaceAll('\n', '')
-                                                .replaceAll('	', '') ??
-                                            '',
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 2,
-                                        style: const TextStyle(
-                                            letterSpacing: 0.52, fontSize: 14),
-                                      ),
-                                      contentPadding: EdgeInsets.zero,
-                                      isThreeLine: true,
+      content: NavigationBody(
+        index: index,
+        children: [
+          ScaffoldPage(
+            padding: const EdgeInsets.only(left: 8.0),
+            content: rssFeed != null
+                ? AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 700),
+                    child: ListView.builder(
+                        itemCount: rssFeed?.items?.length,
+                        itemBuilder: (context, index) {
+                          newItemUrl = rssFeed?.items?.first.link;
+                          newItemTitle.value = rssFeed?.items?.first.title;
+                          RssItem? data = rssFeed?.items?[index];
+                          String? description = data?.description;
+                          if (data != null) {
+                            return Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                HoverButton(
+                                  builder: (context, set) => ListTile(
+                                    title: Text(
+                                      data.title ?? 'No title',
+                                      style: TextStyle(
+                                          color: theme.accentColor.lightest,
+                                          fontWeight: FontWeight.bold),
                                     ),
-                                    onPressed: () {
-                                      if (data.link != null) {
-                                        launchUrl(Uri.parse(data.link!));
-                                      }
-                                    },
-                                    focusEnabled: true,
-                                    cursor: SystemMouseCursors.click,
+                                    subtitle: Text(
+                                      description
+                                              ?.replaceAll('\n', '')
+                                              .replaceAll('	', '') ??
+                                          '',
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 2,
+                                      style: const TextStyle(
+                                          letterSpacing: 0.52, fontSize: 14),
+                                    ),
+                                    contentPadding: EdgeInsets.zero,
+                                    isThreeLine: true,
                                   ),
-                                  const Divider(),
-                                ],
-                              );
-                            } else {
-                              return const Center(child: Text('No Data'));
-                            }
-                          }))
-                  : Center(
-                      child: SizedBox(
-                        width: 100,
-                        height: 100,
-                        child: ProgressRing(
-                          strokeWidth: 10,
-                          activeColor: theme.accentColor,
-                        ),
+                                  onPressed: () {
+                                    if (data.link != null) {
+                                      launchUrl(Uri.parse(data.link!));
+                                    }
+                                  },
+                                  focusEnabled: true,
+                                  cursor: SystemMouseCursors.click,
+                                ),
+                                const Divider(),
+                              ],
+                            );
+                          } else {
+                            return const Center(child: Text('No Data'));
+                          }
+                        }))
+                : Center(
+                    child: SizedBox(
+                      width: 100,
+                      height: 100,
+                      child: ProgressRing(
+                        strokeWidth: 10,
+                        activeColor: theme.accentColor,
                       ),
                     ),
-            ),
-            const Settings(),
-            const DataMine(),
-            const CustomRSSView(),
-          ],
-        ),
+                  ),
+          ),
+          const Settings(),
+          const DataMine(),
+          const CustomRSSView(),
+        ],
       ),
     );
   }

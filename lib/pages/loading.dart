@@ -61,6 +61,7 @@ class LoadingState extends ConsumerState<Loading> {
                       ),
                     );
                   }),
+              extended: true,
             ));
 
         Future.delayed(const Duration(seconds: 4), () async {
@@ -73,9 +74,12 @@ class LoadingState extends ConsumerState<Loading> {
         if (!mounted) return;
 
         showSnackbar(
-            context,
-            Snackbar(
-                content: Text('Version: $version ___ Status: Up-to-date!')));
+          context,
+          Snackbar(
+            content: Text('Version: $version ___ Status: Up-to-date!'),
+            extended: true,
+          ),
+        );
         Future.delayed(const Duration(microseconds: 500), () async {
           Navigator.pushReplacement(
             context,
@@ -92,8 +96,10 @@ class LoadingState extends ConsumerState<Loading> {
       showSnackbar(
           context,
           Snackbar(
-              content: Text(
-                  'Version: $version ___ Status: Error checking for update!')));
+            content: Text(
+                'Version: $version ___ Status: Error checking for update!'),
+            extended: true,
+          ));
       await Sentry.captureException(e, stackTrace: st);
       Future.delayed(const Duration(seconds: 2), () async {
         Navigator.pushReplacement(

@@ -44,11 +44,13 @@ class SettingsState extends ConsumerState<Settings> {
     final firebaseVersion = ref.watch(provider.versionFBProvider);
     return SettingsList(
         platform: DevicePlatform.web,
+        contentPadding: const EdgeInsets.fromLTRB(40, 10, 40, 10),
         brightness: theme.brightness,
         darkTheme: SettingsThemeData(
-            settingsListBackground: Colors.transparent,
-            settingsSectionBackground: Colors.transparent,
-            tileHighlightColor: theme.accentColor.resolve(context)),
+          settingsListBackground: Colors.transparent,
+          settingsSectionBackground: Colors.transparent,
+          tileHighlightColor: theme.accentColor.resolve(context),
+        ),
         lightTheme: SettingsThemeData(
             settingsListBackground: Colors.transparent,
             settingsSectionBackground: Colors.transparent,
@@ -82,6 +84,7 @@ class SettingsState extends ConsumerState<Settings> {
                 title: const Text('Run at Startup'),
                 leading: Icon(FluentIcons.app_icon_default,
                     color: theme.accentColor),
+                activeSwitchColor: theme.accentColor.dark,
               ),
               SettingsTile.switchTile(
                 initialValue: ref.watch(provider.minimizeOnStart),
@@ -91,6 +94,7 @@ class SettingsState extends ConsumerState<Settings> {
                 },
                 title: const Text('Minimize on Startup'),
                 leading: Icon(FluentIcons.settings, color: theme.accentColor),
+                activeSwitchColor: theme.accentColor.dark,
               ),
               SettingsTile.switchTile(
                 initialValue: ref.watch(provider.playSound),
@@ -104,6 +108,7 @@ class SettingsState extends ConsumerState<Settings> {
                         ? FluentIcons.volume3
                         : FluentIcons.volume_disabled,
                     color: theme.accentColor),
+                activeSwitchColor: theme.accentColor.dark,
               ),
               firebaseVersion.when(data: (data) {
                 int fbVersion = int.parse(data.replaceAll('.', ''));
@@ -224,7 +229,9 @@ class SettingsState extends ConsumerState<Settings> {
                   width: 30,
                   height: 30,
                 ),
-                trailing: Icon(FluentIcons.info, color: theme.accentColor),
+                description: const Text(
+                    'Check for updates to the DataMine and notify you when a new one is available.'),
+                activeSwitchColor: theme.accentColor.dark,
               ),
               SettingsTile.switchTile(
                 initialValue: ref.watch(provider.additionalNotif),
@@ -233,6 +240,7 @@ class SettingsState extends ConsumerState<Settings> {
                   prefs.setBool('additionalNotif', value);
                 },
                 title: const Text('Tray and Greeting Notifications'),
+                activeSwitchColor: theme.accentColor.dark,
               ),
             ],
           ),
@@ -256,36 +264,8 @@ class SettingsState extends ConsumerState<Settings> {
   @override
   Widget build(BuildContext context) {
     return ScaffoldPage(
-      content: Flex(
-        direction: Axis.vertical,
-        children: [
-          Text(
-            'Current Version: ${File(pathToVersion).readAsStringSync()}',
-            style: TextStyle(
-              fontSize: 19,
-              color: Colors.red,
-            ),
-          ),
-          ref.watch(provider.versionProvider) != null &&
-                  int.parse(ref
-                          .watch(provider.versionProvider)!
-                          .replaceAll('.', '')) >
-                      int.parse(File(pathToVersion)
-                          .readAsStringSync()
-                          .replaceAll('.', ''))
-              ? BlinkText(
-                  'Latest version: ${ref.watch(provider.versionProvider)}',
-                  style: TextStyle(
-                    fontSize: 19,
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  duration: const Duration(seconds: 2),
-                )
-              : const SizedBox(),
-          Expanded(child: settings(context)),
-        ],
-      ),
+      padding: EdgeInsets.zero,
+      content: settings(context),
     );
   }
 }
