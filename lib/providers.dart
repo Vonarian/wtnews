@@ -25,10 +25,9 @@ class MyProvider {
     if (rssFeed.items != null) {
       rssFeed.items!.removeWhere((item) {
         var itemDescription = item.description;
-        bool? isDataMine = (itemDescription!.contains('Raw changes:') &&
-                itemDescription.contains('→') &&
-                itemDescription.contains('Current dev version')) ||
-            itemDescription.contains('	');
+        bool? isDataMine = itemDescription!.contains('Raw changes:') &&
+            itemDescription.contains('→') &&
+            itemDescription.contains('Current dev version');
         return !isDataMine;
       });
     }

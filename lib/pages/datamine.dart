@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,23 +19,6 @@ class DataMine extends ConsumerStatefulWidget {
 }
 
 class DataMineState extends ConsumerState<DataMine> {
-  Future<RssFeed> getDataMine() async {
-    Response response = await Dio()
-        .get('https://forum.warthunder.com/index.php?/discover/704.xml');
-    RssFeed rssFeed = RssFeed.parse(response.data);
-    if (rssFeed.items != null) {
-      rssFeed.items!.removeWhere((item) {
-        var itemDescription = item.description;
-        bool? isDataMine = (itemDescription!.contains('Raw changes:') &&
-                itemDescription.contains('→') &&
-                itemDescription.contains('Current dev version')) ||
-            itemDescription.contains('	');
-        return !isDataMine;
-      });
-    }
-    return rssFeed;
-  }
-
   @override
   initState() {
     super.initState();

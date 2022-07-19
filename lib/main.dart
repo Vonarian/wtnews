@@ -98,7 +98,7 @@ Future<void> main(List<String> args) async {
           title: 'Hi!');
     }
     runApp(ProviderScope(
-      child: App(startup: args.contains('startup'), child: const Loading()),
+      child: App(startup: args.isNotEmpty, child: const Loading()),
     ));
   }, (exception, stackTrace) async {
     await Sentry.captureException(exception, stackTrace: stackTrace);

@@ -84,7 +84,7 @@ class SettingsState extends ConsumerState<Settings> {
                 title: const Text('Run at Startup'),
                 leading: Icon(FluentIcons.app_icon_default,
                     color: theme.accentColor),
-                activeSwitchColor: theme.accentColor.dark,
+                activeSwitchColor: theme.accentColor.lightest,
               ),
               SettingsTile.switchTile(
                 initialValue: ref.watch(provider.minimizeOnStart),
@@ -94,7 +94,7 @@ class SettingsState extends ConsumerState<Settings> {
                 },
                 title: const Text('Minimize on Startup'),
                 leading: Icon(FluentIcons.settings, color: theme.accentColor),
-                activeSwitchColor: theme.accentColor.dark,
+                activeSwitchColor: theme.accentColor.lightest,
               ),
               SettingsTile.switchTile(
                 initialValue: ref.watch(provider.playSound),
@@ -108,7 +108,7 @@ class SettingsState extends ConsumerState<Settings> {
                         ? FluentIcons.volume3
                         : FluentIcons.volume_disabled,
                     color: theme.accentColor),
-                activeSwitchColor: theme.accentColor.dark,
+                activeSwitchColor: theme.accentColor.lightest,
               ),
               firebaseVersion.when(data: (data) {
                 int fbVersion = int.parse(data.replaceAll('.', ''));
@@ -231,7 +231,7 @@ class SettingsState extends ConsumerState<Settings> {
                 ),
                 description: const Text(
                     'Check for updates to the DataMine and notify you when a new one is available.'),
-                activeSwitchColor: theme.accentColor.dark,
+                activeSwitchColor: theme.accentColor.lightest,
               ),
               SettingsTile.switchTile(
                 initialValue: ref.watch(provider.additionalNotif),
@@ -240,7 +240,7 @@ class SettingsState extends ConsumerState<Settings> {
                   prefs.setBool('additionalNotif', value);
                 },
                 title: const Text('Tray and Greeting Notifications'),
-                activeSwitchColor: theme.accentColor.dark,
+                activeSwitchColor: theme.accentColor.lightest,
               ),
             ],
           ),

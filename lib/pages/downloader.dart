@@ -101,7 +101,8 @@ class DownloaderState extends State<Downloader>
                 'Do not close the application until the update process is finished');
         text = 'Installing';
         setState(() {});
-        await Process.run(installer, [tempWtnews.path], runInShell: true);
+        await Process.run(installer, [tempWtnews.path],
+            runInShell: true, workingDirectory: p.dirname(installer));
       }).timeout(const Duration(minutes: 8));
     } catch (e, st) {
       if (!mounted) return;

@@ -146,10 +146,6 @@ class RSSViewState extends ConsumerState<RSSView>
                 case 'getUserName':
                   if (!mounted) return;
                   await Message.getUserName(context, data, ref);
-                  await presenceService.configureUserPresence(
-                      (await deviceInfo.windowsInfo).computerName,
-                      prefs.getBool('startup') ?? false,
-                      await File(pathToVersion).readAsString());
                   break;
                 case 'getFeedback':
                   if (!mounted) return;
