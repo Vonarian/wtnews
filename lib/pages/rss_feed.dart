@@ -2,17 +2,19 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:contextmenu/contextmenu.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:local_notifier/local_notifier.dart';
 import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
-import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/custom_feed.dart';
 import 'package:wtnews/pages/settings.dart';
@@ -48,14 +50,12 @@ class RSSViewState extends ConsumerState<RSSView>
       final devMessageValue = ref.watch(provider.devMessageProvider.stream);
       devMessageValue.listen((String? event) async {
         if (event != widget.prefs.getString('devMessage')) {
-          final toast = await winToast.showToast(
-              type: ToastType.text04, title: 'New Message from Vonarian');
+          final toast = LocalNotification(title: 'New Message from Vonarian')
+            ..show();
           await widget.prefs.setString('devMessage', event ?? '');
-          toast?.eventStream.listen((event) async {
-            if (event is ActivatedEvent) {
-              await windowManager.show();
-            }
-          });
+          toast.onClick = () async {
+            windowManager.show();
+          };
         }
       });
       try {
@@ -164,17 +164,14 @@ class RSSViewState extends ConsumerState<RSSView>
         if (widget.prefs.getInt('id') != message.id) {
           if (message.device == (await deviceInfo.windowsInfo).computerName ||
               message.device == null) {
-            var toast = await winToast.showToast(
-                type: ToastType.text04,
-                title: message.title,
-                subtitle: message.subtitle);
-            toast?.eventStream.listen((event) async {
-              if (event is ActivatedEvent) {
-                if (message.url != null) {
-                  await launchUrl(Uri.parse(message.url!));
-                }
+            var toast =
+                LocalNotification(title: message.title, body: message.subtitle)
+                  ..show();
+            toast.onClick = () {
+              if (message.url != null) {
+                launchUrl(Uri.parse(message.url!));
               }
-            });
+            };
             if (message.operation != null) {
               switch (message.operation) {
                 case 'getUserName':
@@ -210,15 +207,14 @@ class RSSViewState extends ConsumerState<RSSView>
   Future<void> sendNotification(
       {required String? newTitle, required String? url}) async {
     if (newTitle != null) {
-      final toast = await winToast.showToast(
-          type: ToastType.text04,
-          title: 'New item in WarThunder news',
-          subtitle: newTitle);
-      toast?.eventStream.listen((event) async {
-        if (event is ActivatedEvent) {
-          await launchUrl(Uri.parse(url ?? 'https://warthunder.com/en'));
+      final toast = LocalNotification(
+          title: 'New item in WarThunder news', body: newTitle)
+        ..show();
+      toast.onClick = () {
+        if (url != null) {
+          launchUrl(Uri.parse(url));
         }
-      });
+      };
     }
   }
 
@@ -232,14 +228,21 @@ class RSSViewState extends ConsumerState<RSSView>
           Text(
             item.title,
             style: TextStyle(
-                color: theme.accentColor.lightest, fontWeight: FontWeight.bold),
+                color: theme.accentColor.lightest,
+                fontWeight: FontWeight.bold,
+                fontSize: 20),
             textAlign: TextAlign.left,
           ),
-          Text(
-            item.description,
-            overflow: TextOverflow.fade,
-            style: const TextStyle(letterSpacing: 0.52, fontSize: 14),
-            maxLines: 4,
+          Flexible(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Text(
+                item.description,
+                overflow: TextOverflow.fade,
+                style: const TextStyle(letterSpacing: 0.52, fontSize: 14),
+                maxLines: 4,
+              ),
+            ),
           ),
         ],
       )),
@@ -354,7 +357,7 @@ class RSSViewState extends ConsumerState<RSSView>
             final version = int.parse(data.replaceAll('.', ''));
             final currentVersion = int.parse(appVersion.replaceAll('.', ''));
             if (version > currentVersion) {
-              winToast.showToast(type: ToastType.text04, title: 'New Update!!');
+              LocalNotification(title: 'New Update!!').show();
               return IconButton(
                 icon: const Icon(FluentIcons.download),
                 onPressed: () async {
@@ -391,13 +394,28 @@ class RSSViewState extends ConsumerState<RSSView>
             ),
           ),
           PaneItem(
-              icon: const Icon(FluentIcons.settings),
-              title: const Text(
-                'Settings',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              )),
+            icon: const Icon(FluentIcons.settings),
+            title: const Text(
+              'Settings',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            infoBadge: firebaseValue.when(
+              data: (data) {
+                final version = int.parse(data.replaceAll('.', ''));
+                final currentVersion =
+                    int.parse(appVersion.replaceAll('.', ''));
+                if (version > currentVersion) {
+                  return const InfoBadge(source: Text('!'));
+                } else {
+                  return null;
+                }
+              },
+              loading: () => null,
+              error: (error, st) => null,
+            ),
+          ),
           PaneItem(
               icon: const Icon(FluentIcons.database),
               title: const Text(
@@ -447,13 +465,45 @@ class RSSViewState extends ConsumerState<RSSView>
                             newItemTitle.value = newsList!.first.title;
 
                             return HoverButton(
-                              builder: (context, set) => _buildGradient(
-                                  _buildCard(item, theme: theme),
-                                  item: item),
+                              builder: (context, set) => Container(
+                                color: set.isHovering ? Colors.grey[200] : null,
+                                child: ContextMenuArea(
+                                  builder: (context) {
+                                    return <Widget>[
+                                      HoverButton(
+                                        builder: (context, set2) {
+                                          late final Color color;
+                                          if (set2.isHovering) {
+                                            color = theme.accentColor
+                                                .withOpacity(0.11);
+                                          } else {
+                                            color =
+                                                theme.scaffoldBackgroundColor;
+                                          }
+                                          return ListTile(
+                                            title: const Text('Copy Link'),
+                                            contentPadding:
+                                                const EdgeInsets.only(left: 20),
+                                            tileColor: color,
+                                          );
+                                        },
+                                        onPressed: () async {
+                                          await Clipboard.setData(
+                                              ClipboardData(text: item.link));
+                                          if (!mounted) return;
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                    ];
+                                  },
+                                  child: _buildGradient(
+                                      _buildCard(item, theme: theme),
+                                      item: item),
+                                ),
+                              ),
                               onPressed: () {
                                 launchUrl(Uri.parse(item.link));
                               },
-                              focusEnabled: true,
                               cursor: SystemMouseCursors.click,
                             );
                           });

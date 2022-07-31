@@ -5,12 +5,12 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   dynamic_color
   flutter_acrylic
+  local_notifier
   screen_retriever
   sentry_flutter
   system_theme
   tray_manager
   url_launcher_windows
-  win_toast
   window_manager
 )
 

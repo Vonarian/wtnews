@@ -33,8 +33,6 @@ class SettingsState extends ConsumerState<Settings> {
 
       ref.read(provider.playSound.notifier).state =
           widget.prefs.getBool('playSound') ?? false;
-      ref.read(provider.additionalNotif.notifier).state =
-          widget.prefs.getBool('additionalNotif') ?? false;
       ref.read(provider.customFeed.notifier).state =
           widget.prefs.getString('customFeed');
       ref.read(provider.checkDataMine.notifier).state =
@@ -233,16 +231,7 @@ class SettingsState extends ConsumerState<Settings> {
                   height: 30,
                 ),
                 description: const Text(
-                    'Check for updates to the DataMine and notify you when a new one is available.'),
-                activeSwitchColor: theme.accentColor.lightest,
-              ),
-              SettingsTile.switchTile(
-                initialValue: ref.watch(provider.additionalNotif),
-                onToggle: (value) {
-                  ref.read(provider.additionalNotif.notifier).state = value;
-                  widget.prefs.setBool('additionalNotif', value);
-                },
-                title: const Text('Tray and Greeting Notifications'),
+                    'WTNews Checks for updates of data mines and notifies you when a new one is available.'),
                 activeSwitchColor: theme.accentColor.lightest,
               ),
             ],

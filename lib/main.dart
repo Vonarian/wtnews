@@ -8,11 +8,11 @@ import 'package:firebase_dart_flutter/firebase_dart_flutter.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:local_notifier/local_notifier.dart';
 import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:system_info2/system_info2.dart';
-import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/loading.dart';
 import 'package:wtnews/providers.dart';
@@ -34,7 +34,6 @@ final String newSound = p.joinAll([
 final provider = MyProvider();
 final deviceInfo = DeviceInfoPlugin();
 final Dio dio = Dio();
-final winToast = WinToast.instance();
 late final String appVersion;
 
 Future<void> main(List<String> args) async {
@@ -63,8 +62,8 @@ Future<void> main(List<String> args) async {
 
     await windowManager.show();
   });
-  await winToast.initialize(
-      appName: 'WTNews', productName: 'WTNews', companyName: 'Vonarian');
+  await localNotifier.setup(
+      appName: 'WTNews', shortcutPolicy: ShortcutPolicy.ignore);
   await FirebaseDartFlutter.setup();
   app = await Firebase.initializeApp(
       options: FirebaseOptions.fromMap(firebaseConfig), name: 'wtnews-54364');
@@ -73,7 +72,6 @@ Future<void> main(List<String> args) async {
         username: prefs.getString('userName'),
         ipAddress: scope.user?.ipAddress)));
     appVersion = await File(pathToVersion).readAsString();
-
     await SentryFlutter.init(
       (options) {
         options.dsn = dsn;
@@ -87,15 +85,6 @@ Future<void> main(List<String> args) async {
         };
       },
     );
-    if (prefs.getString('userName') != null &&
-        prefs.getString('userName') != '' &&
-        prefs.getBool('additionalNotif') != null &&
-        prefs.getBool('additionalNotif')!) {
-      winToast.showToast(
-          type: ToastType.text04,
-          subtitle: 'Welcome back ${prefs.getString('userName')} :)',
-          title: 'Hi!');
-    }
     runApp(ProviderScope(
       overrides: [provider.prefsProvider.overrideWithValue(prefs)],
       child: App(startup: args.isNotEmpty, child: Loading(prefs)),

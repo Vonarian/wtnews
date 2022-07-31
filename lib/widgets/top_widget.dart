@@ -5,12 +5,12 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:fluent_ui/fluent_ui.dart' hide MenuItem;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:local_notifier/local_notifier.dart';
 import 'package:system_theme/system_theme.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
-import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../main.dart';
@@ -112,31 +112,25 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
         }
 
         AppUtil.playSound(newSound);
-        final toast = await winToast.showToast(
+        final toast = LocalNotification(
           title: 'New Data Mine',
-          type: ToastType.text04,
-          subtitle: 'Click to launch in browser',
-        );
-        toast?.eventStream.listen((event) {
-          if (event is ActivatedEvent) {
-            launchUrl(Uri.parse(url));
-          }
-        });
+          body: 'Click to launch in browser',
+        )..show();
+        toast.onClick = () {
+          launchUrl(Uri.parse(url));
+        };
       }
     } else {
       if (kDebugMode) {
         print('Null');
       }
       AppUtil.playSound(newSound);
-      final toast = await winToast.showToast(
-          title: 'New Data Mine',
-          type: ToastType.text04,
-          subtitle: 'New Data Mine from gszabi');
-      toast?.eventStream.listen((event) {
-        if (event is ActivatedEvent) {
-          launchUrl(Uri.parse(url));
-        }
-      });
+      final toast = LocalNotification(
+          title: 'New Data Mine', body: 'Click to launch in browser')
+        ..show();
+      toast.onClick = () {
+        launchUrl(Uri.parse(url));
+      };
     }
   }
 
@@ -158,6 +152,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
         theme: ThemeData(
             brightness: ref.watch(provider.systemThemeProvider),
             visualDensity: VisualDensity.adaptivePlatformDensity,
+            cardColor: Colors.transparent,
             accentColor:
                 ref.watch(provider.systemColorProvider).toAccentColor(),
             navigationPaneTheme: NavigationPaneThemeData(
@@ -224,20 +219,11 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
 
   @override
   void onWindowMinimize() {
-    final prefs = ref.read(provider.prefsProvider);
-
     windowManager.hide();
     setState(() {
       focused = false;
     });
     _trayInit();
-    if (prefs.getBool('additionalNotif') != null &&
-        prefs.getBool('additionalNotif')!) {
-      winToast.showToast(
-          type: ToastType.text04,
-          title: 'WTNews is minimized to tray',
-          subtitle: 'Check tray to open app again');
-    }
   }
 
   @override

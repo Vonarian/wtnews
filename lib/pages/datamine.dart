@@ -1,13 +1,15 @@
 import 'dart:async';
 
+import 'package:contextmenu/contextmenu.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:local_notifier/local_notifier.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
-import 'package:win_toast/win_toast.dart';
 
 import '../main.dart';
 import '../services/utility.dart';
@@ -52,31 +54,25 @@ class DataMineState extends ConsumerState<DataMine> {
         }
 
         AppUtil.playSound(newSound);
-        final toast = await winToast.showToast(
+        final toast = LocalNotification(
           title: 'New Data Mine',
-          type: ToastType.text04,
-          subtitle: 'Click to launch in browser',
-        );
-        toast?.eventStream.listen((event) {
-          if (event is ActivatedEvent) {
-            launchUrl(Uri.parse(url));
-          }
-        });
+          body: 'Click to launch in browser',
+        )..show();
+        toast.onClick = () {
+          launchUrl(Uri.parse(url));
+        };
       }
     } else {
       if (kDebugMode) {
         print('Null');
       }
       AppUtil.playSound(newSound);
-      final toast = await winToast.showToast(
-          title: 'New Data Mine',
-          type: ToastType.text04,
-          subtitle: 'New Data Mine from gszabi');
-      toast?.eventStream.listen((event) {
-        if (event is ActivatedEvent) {
-          launchUrl(Uri.parse(url));
-        }
-      });
+      final toast = LocalNotification(
+          title: 'New Data Mine', body: 'New Data Mine from gszabi')
+        ..show();
+      toast.onClick = () {
+        launchUrl(Uri.parse(url));
+      };
     }
   }
 
@@ -106,43 +102,73 @@ class DataMineState extends ConsumerState<DataMine> {
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           HoverButton(
-                            builder: (context, set) => ListTile(
-                              title: Row(
-                                children: [
-                                  Text(
-                                    data.title ?? '',
-                                    style: TextStyle(
-                                        color: theme.accentColor.light,
-                                        fontWeight: FontWeight.bold),
+                            builder: (context, set) => Container(
+                              color: set.isHovering ? Colors.grey[200] : null,
+                              child: ContextMenuArea(
+                                builder: (context) {
+                                  return <Widget>[
+                                    HoverButton(
+                                      builder: (context, set2) {
+                                        late final Color color;
+                                        if (set2.isHovering) {
+                                          color = theme.accentColor
+                                              .withOpacity(0.11);
+                                        } else {
+                                          color = theme.scaffoldBackgroundColor;
+                                        }
+                                        return ListTile(
+                                          title: const Text('Copy Link'),
+                                          contentPadding:
+                                              const EdgeInsets.only(left: 20),
+                                          tileColor: color,
+                                        );
+                                      },
+                                      onPressed: () async {
+                                        await Clipboard.setData(
+                                            ClipboardData(text: data.link));
+                                        if (!mounted) return;
+                                        Navigator.of(context).pop();
+                                      },
+                                      focusEnabled: true,
+                                      cursor: SystemMouseCursors.click,
+                                    ),
+                                  ];
+                                },
+                                child: ListTile(
+                                  title: Row(
+                                    children: [
+                                      Text(
+                                        data.title ?? '',
+                                        style: TextStyle(
+                                            color: theme.accentColor.light,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      Text(
+                                        ' 📰By gszabi99_HUN📰',
+                                        style: TextStyle(
+                                            color: theme.accentColor.lightest,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    ' 📰By gszabi99_HUN📰',
-                                    style: TextStyle(
-                                        color: theme.accentColor.lightest,
-                                        fontWeight: FontWeight.bold),
+                                  subtitle: Text(
+                                    description
+                                            ?.replaceAll('\n', '')
+                                            .replaceAll('	', '') ??
+                                        '',
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
+                                    style: const TextStyle(
+                                        letterSpacing: 0.52, fontSize: 14),
                                   ),
-                                ],
+                                  contentPadding: EdgeInsets.zero,
+                                  isThreeLine: true,
+                                ),
                               ),
-                              subtitle: Text(
-                                description
-                                        ?.replaceAll('\n', '')
-                                        .replaceAll('	', '') ??
-                                    '',
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 2,
-                                style: const TextStyle(
-                                    letterSpacing: 0.52, fontSize: 14),
-                              ),
-                              contentPadding: EdgeInsets.zero,
-                              isThreeLine: true,
                             ),
-                            onPressed: () {
-                              if (data.link != null) {
-                                launchUrl(Uri.parse(data.link!));
-                              }
+                            onPressed: () async {
+                              await launchUrl(Uri.parse(data.link!));
                             },
-                            focusEnabled: true,
-                            cursor: SystemMouseCursors.click,
                           ),
                           const Divider(),
                         ],

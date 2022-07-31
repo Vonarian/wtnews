@@ -5,12 +5,12 @@ import 'package:archive/archive.dart';
 import 'package:blinking_text/blinking_text.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart' show SnackBarAction;
+import 'package:local_notifier/local_notifier.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:tray_manager/tray_manager.dart' as tray;
-import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../main.dart';
@@ -41,11 +41,11 @@ class DownloaderState extends State<Downloader>
   }
 
   Future<void> downloadUpdate() async {
-    await winToast.showToast(
-        type: ToastType.text04,
-        title: 'Updating WTNews...',
-        subtitle:
-            'WTNews is downloading update, please do not close the application');
+    LocalNotification(
+            title: 'Updating WTNews...',
+            body:
+                'WTNews is downloading update, please do not close the application')
+        .show();
     await windowManager.setMinimumSize(const Size(230, 300));
     await windowManager.setMaximumSize(const Size(600, 600));
     await windowManager.setSize(const Size(230, 300));
@@ -94,11 +94,11 @@ class DownloaderState extends State<Downloader>
           'installer.bat'
         ]));
 
-        await winToast.showToast(
-            type: ToastType.text04,
-            title: 'Update process starting in a moment',
-            subtitle:
-                'Do not close the application until the update process is finished');
+        LocalNotification(
+                title: 'Update process starting in a moment',
+                body:
+                    'Do not close the application until the update process is finished')
+            .show();
         text = 'Installing';
         setState(() {});
         await Process.run(installer, [tempWtnews.path],
