@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:firebase_dart/database.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../main.dart';
+import '../../main.dart';
 import 'firebase_data.dart';
 
 class PresenceService {
@@ -12,8 +13,8 @@ class PresenceService {
   StreamSubscription? subscription;
   DatabaseReference? con;
 
-  Future<void> configureUserPresence(
-      String uid, bool startup, String version) async {
+  Future<void> configureUserPresence(String uid, bool startup, String version,
+      {required SharedPreferences prefs}) async {
     final uidRef = database.reference().child('presence').child(uid);
     final myConnectionsRef = uidRef.child('connected');
     final lastOnlineRef = uidRef.child('lastOnline');

@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
@@ -15,7 +16,9 @@ import '../main.dart';
 import '../services/utility.dart';
 
 class CustomRSSView extends ConsumerStatefulWidget {
-  const CustomRSSView({Key? key}) : super(key: key);
+  final SharedPreferences prefs;
+
+  const CustomRSSView(this.prefs, {Key? key}) : super(key: key);
 
   @override
   CustomRSSViewState createState() => CustomRSSViewState();
@@ -35,11 +38,9 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
       if (ref.read(provider.customFeed) == null) {
         await dialog();
       }
-      ref
-          .read(provider.playSound.notifier)
-          .state = prefs.getBool('playSound') ?? true;
+      ref.read(provider.playSound.notifier).state =
+          widget.prefs.getBool('playSound') ?? true;
       rssFeed = await getForum(ref.watch(provider.customFeed) ?? '');
-
 
       setState(() {});
     });
@@ -66,11 +67,9 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
   ]);
 
   Future<void> loadFromPrefs() async {
-    ref
-        .read(provider.customFeed.notifier)
-        .state =
-        prefs.getString('customFeed');
-    newItemTitle.value = prefs.getString('lastTitleCustom');
+    ref.read(provider.customFeed.notifier).state =
+        widget.prefs.getString('customFeed');
+    newItemTitle.value = widget.prefs.getString('lastTitleCustom');
   }
 
   Future<void> sendNotification(
@@ -107,10 +106,8 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
               },
               controller: controller,
               onFieldSubmitted: (value) async {
-                ref
-                    .read(provider.customFeed.notifier)
-                    .state = value;
-                await prefs.setString('customFeed', value);
+                ref.read(provider.customFeed.notifier).state = value;
+                await widget.prefs.setString('customFeed', value);
                 if (!mounted) return;
                 Navigator.of(context).pop();
                 rssFeed = await getForum(value);
@@ -120,11 +117,9 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
               Button(
                 child: const Text('Save'),
                 onPressed: () async {
-                  ref
-                      .read(provider.customFeed.notifier)
-                      .state =
+                  ref.read(provider.customFeed.notifier).state =
                       controller.text;
-                  await prefs.setString('customFeed', controller.text);
+                  await widget.prefs.setString('customFeed', controller.text);
                   if (!mounted) return;
                   Navigator.of(context).pop();
                 },
@@ -141,7 +136,7 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
   }
 
   Future<void> saveToPrefs() async {
-    await prefs.setString('lastTitleCustom', newItemTitle.value ?? '');
+    await widget.prefs.setString('lastTitleCustom', newItemTitle.value ?? '');
   }
 
   Future<RssFeed> getForum(String url) async {
@@ -167,9 +162,8 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           HoverButton(
-            builder: (context, set) =>
-                Text('Change feed URL',
-                    style: TextStyle(fontSize: 18, color: Colors.red)),
+            builder: (context, set) => Text('Change feed URL',
+                style: TextStyle(fontSize: 18, color: Colors.red)),
             onPressed: () async {
               await dialog();
               setState(() {});
@@ -179,16 +173,15 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
       ),
       content: rssFeed != null
           ? ListView.builder(
-          itemCount: rssFeed?.items?.length,
-          itemBuilder: (context, index) {
-            newItemTitle.value = rssFeed?.items?.first.title;
-            newItemUrl = rssFeed?.items?.first.link ?? '';
-            RssItem? data = rssFeed?.items?[index];
-            String? description = data?.description;
-            if (data != null) {
-              return HoverButton(
-                builder: (context, set) =>
-                    ListTile(
+              itemCount: rssFeed?.items?.length,
+              itemBuilder: (context, index) {
+                newItemTitle.value = rssFeed?.items?.first.title;
+                newItemUrl = rssFeed?.items?.first.link ?? '';
+                RssItem? data = rssFeed?.items?[index];
+                String? description = data?.description;
+                if (data != null) {
+                  return HoverButton(
+                    builder: (context, set) => ListTile(
                       title: Text(
                         data.title ?? 'No title',
                         style: TextStyle(
@@ -197,39 +190,38 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
                         maxLines: 1,
                       ),
                       subtitle: Text(
-                        description?.replaceAll('\n', '').replaceAll(
-                            '	', '') ??
+                        description?.replaceAll('\n', '').replaceAll('	', '') ??
                             '',
                         overflow: TextOverflow.ellipsis,
                         maxLines: 2,
                         style:
-                        const TextStyle(letterSpacing: 0.52, fontSize: 14),
+                            const TextStyle(letterSpacing: 0.52, fontSize: 14),
                       ),
                       contentPadding: EdgeInsets.zero,
                       isThreeLine: true,
                     ),
-                onPressed: () {
-                  if (data.link != null) {
-                    launchUrl(Uri.parse(data.link!));
-                  }
-                },
-                focusEnabled: true,
-                cursor: SystemMouseCursors.click,
-              );
-            } else {
-              return const Center(child: Text('No Data'));
-            }
-          })
+                    onPressed: () {
+                      if (data.link != null) {
+                        launchUrl(Uri.parse(data.link!));
+                      }
+                    },
+                    focusEnabled: true,
+                    cursor: SystemMouseCursors.click,
+                  );
+                } else {
+                  return const Center(child: Text('No Data'));
+                }
+              })
           : Center(
-        child: SizedBox(
-          width: 100,
-          height: 100,
-          child: ProgressRing(
-            strokeWidth: 10,
-            activeColor: theme.accentColor,
-          ),
-        ),
-      ),
+              child: SizedBox(
+                width: 100,
+                height: 100,
+                child: ProgressRing(
+                  strokeWidth: 10,
+                  activeColor: theme.accentColor,
+                ),
+              ),
+            ),
     );
   }
 }

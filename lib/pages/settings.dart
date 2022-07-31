@@ -6,13 +6,16 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:settings_ui/settings_ui.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wtnews/main.dart';
 
-import '../services/data_class.dart';
+import '../services/data/data_class.dart';
 import 'downloader.dart';
 
 class Settings extends ConsumerStatefulWidget {
-  const Settings({Key? key}) : super(key: key);
+  final SharedPreferences prefs;
+
+  const Settings(this.prefs, {Key? key}) : super(key: key);
 
   @override
   SettingsState createState() => SettingsState();
@@ -24,18 +27,18 @@ class SettingsState extends ConsumerState<Settings> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(provider.startupEnabled.notifier).state =
-          prefs.getBool('startup') ?? false;
+          widget.prefs.getBool('startup') ?? false;
       ref.read(provider.minimizeOnStart.notifier).state =
-          prefs.getBool('minimize') ?? false;
+          widget.prefs.getBool('minimize') ?? false;
 
       ref.read(provider.playSound.notifier).state =
-          prefs.getBool('playSound') ?? false;
+          widget.prefs.getBool('playSound') ?? false;
       ref.read(provider.additionalNotif.notifier).state =
-          prefs.getBool('additionalNotif') ?? false;
+          widget.prefs.getBool('additionalNotif') ?? false;
       ref.read(provider.customFeed.notifier).state =
-          prefs.getString('customFeed');
+          widget.prefs.getString('customFeed');
       ref.read(provider.checkDataMine.notifier).state =
-          prefs.getBool('checkDataMine') ?? false;
+          widget.prefs.getBool('checkDataMine') ?? false;
     });
   }
 
@@ -76,10 +79,10 @@ class SettingsState extends ConsumerState<Settings> {
                   } else {
                     Process.run(pathToRemoveShortcut, []);
                     ref.read(provider.minimizeOnStart.notifier).state = false;
-                    prefs.setBool('minimize', false);
+                    widget.prefs.setBool('minimize', false);
                   }
                   ref.read(provider.startupEnabled.notifier).state = value;
-                  prefs.setBool('startup', value);
+                  widget.prefs.setBool('startup', value);
                 },
                 title: const Text('Run at Startup'),
                 leading: Icon(FluentIcons.app_icon_default,
@@ -90,7 +93,7 @@ class SettingsState extends ConsumerState<Settings> {
                 initialValue: ref.watch(provider.minimizeOnStart),
                 onToggle: (value) async {
                   ref.read(provider.minimizeOnStart.notifier).state = value;
-                  await prefs.setBool('minimize', value);
+                  await widget.prefs.setBool('minimize', value);
                 },
                 title: const Text('Minimize on Startup'),
                 leading: Icon(FluentIcons.settings, color: theme.accentColor),
@@ -100,7 +103,7 @@ class SettingsState extends ConsumerState<Settings> {
                 initialValue: ref.watch(provider.playSound),
                 onToggle: (value) {
                   ref.read(provider.playSound.notifier).state = value;
-                  prefs.setBool('playSound', value);
+                  widget.prefs.setBool('playSound', value);
                 },
                 title: const Text('Play Sound'),
                 leading: Icon(
@@ -220,7 +223,7 @@ class SettingsState extends ConsumerState<Settings> {
               SettingsTile.switchTile(
                 initialValue: ref.watch(provider.checkDataMine),
                 onToggle: (value) async {
-                  prefs.setBool('checkDataMine', value);
+                  widget.prefs.setBool('checkDataMine', value);
                   ref.read(provider.checkDataMine.notifier).state = value;
                 },
                 title: const Text('DataMine Notifier'),
@@ -237,7 +240,7 @@ class SettingsState extends ConsumerState<Settings> {
                 initialValue: ref.watch(provider.additionalNotif),
                 onToggle: (value) {
                   ref.read(provider.additionalNotif.notifier).state = value;
-                  prefs.setBool('additionalNotif', value);
+                  widget.prefs.setBool('additionalNotif', value);
                 },
                 title: const Text('Tray and Greeting Notifications'),
                 activeSwitchColor: theme.accentColor.lightest,

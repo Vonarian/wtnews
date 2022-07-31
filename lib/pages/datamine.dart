@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
@@ -12,7 +13,9 @@ import '../main.dart';
 import '../services/utility.dart';
 
 class DataMine extends ConsumerStatefulWidget {
-  const DataMine({Key? key}) : super(key: key);
+  final SharedPreferences prefs;
+
+  const DataMine(this.prefs, {Key? key}) : super(key: key);
 
   @override
   DataMineState createState() => DataMineState();
@@ -24,11 +27,11 @@ class DataMineState extends ConsumerState<DataMine> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(provider.checkDataMine.notifier).state =
-          prefs.getBool('checkDataMine') ?? false;
+          widget.prefs.getBool('checkDataMine') ?? false;
     });
     lastPubDate.addListener(() async {
       await notify(lastPubDate.value!, newItemUrl!);
-      await prefs.setString('previous', lastPubDate.value!);
+      await widget.prefs.setString('previous', lastPubDate.value!);
     });
     Timer.periodic(const Duration(seconds: 10), (timer) async {
       if (!mounted) timer.cancel();
@@ -39,9 +42,9 @@ class DataMineState extends ConsumerState<DataMine> {
   }
 
   Future<void> notify(String pubDate, String url) async {
-    if (prefs.getString('previous') != null) {
-      if (prefs.getString('previous') != pubDate) {
-        String? previous = prefs.getString('previous');
+    if (widget.prefs.getString('previous') != null) {
+      if (widget.prefs.getString('previous') != pubDate) {
+        String? previous = widget.prefs.getString('previous');
         if (kDebugMode) {
           print('isNew');
           print(previous);

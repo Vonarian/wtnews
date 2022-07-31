@@ -60,6 +60,8 @@ dependencies:
   system_info2: ^2.0.4
   settings_ui:
     path: ../flutter-settings-ui
+  html: ^0.15.0
+  cached_network_image: ^3.2.1
 
 
 dev_dependencies:

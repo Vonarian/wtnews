@@ -3,9 +3,10 @@ import 'dart:developer';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:wtnews/services/firebase.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wtnews/services/data/firebase.dart';
 
-import '../main.dart';
+import '../../main.dart';
 
 class Message {
   final String title;
@@ -16,12 +17,13 @@ class Message {
   final String? device;
 
   @override
-  const Message({required this.title,
-    required this.subtitle,
-    required this.id,
-    this.url,
-    this.operation,
-    this.device});
+  const Message(
+      {required this.title,
+      required this.subtitle,
+      required this.id,
+      this.url,
+      this.operation,
+      this.device});
 
   @override
   String toString() {
@@ -50,8 +52,9 @@ class Message {
     );
   }
 
-  static Future<void> getUserName(BuildContext context, data,
-      WidgetRef ref) async {
+  static Future<void> getUserName(
+      BuildContext context, data, WidgetRef ref) async {
+    final prefs = ref.read(provider.prefsProvider);
     if (prefs.getString('userName') == null ||
         prefs.getString('userName') == '') {
       try {
@@ -64,12 +67,12 @@ class Message {
     }
   }
 
-  static Future<void> getFeedback(BuildContext context, data,
-      bool mounted) async {
+  static Future<void> getFeedback(BuildContext context, data, bool mounted,
+      {required SharedPreferences prefs}) async {
     try {
       if (prefs.getString('userName') != null &&
           prefs.getString('userName') != '') {
-        dialogBuilderFeedback(context, data, mounted);
+        dialogBuilderFeedback(context, data, mounted, prefs: prefs);
       }
     } catch (e, st) {
       await Sentry.captureException('Operation canceled.\n$e', stackTrace: st);
@@ -79,6 +82,8 @@ class Message {
 
 ContentDialog dialogBuilderUserName(BuildContext context, data, WidgetRef ref) {
   TextEditingController userNameController = TextEditingController();
+  final prefs = ref.read(provider.prefsProvider);
+
   return ContentDialog(
     content: TextFormBox(
       onChanged: (value) {},
@@ -104,8 +109,7 @@ ContentDialog dialogBuilderUserName(BuildContext context, data, WidgetRef ref) {
           onPressed: () async {
             Navigator.of(context).pop();
             Sentry.configureScope(
-                  (scope) async =>
-              await scope.setUser(SentryUser(
+              (scope) async => await scope.setUser(SentryUser(
                   username: ref.watch(provider.userNameProvider),
                   ipAddress: scope.user?.ipAddress)),
             );
@@ -115,14 +119,16 @@ ContentDialog dialogBuilderUserName(BuildContext context, data, WidgetRef ref) {
             await presenceService.configureUserPresence(
                 (await deviceInfo.windowsInfo).computerName,
                 prefs.getBool('startup') ?? false,
-                appVersion);
+                appVersion,
+                prefs: prefs);
           },
           child: const Text('Save'))
     ],
   );
 }
 
-ContentDialog dialogBuilderFeedback(BuildContext context, data, bool mounted) {
+ContentDialog dialogBuilderFeedback(BuildContext context, data, bool mounted,
+    {required SharedPreferences prefs}) {
   TextEditingController controller = TextEditingController();
   return ContentDialog(
     content: TextFormBox(

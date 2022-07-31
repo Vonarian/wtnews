@@ -30,6 +30,8 @@ class App extends ConsumerStatefulWidget {
 class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   @override
   void initState() {
+    final prefs = ref.read(provider.prefsProvider);
+
     super.initState();
     trayManager.addListener(this);
     windowManager.addListener(this);
@@ -99,6 +101,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   }
 
   Future<void> notify(String pubDate, String url) async {
+    final prefs = ref.read(provider.prefsProvider);
     if (prefs.getString('previous') != null) {
       if (prefs.getString('previous') != pubDate) {
         String? previous = prefs.getString('previous');
@@ -221,6 +224,8 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
 
   @override
   void onWindowMinimize() {
+    final prefs = ref.read(provider.prefsProvider);
+
     windowManager.hide();
     setState(() {
       focused = false;

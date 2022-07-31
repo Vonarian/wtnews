@@ -2,23 +2,25 @@ import 'package:dio/dio.dart';
 import 'package:firebase_dart/firebase_dart.dart';
 import 'package:fluent_ui/fluent_ui.dart' show Brightness, Color, Colors;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webfeed/domain/rss_feed.dart';
-import 'package:wtnews/services/firebase.dart';
+import 'package:wtnews/services/data/firebase.dart';
 
 class MyProvider {
-  final StateProvider<bool> startupEnabled = StateProvider((ref) => false);
-  final StateProvider<bool> playSound = StateProvider((ref) => true);
-  final StateProvider<bool> minimizeOnStart = StateProvider((ref) => false);
-  final StateProvider<bool> checkDataMine = StateProvider((ref) => false);
-  final StateProvider<bool> additionalNotif = StateProvider((ref) => false);
-  final StateProvider<String?> customFeed = StateProvider((ref) => null);
-  final versionProvider = StateProvider<String?>((ref) => null);
+  final StateProvider<bool> startupEnabled = StateProvider((_) => false);
+  final StateProvider<bool> playSound = StateProvider((_) => true);
+  final StateProvider<bool> minimizeOnStart = StateProvider((_) => false);
+  final StateProvider<bool> checkDataMine = StateProvider((_) => false);
+  final prefsProvider =
+      Provider<SharedPreferences>((_) => throw UnimplementedError());
+  final StateProvider<bool> additionalNotif = StateProvider((_) => false);
+  final StateProvider<String?> customFeed = StateProvider((_) => null);
+  final versionProvider = StateProvider<String?>((_) => null);
   late final StateProvider<String?> userNameProvider;
-  final systemColorProvider = StateProvider<Color>((ref) => Colors.red);
-  final systemThemeProvider =
-      StateProvider<Brightness>((ref) => Brightness.dark);
+  final systemColorProvider = StateProvider<Color>((_) => Colors.red);
+  final systemThemeProvider = StateProvider<Brightness>((_) => Brightness.dark);
 
-  final dataMineFutureProvider = FutureProvider<RssFeed>((ref) async {
+  final dataMineFutureProvider = FutureProvider<RssFeed>((_) async {
     Response response = await Dio()
         .get('https://forum.warthunder.com/index.php?/discover/704.xml');
     RssFeed rssFeed = RssFeed.parse(response.data);
@@ -34,14 +36,14 @@ class MyProvider {
     return rssFeed;
   });
   final versionFBProvider = StreamProvider<String>(
-    (ref) async* {
+    (_) async* {
       await for (Event e in presenceService.getVersion()) {
         yield e.snapshot.value.toString();
       }
     },
   );
   final devMessageProvider = StreamProvider<String?>(
-    (ref) async* {
+    (_) async* {
       await for (Event e in presenceService.getDevMessage()) {
         yield e.snapshot.value as String?;
       }

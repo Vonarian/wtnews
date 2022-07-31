@@ -16,8 +16,8 @@ import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/loading.dart';
 import 'package:wtnews/providers.dart';
-import 'package:wtnews/services/dsn.dart';
-import 'package:wtnews/services/firebase_data.dart';
+import 'package:wtnews/services/data/dsn.dart';
+import 'package:wtnews/services/data/firebase_data.dart';
 import 'package:wtnews/widgets/top_widget.dart';
 
 late final FirebaseApp app;
@@ -31,7 +31,6 @@ final String newSound = p.joinAll([
   p.dirname(Platform.resolvedExecutable),
   'data\\flutter_assets\\assets\\sound\\new.wav'
 ]);
-late final SharedPreferences prefs;
 final provider = MyProvider();
 final deviceInfo = DeviceInfoPlugin();
 final Dio dio = Dio();
@@ -42,7 +41,7 @@ Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
   await Window.initialize();
-  prefs = await SharedPreferences.getInstance();
+  final prefs = await SharedPreferences.getInstance();
   provider.userNameProvider =
       StateProvider((ref) => prefs.getString('userName'));
   windowManager.waitUntilReadyToShow().then((_) async {
@@ -98,7 +97,8 @@ Future<void> main(List<String> args) async {
           title: 'Hi!');
     }
     runApp(ProviderScope(
-      child: App(startup: args.isNotEmpty, child: const Loading()),
+      overrides: [provider.prefsProvider.overrideWithValue(prefs)],
+      child: App(startup: args.isNotEmpty, child: Loading(prefs)),
     ));
   }, (exception, stackTrace) async {
     await Sentry.captureException(exception, stackTrace: stackTrace);

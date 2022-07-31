@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 
-import '../main.dart';
+import '../../main.dart';
 
 Data networkFromJson(String str) => Data.fromJson(json.decode(str));
 

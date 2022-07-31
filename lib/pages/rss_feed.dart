@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
@@ -14,16 +16,19 @@ import 'package:win_toast/win_toast.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/custom_feed.dart';
 import 'package:wtnews/pages/settings.dart';
-import 'package:wtnews/services/firebase.dart';
+import 'package:wtnews/services/data/firebase.dart';
+import 'package:wtnews/services/data/news.dart';
 
 import '../main.dart';
-import '../services/data_class.dart';
+import '../services/data/data_class.dart';
 import '../services/utility.dart';
 import 'datamine.dart';
 import 'downloader.dart';
 
 class RSSView extends ConsumerStatefulWidget {
-  const RSSView({Key? key}) : super(key: key);
+  final SharedPreferences prefs;
+
+  const RSSView(this.prefs, {Key? key}) : super(key: key);
 
   @override
   RSSViewState createState() => RSSViewState();
@@ -31,9 +36,6 @@ class RSSView extends ConsumerStatefulWidget {
 
 class RSSViewState extends ConsumerState<RSSView>
     with WidgetsBindingObserver, TickerProviderStateMixin {
-  RssFeed? rssFeed;
-  StreamSubscription? subscription;
-
   @override
   void initState() {
     super.initState();
@@ -45,10 +47,10 @@ class RSSViewState extends ConsumerState<RSSView>
       subscription = startListening();
       final devMessageValue = ref.watch(provider.devMessageProvider.stream);
       devMessageValue.listen((String? event) async {
-        if (event != prefs.getString('devMessage')) {
+        if (event != widget.prefs.getString('devMessage')) {
           final toast = await winToast.showToast(
               type: ToastType.text04, title: 'New Message from Vonarian');
-          await prefs.setString('devMessage', event ?? '');
+          await widget.prefs.setString('devMessage', event ?? '');
           toast?.eventStream.listen((event) async {
             if (event is ActivatedEvent) {
               await windowManager.show();
@@ -59,24 +61,45 @@ class RSSViewState extends ConsumerState<RSSView>
       try {
         await presenceService.configureUserPresence(
             (await deviceInfo.windowsInfo).computerName,
-            prefs.getBool('startup') ?? false,
-            appVersion);
-        rssFeed = await getForum();
+            widget.prefs.getBool('startup') ?? false,
+            appVersion,
+            prefs: widget.prefs);
+        newsList = await getAllNews();
+        setState(() {});
         ref.read(provider.playSound.notifier).state =
-            prefs.getBool('playSound') ?? true;
-      } catch (e, st) {
-        await Sentry.captureException(e, stackTrace: st);
-      }
-      setState(() {});
+            widget.prefs.getBool('playSound') ?? true;
+        rssFeed = await getForum();
+        List<RssItem>? filteredList = rssFeed?.items
+            ?.where((element) =>
+                element.title!.toLowerCase().contains('opening') ||
+                element.title!.toLowerCase().contains('planned') ||
+                element.title!.toLowerCase().contains('technical'))
+            .toList()
+            .cast<RssItem>();
+        for (RssItem item in filteredList ?? []) {
+          newRssUrl = item.link;
+          newRssTitle.value = item.title;
+        }
+      } catch (e) {}
     });
     Timer.periodic(const Duration(seconds: 15), (timer) async {
       if (!mounted) timer.cancel();
       try {
-        rssFeed = await getForum();
+        newsList = await getAllNews();
         setState(() {});
-      } catch (e, st) {
-        await Sentry.captureException(e, stackTrace: st);
-      }
+        rssFeed = await getForum();
+        List<RssItem>? filteredList = rssFeed?.items
+            ?.where((element) =>
+                element.title!.toLowerCase().contains('opening') ||
+                element.title!.toLowerCase().contains('planned') ||
+                element.title!.toLowerCase().contains('technical'))
+            .toList()
+            .cast<RssItem>();
+        for (RssItem item in filteredList ?? []) {
+          newRssUrl = item.link;
+          if (item.title != null) newRssTitle.value = item.title;
+        }
+      } catch (e) {}
     });
 
     Future.delayed(const Duration(seconds: 10), () {
@@ -84,6 +107,17 @@ class RSSViewState extends ConsumerState<RSSView>
         saveToPrefs();
         try {
           await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
+          if (ref.watch(provider.playSound)) AppUtil.playSound(newSound);
+        } catch (e, st) {
+          await Sentry.captureException(e, stackTrace: st);
+        }
+      });
+      newRssTitle.addListener(() async {
+        try {
+          ref
+              .read(provider.prefsProvider)
+              .setString('rssTitle', newRssTitle.value!);
+          await sendNotification(newTitle: newRssTitle.value, url: newRssUrl);
           if (ref.watch(provider.playSound)) AppUtil.playSound(newSound);
         } catch (e, st) {
           await Sentry.captureException(e, stackTrace: st);
@@ -127,7 +161,7 @@ class RSSViewState extends ConsumerState<RSSView>
           data['title'] != '' &&
           data['subtitle'] != '') {
         Message message = Message.fromMap(data);
-        if (prefs.getInt('id') != message.id) {
+        if (widget.prefs.getInt('id') != message.id) {
           if (message.device == (await deviceInfo.windowsInfo).computerName ||
               message.device == null) {
             var toast = await winToast.showToast(
@@ -149,11 +183,12 @@ class RSSViewState extends ConsumerState<RSSView>
                   break;
                 case 'getFeedback':
                   if (!mounted) return;
-                  Message.getFeedback(context, data, mounted);
+                  Message.getFeedback(context, data, mounted,
+                      prefs: widget.prefs);
                   break;
               }
             }
-            await prefs.setInt('id', message.id);
+            await widget.prefs.setInt('id', message.id);
           }
         }
       }
@@ -168,130 +203,102 @@ class RSSViewState extends ConsumerState<RSSView>
       p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\logs']);
 
   void loadFromPrefs() {
-    newItemTitle.value = prefs.getString('lastTitle');
+    newItemTitle.value = widget.prefs.getString('lastTitle');
+    newRssTitle.value = widget.prefs.getString('rssTitle');
   }
 
   Future<void> sendNotification(
       {required String? newTitle, required String? url}) async {
     if (newTitle != null) {
-      if (newTitle.contains('Development')) {
-        var toast = await winToast.showToast(
-            type: ToastType.text04, title: 'New DevBlog!!', subtitle: newTitle);
-        toast?.eventStream.listen((event) async {
-          if (event is ActivatedEvent) {
-            if (url != null) {
-              await launchUrl(Uri.parse(url));
-            }
-          }
-        });
-      } else if (newTitle.contains('Event')) {
-        var toast = await winToast.showToast(
-            type: ToastType.text04, title: 'New Event!!', subtitle: newTitle);
-        toast?.eventStream.listen((event) async {
-          if (event is ActivatedEvent) {
-            if (url != null) {
-              await launchUrl(Uri.parse(url));
-            }
-          }
-        });
-      } else if (newTitle.contains('Video')) {
-        var toast = await winToast.showToast(
-            type: ToastType.text04, title: 'New Video!', subtitle: newTitle);
-        toast?.eventStream.listen((event) async {
-          if (event is ActivatedEvent) {
-            if (url != null) {
-              await launchUrl(Uri.parse(url));
-            }
-          }
-        });
-      } else if (newTitle.contains('It’s fixed!')) {
-        var toast = await winToast.showToast(
-            type: ToastType.text04,
-            title: 'New It\'s fixed!!',
-            subtitle: newTitle);
-        toast?.eventStream.listen((event) async {
-          if (event is ActivatedEvent) {
-            if (url != null) {
-              await launchUrl(Uri.parse(url));
-            }
-          }
-        });
-      } else if (newTitle.contains('Update') && !newTitle.contains('Dev ')) {
-        var toast = await winToast.showToast(
-            type: ToastType.text04, title: 'New Update!!', subtitle: newTitle);
-        toast?.eventStream.listen((event) async {
-          if (event is ActivatedEvent) {
-            if (url != null) {
-              await launchUrl(Uri.parse(url));
-            }
-          }
-        });
-      } else if (newTitle.contains('Dev ')) {
-        var toast = await winToast.showToast(
-            type: ToastType.text04,
-            title: 'New Dev related content!!',
-            subtitle: newTitle);
-        toast?.eventStream.listen((event) async {
-          if (event is ActivatedEvent) {
-            if (url != null) {
-              await launchUrl(Uri.parse(url));
-            }
-          }
-        });
-      } else if (newTitle.toLowerCase().contains('dev server opening')) {
-        var toast = await winToast.showToast(
-            type: ToastType.text04,
-            title: 'Dev Server Opening!!',
-            subtitle: newTitle);
-        toast?.eventStream.listen((event) async {
-          if (event is ActivatedEvent) {
-            if (url != null) {
-              await launchUrl(Uri.parse(url));
-            }
-          }
-        });
-      } else if (newTitle.toLowerCase().contains('planned battle rating')) {
-        var toast = await winToast.showToast(
-            type: ToastType.text04,
-            title: 'Planned BR changes!!',
-            subtitle: newTitle);
-        toast?.eventStream.listen((event) async {
-          if (event is ActivatedEvent) {
-            if (url != null) {
-              await launchUrl(Uri.parse(url));
-            }
-          }
-        });
-      } else if (newTitle.contains('Economic')) {
-        var toast = await winToast.showToast(
-            type: ToastType.text04,
-            title: 'News about economics!!',
-            subtitle: newTitle);
-        toast?.eventStream.listen((event) async {
-          if (event is ActivatedEvent) {
-            if (url != null) {
-              await launchUrl(Uri.parse(url));
-            }
-          }
-        });
-      } else {
-        var toast = await winToast.showToast(
-            type: ToastType.text04,
-            title: 'New content in the official forums',
-            subtitle: newTitle);
-        toast?.eventStream.listen((event) async {
-          if (event is ActivatedEvent) {
-            if (url != null) {
-              await launchUrl(Uri.parse(url));
-            }
-          }
-        });
-      }
+      final toast = await winToast.showToast(
+          type: ToastType.text04,
+          title: 'New item in WarThunder news',
+          subtitle: newTitle);
+      toast?.eventStream.listen((event) async {
+        if (event is ActivatedEvent) {
+          await launchUrl(Uri.parse(url ?? 'https://warthunder.com/en'));
+        }
+      });
+    }
+  }
+
+  Widget _buildCard(News item, {required ThemeData theme}) {
+    return SizedBox(
+      child: Card(
+          child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CachedNetworkImage(imageUrl: item.imageUrl, fit: BoxFit.cover),
+          Text(
+            item.title,
+            style: TextStyle(
+                color: theme.accentColor.lightest, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.left,
+          ),
+          Text(
+            item.description,
+            overflow: TextOverflow.fade,
+            style: const TextStyle(letterSpacing: 0.52, fontSize: 14),
+            maxLines: 4,
+          ),
+        ],
+      )),
+    );
+  }
+
+  Widget _buildGradient(Widget widget, {required News item}) {
+    return Stack(children: [
+      // Your widget
+      Positioned.fill(child: widget),
+      // gradient
+      Positioned.fill(
+        child: Container(
+          decoration: const BoxDecoration(
+              gradient: LinearGradient(
+            colors: [
+              Colors.black,
+              Colors.transparent,
+            ],
+            stops: [0, 0.4],
+            begin: Alignment.bottomCenter,
+            end: Alignment.center,
+          )),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  item.dateString,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ]);
+  }
+
+  Future<List<News>> getAllNews() async {
+    try {
+      final List<News> newsList = await News.getNews() ?? [];
+      final List<News> changeLogList = await News.getChangelog() ?? [];
+      List<News> finalList = [...newsList, ...changeLogList];
+      finalList.sort((a, b) => b.date.compareTo(a.date));
+      return finalList.isNotEmpty ? finalList : [];
+    } catch (e) {
+      rethrow;
     }
   }
 
   Future<void> saveToPrefs() async {
-    await prefs.setString('lastTitle', newItemTitle.value ?? '');
+    await widget.prefs.setString('lastTitle', newItemTitle.value ?? '');
   }
 
   Future<RssFeed> getForum() async {
@@ -301,8 +308,13 @@ class RSSViewState extends ConsumerState<RSSView>
     return rssFeed;
   }
 
+  RssFeed? rssFeed;
+  List<News>? newsList;
+  StreamSubscription? subscription;
   String? newItemUrl;
   ValueNotifier<String?> newItemTitle = ValueNotifier(null);
+  String? newRssUrl;
+  ValueNotifier<String?> newRssTitle = ValueNotifier(null);
   int index = 0;
 
   @override
@@ -409,56 +421,43 @@ class RSSViewState extends ConsumerState<RSSView>
         children: [
           ScaffoldPage(
             padding: const EdgeInsets.only(left: 8.0),
-            content: rssFeed != null
+            content: newsList != null
                 ? AnimatedSwitcher(
                     duration: const Duration(milliseconds: 700),
-                    child: ListView.builder(
-                        itemCount: rssFeed?.items?.length,
-                        itemBuilder: (context, index) {
-                          newItemUrl = rssFeed?.items?.first.link;
-                          newItemTitle.value = rssFeed?.items?.first.title;
-                          RssItem? data = rssFeed?.items?[index];
-                          String? description = data?.description;
-                          if (data != null) {
-                            return Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                HoverButton(
-                                  builder: (context, set) => ListTile(
-                                    title: Text(
-                                      data.title ?? 'No title',
-                                      style: TextStyle(
-                                          color: theme.accentColor.lightest,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    subtitle: Text(
-                                      description
-                                              ?.replaceAll('\n', '')
-                                              .replaceAll('	', '') ??
-                                          '',
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 2,
-                                      style: const TextStyle(
-                                          letterSpacing: 0.52, fontSize: 14),
-                                    ),
-                                    contentPadding: EdgeInsets.zero,
-                                    isThreeLine: true,
-                                  ),
-                                  onPressed: () {
-                                    if (data.link != null) {
-                                      launchUrl(Uri.parse(data.link!));
-                                    }
-                                  },
-                                  focusEnabled: true,
-                                  cursor: SystemMouseCursors.click,
-                                ),
-                                const Divider(),
-                              ],
+                    child: LayoutBuilder(builder: (context, constraints) {
+                      final width = constraints.maxWidth;
+                      final height = constraints.maxHeight;
+                      int crossAxisCount = 2;
+                      if (width / height >= 1.5 && width >= 600) {
+                        crossAxisCount = 3;
+                      }
+                      if ((width / height >= 2 || width >= 1300) &&
+                          width >= 1200) {
+                        crossAxisCount = 4;
+                      }
+                      return GridView.builder(
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                          ),
+                          itemCount: newsList?.length ?? 0,
+                          itemBuilder: (context, index) {
+                            final item = newsList![index];
+                            newItemUrl = newsList!.first.link;
+                            newItemTitle.value = newsList!.first.title;
+
+                            return HoverButton(
+                              builder: (context, set) => _buildGradient(
+                                  _buildCard(item, theme: theme),
+                                  item: item),
+                              onPressed: () {
+                                launchUrl(Uri.parse(item.link));
+                              },
+                              focusEnabled: true,
+                              cursor: SystemMouseCursors.click,
                             );
-                          } else {
-                            return const Center(child: Text('No Data'));
-                          }
-                        }))
+                          });
+                    }))
                 : Center(
                     child: SizedBox(
                       width: 100,
@@ -470,9 +469,9 @@ class RSSViewState extends ConsumerState<RSSView>
                     ),
                   ),
           ),
-          const Settings(),
-          const DataMine(),
-          const CustomRSSView(),
+          Settings(widget.prefs),
+          DataMine(widget.prefs),
+          CustomRSSView(widget.prefs),
         ],
       ),
     );

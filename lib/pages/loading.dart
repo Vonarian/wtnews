@@ -4,13 +4,16 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/github.dart';
+import '../services/data/github.dart';
 import 'downloader.dart';
 import 'rss_feed.dart';
 
 class Loading extends ConsumerStatefulWidget {
-  const Loading({Key? key}) : super(key: key);
+  final SharedPreferences prefs;
+
+  const Loading(this.prefs, {Key? key}) : super(key: key);
 
   @override
   LoadingState createState() => LoadingState();
@@ -54,7 +57,7 @@ class LoadingState extends ConsumerState<Loading> {
                     Navigator.pushReplacement(
                       context,
                       PageRouteBuilder(
-                        pageBuilder: (c, a1, a2) => const RSSView(),
+                        pageBuilder: (c, a1, a2) => RSSView(widget.prefs),
                         transitionsBuilder: (c, anim, a2, child) =>
                             FadeTransition(opacity: anim, child: child),
                         transitionDuration: const Duration(milliseconds: 1000),
@@ -84,7 +87,7 @@ class LoadingState extends ConsumerState<Loading> {
           Navigator.pushReplacement(
             context,
             PageRouteBuilder(
-              pageBuilder: (c, a1, a2) => const RSSView(),
+              pageBuilder: (c, a1, a2) => RSSView(widget.prefs),
               transitionsBuilder: (c, anim, a2, child) =>
                   FadeTransition(opacity: anim, child: child),
               transitionDuration: const Duration(milliseconds: 1000),
@@ -105,7 +108,7 @@ class LoadingState extends ConsumerState<Loading> {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
-            pageBuilder: (c, a1, a2) => const RSSView(),
+            pageBuilder: (c, a1, a2) => RSSView(widget.prefs),
             transitionsBuilder: (c, anim, a2, child) =>
                 FadeTransition(opacity: anim, child: child),
             transitionDuration: const Duration(milliseconds: 1000),
