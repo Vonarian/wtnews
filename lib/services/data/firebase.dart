@@ -38,7 +38,7 @@ class PresenceService {
         con?.onDisconnect().set(false);
         con?.set(true);
         DateFormat f = DateFormat('E, d MMM yyyy HH:mm:ss');
-        String date = "${f.format(DateTime.now().toUtc())} GMT";
+        String date = '${f.format(DateTime.now().toUtc())} GMT';
         lastOnlineRef.onDisconnect().set(date);
       }
     });

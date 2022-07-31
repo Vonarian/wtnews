@@ -357,7 +357,6 @@ class RSSViewState extends ConsumerState<RSSView>
             final version = int.parse(data.replaceAll('.', ''));
             final currentVersion = int.parse(appVersion.replaceAll('.', ''));
             if (version > currentVersion) {
-              LocalNotification(title: 'New Update!!').show();
               return IconButton(
                 icon: const Icon(FluentIcons.download),
                 onPressed: () async {
