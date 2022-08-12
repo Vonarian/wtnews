@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:contextmenu/contextmenu.dart';
@@ -9,12 +8,10 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_notifier/local_notifier.dart';
-import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
-import 'package:webfeed/domain/rss_item.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/custom_feed.dart';
 import 'package:wtnews/pages/settings.dart';
@@ -66,20 +63,6 @@ class RSSViewState extends ConsumerState<RSSView>
             prefs: widget.prefs);
         newsList = await getAllNews();
         setState(() {});
-        ref.read(provider.playSound.notifier).state =
-            widget.prefs.getBool('playSound') ?? true;
-        rssFeed = await getForum();
-        List<RssItem>? filteredList = rssFeed?.items
-            ?.where((element) =>
-                element.title!.toLowerCase().contains('opening') ||
-                element.title!.toLowerCase().contains('planned') ||
-                element.title!.toLowerCase().contains('technical'))
-            .toList()
-            .cast<RssItem>();
-        for (RssItem item in filteredList ?? []) {
-          newRssUrl = item.link;
-          newRssTitle.value = item.title;
-        }
       } catch (e) {}
     });
     Timer.periodic(const Duration(seconds: 15), (timer) async {
@@ -88,16 +71,16 @@ class RSSViewState extends ConsumerState<RSSView>
         newsList = await getAllNews();
         setState(() {});
         rssFeed = await getForum();
-        List<RssItem>? filteredList = rssFeed?.items
-            ?.where((element) =>
-                element.title!.toLowerCase().contains('opening') ||
-                element.title!.toLowerCase().contains('planned') ||
-                element.title!.toLowerCase().contains('technical'))
-            .toList()
-            .cast<RssItem>();
-        for (RssItem item in filteredList ?? []) {
-          newRssUrl = item.link;
-          if (item.title != null) newRssTitle.value = item.title;
+        final item = rssFeed?.items?.firstWhere((element) =>
+            element.title!.toLowerCase().contains('technical') ||
+            element.title!.toLowerCase().contains('opening') ||
+            element.title!.toLowerCase().contains('planned'));
+        newRssUrl = item?.link;
+        if (item?.title != null &&
+            item?.title != newRssTitle.value &&
+            newRssTitle.value !=
+                ref.read(provider.prefsProvider).getString('rssTitle')) {
+          newRssTitle.value = item?.title;
         }
       } catch (e) {}
     });
@@ -114,7 +97,7 @@ class RSSViewState extends ConsumerState<RSSView>
       });
       newRssTitle.addListener(() async {
         try {
-          ref
+          await ref
               .read(provider.prefsProvider)
               .setString('rssTitle', newRssTitle.value!);
           await sendNotification(newTitle: newRssTitle.value, url: newRssUrl);
@@ -191,13 +174,6 @@ class RSSViewState extends ConsumerState<RSSView>
       }
     });
   }
-
-  String newMessage = p.joinAll([
-    p.dirname(Platform.resolvedExecutable),
-    'data\\flutter_assets\\assets\\sound\\message.wav'
-  ]);
-  String logPath =
-      p.joinAll([p.dirname(Platform.resolvedExecutable), 'data\\logs']);
 
   void loadFromPrefs() {
     newItemTitle.value = widget.prefs.getString('lastTitle');

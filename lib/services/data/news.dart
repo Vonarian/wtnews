@@ -45,8 +45,7 @@ class News {
           final imageUrl = item
               .getElementsByClassName('widget__poster-media')[0]
               .attributes['data-src']
-              .toString()
-              .replaceAll('//', '');
+              .toString();
           final content = item.getElementsByClassName('widget__content').first;
           final title = content.getElementsByClassName('widget__title').first;
           final description =
@@ -55,7 +54,8 @@ class News {
           final news = News(
               title: title.text.trim(),
               description: description.text.trim(),
-              imageUrl: 'https://${imageUrl.trim()}',
+              imageUrl: 'https://${imageUrl.trim()}'
+                  .replaceAll('https:////', 'https://'),
               date: DateFormat('d-LLLL-y').parseLoose(date.trim()),
               dateString: date.trim(),
               link: url);
@@ -88,8 +88,7 @@ class News {
           final imageUrl = item
               .getElementsByClassName('widget__poster-media')[0]
               .attributes['data-src']
-              .toString()
-              .replaceAll('//', '');
+              .toString();
           final content = item.getElementsByClassName('widget__content').first;
           final title = content.getElementsByClassName('widget__title').first;
           final description =
@@ -98,7 +97,8 @@ class News {
           final news = News(
               title: title.text.trim(),
               description: description.text.trim(),
-              imageUrl: 'https://${imageUrl.trim()}',
+              imageUrl: 'https://${imageUrl.trim()}'
+                  .replaceAll('https:////', 'https://'),
               date: DateFormat('d-LLLL-y').parseLoose(date.trim()),
               dateString: date.trim(),
               link: url);
