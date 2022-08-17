@@ -17,6 +17,7 @@ import 'package:wtnews/pages/custom_feed.dart';
 import 'package:wtnews/pages/settings.dart';
 import 'package:wtnews/services/data/firebase.dart';
 import 'package:wtnews/services/data/news.dart';
+import 'package:wtnews/services/extensions.dart';
 
 import '../main.dart';
 import '../services/data/data_class.dart';
@@ -195,41 +196,43 @@ class RSSViewState extends ConsumerState<RSSView>
   }
 
   Widget _buildCard(News item, {required ThemeData theme}) {
-    return SizedBox(
-      child: Card(
-          child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          CachedNetworkImage(imageUrl: item.imageUrl, fit: BoxFit.cover),
-          Text(
+    return Card(
+        child: Column(
+      children: [
+        CachedNetworkImage(
+          imageUrl: item.imageUrl,
+          fit: BoxFit.cover,
+          width: 378,
+          height: 213,
+        ),
+        Flexible(
+          child: Text(
             item.title,
-            style: TextStyle(
-                color: theme.accentColor.lightest,
-                fontWeight: FontWeight.bold,
-                fontSize: 20),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
             textAlign: TextAlign.left,
           ),
-          Flexible(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: Text(
-                item.description,
-                overflow: TextOverflow.fade,
-                style: const TextStyle(letterSpacing: 0.52, fontSize: 14),
-                maxLines: 4,
-              ),
+        ),
+        Flexible(
+          fit: FlexFit.tight,
+          child: Text(
+            item.description,
+            overflow: TextOverflow.fade,
+            style: TextStyle(
+              letterSpacing: 0.50,
+              fontSize: 14,
+              color: HexColor.fromHex('#8da0aa'),
             ),
+            maxLines: 3,
+            textAlign: TextAlign.left,
           ),
-        ],
-      )),
-    );
+        ),
+      ],
+    ));
   }
 
   Widget _buildGradient(Widget widget, {required News item}) {
     return Stack(children: [
-      // Your widget
       Positioned.fill(child: widget),
-      // gradient
       Positioned.fill(
         child: Container(
           decoration: const BoxDecoration(
@@ -244,15 +247,14 @@ class RSSViewState extends ConsumerState<RSSView>
           )),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
                   item.dateString,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: HexColor.fromHex('#8da0aa'),
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -431,14 +433,13 @@ class RSSViewState extends ConsumerState<RSSView>
                       return GridView.builder(
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
-                          ),
+                                  crossAxisCount: crossAxisCount,
+                                  childAspectRatio: 380 / 372),
                           itemCount: newsList?.length ?? 0,
                           itemBuilder: (context, index) {
                             final item = newsList![index];
                             newItemUrl = newsList!.first.link;
                             newItemTitle.value = newsList!.first.title;
-
                             return HoverButton(
                               builder: (context, set) => Container(
                                 color: set.isHovering ? Colors.grey[200] : null,
@@ -468,6 +469,7 @@ class RSSViewState extends ConsumerState<RSSView>
                                           if (!mounted) return;
                                           Navigator.of(context).pop();
                                         },
+                                        margin: EdgeInsets.zero,
                                       ),
                                     ];
                                   },

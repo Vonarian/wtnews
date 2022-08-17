@@ -27,14 +27,15 @@ class App extends ConsumerStatefulWidget {
   AppState createState() => AppState();
 }
 
-class AppState extends ConsumerState<App> with TrayListener, WindowListener {
+class AppState extends ConsumerState<App>
+    with TrayListener, WindowListener, LocalNotificationListener {
   @override
   void initState() {
     final prefs = ref.read(provider.prefsProvider);
-
     super.initState();
     trayManager.addListener(this);
     windowManager.addListener(this);
+    localNotifier.addListener(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (widget.startup) {
         ref.read(provider.checkDataMine.notifier).state =
@@ -72,13 +73,19 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
             .timeout(const Duration(seconds: 25))
             .whenComplete(() async {
           if (rssFeed != null && rssFeed?.items != null) {
+            rssFeed?.items!.removeWhere((item) {
+              var itemDescription = item.description;
+              bool isDataMine = itemDescription!.contains('Raw changes:') &&
+                  itemDescription.contains('→') &&
+                  itemDescription.contains('Current dev version');
+              return !isDataMine;
+            });
             RssItem item = rssFeed!.items!.first;
             if (item.description != null) {
               String itemDescription = item.description!;
-              bool? isDataMine = (itemDescription.contains('Raw changes:') &&
-                      itemDescription.contains('→') &&
-                      itemDescription.contains('Current dev version')) ||
-                  itemDescription.contains('	');
+              bool isDataMine = (itemDescription.contains('Raw changes:') &&
+                  itemDescription.contains('→') &&
+                  itemDescription.contains('Current dev version'));
               if (isDataMine) {
                 if (lastPubDate.value != item.pubDate.toString()) {
                   newItemUrl = item.link;
@@ -96,6 +103,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   void dispose() {
     trayManager.removeListener(this);
     windowManager.removeListener(this);
+    localNotifier.removeListener(this);
     lastPubDate.removeListener(() {});
     super.dispose();
   }
@@ -231,5 +239,10 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     setState(() {
       focused = true;
     });
+  }
+
+  @override
+  void onLocalNotificationClick(LocalNotification notification) {
+    return;
   }
 }

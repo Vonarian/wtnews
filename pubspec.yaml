@@ -33,7 +33,8 @@ dependencies:
   dio: ^4.0.4
   window_manager: ^0.2.5
   shared_preferences: ^2.0.13
-  local_notifier: ^0.1.5
+  local_notifier:
+    path: ../local_notifier
   tray_manager: ^0.1.8
   archive: ^3.3.0
   percent_indicator: ^4.0.1
