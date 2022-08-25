@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -64,7 +65,7 @@ Future<void> main(List<String> args) async {
   });
   await localNotifier.setup(
       appName: 'WTNews', shortcutPolicy: ShortcutPolicy.ignore);
-  await FirebaseDartFlutter.setup();
+  await FirebaseDartFlutter.setup(isolated: true);
   app = await Firebase.initializeApp(
       options: FirebaseOptions.fromMap(firebaseConfig), name: 'wtnews-54364');
   runZonedGuarded(() async {
@@ -75,10 +76,15 @@ Future<void> main(List<String> args) async {
     await SentryFlutter.init(
       (options) {
         options.dsn = dsn;
+        options.logger = (level, message, {exception, logger, stackTrace}) => {
+              log('Level: $level'),
+              log('Message: $message'),
+              if (exception != null)
+                log('Exception: $exception', stackTrace: stackTrace),
+            };
         options.tracesSampleRate = 1.0;
         options.enableAutoSessionTracking = true;
         options.enableOutOfMemoryTracking = true;
-        options.reportPackages = true;
         options.release = 'WTNews@$appVersion';
         options.tracesSampler = (samplingContext) {
           return 0.6;

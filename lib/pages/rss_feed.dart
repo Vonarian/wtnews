@@ -187,9 +187,12 @@ class RSSViewState extends ConsumerState<RSSView>
       final toast = LocalNotification(
           title: 'New item in WarThunder news', body: newTitle)
         ..show();
-      toast.onClick = () {
+      toast.onClick = () async {
         if (url != null) {
           launchUrl(Uri.parse(url));
+          if (!(await windowManager.isFocused())) {
+            windowManager.minimize();
+          }
         }
       };
     }

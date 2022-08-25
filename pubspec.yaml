@@ -46,7 +46,7 @@ dependencies:
   firebase_dart_flutter:
   firebase_core: ^1.18.0
   device_info_plus: ^3.2.2
-  sentry_flutter: ^6.6.1
+  sentry_flutter: ^6.9.1
   flutter_acrylic: ^1.0.0+2
   path: ^1.8.1
   ffi: ^1.2.1
