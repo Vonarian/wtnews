@@ -11,6 +11,7 @@ class News {
   final DateTime date;
   final String dateString;
   final String link;
+  final bool isNews;
 
   const News(
       {required this.title,
@@ -18,7 +19,8 @@ class News {
       required this.imageUrl,
       required this.date,
       required this.link,
-      required this.dateString});
+      required this.dateString,
+      required this.isNews});
 
   @override
   String toString() {
@@ -58,7 +60,8 @@ class News {
                   .replaceAll('https:////', 'https://'),
               date: DateFormat('d-LLLL-y').parseLoose(date.trim()),
               dateString: date.trim(),
-              link: url);
+              link: url,
+              isNews: true);
           list.add(news);
         }
         return list;
@@ -101,12 +104,27 @@ class News {
                   .replaceAll('https:////', 'https://'),
               date: DateFormat('d-LLLL-y').parseLoose(date.trim()),
               dateString: date.trim(),
-              link: url);
+              link: url,
+              isNews: false);
           list.add(news);
         }
         return list;
       }
     }
     return null;
+  }
+
+  bool isDev() {
+    if ((title.contains(':') ||
+                !description.toLowerCase().contains('thunder show')) &&
+            (description.toLowerCase().contains('major') ||
+                description.toLowerCase().contains('update')) &&
+            (!title.toLowerCase().contains('shooting range') ||
+                title.toLowerCase().contains('major update')) ||
+        title.toLowerCase().contains('teaser') ||
+        title.toLowerCase().contains('trailer')) {
+      return true;
+    }
+    return false;
   }
 }

@@ -234,6 +234,34 @@ class SettingsState extends ConsumerState<Settings> {
                     'WTNews Checks for updates of data mines and notifies you when a new one is available.'),
                 activeSwitchColor: theme.accentColor.lightest,
               ),
+              ref.watch(provider.premiumProvider)
+                  ? SettingsTile.switchTile(
+                      initialValue: ref.watch(provider.focusedProvider),
+                      onToggle: (value) async {
+                        ref.read(provider.focusedProvider.notifier).state =
+                            value;
+                        await widget.prefs.setBool('focused', value);
+                      },
+                      title: const Text(
+                        'Focused Mode',
+                      ),
+                      description: const Text(
+                          'This will only send dev-related notifications'),
+                      activeSwitchColor: theme.accentColor.lightest,
+                    )
+                  : SettingsTile.switchTile(
+                      initialValue: ref.watch(provider.focusedProvider),
+                      description: Text(
+                        'You need premium account for this feature',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      onToggle: (value) {},
+                      enabled: false,
+                      title: const Text(
+                        'Focused Mode',
+                        style:
+                            TextStyle(decoration: TextDecoration.lineThrough),
+                      )),
             ],
           ),
           SettingsSection(title: const Text('Misc'), tiles: [

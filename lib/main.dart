@@ -36,6 +36,7 @@ final provider = MyProvider();
 final deviceInfo = DeviceInfoPlugin();
 final Dio dio = Dio();
 late final String appVersion;
+late final String uid;
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,6 +66,7 @@ Future<void> main(List<String> args) async {
   });
   await localNotifier.setup(
       appName: 'WTNews', shortcutPolicy: ShortcutPolicy.ignore);
+  uid = (await deviceInfo.windowsInfo).computerName;
   await FirebaseDartFlutter.setup(isolated: true);
   app = await Firebase.initializeApp(
       options: FirebaseOptions.fromMap(firebaseConfig), name: 'wtnews-54364');

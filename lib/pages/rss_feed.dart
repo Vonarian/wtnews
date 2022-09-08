@@ -90,8 +90,17 @@ class RSSViewState extends ConsumerState<RSSView>
       newItemTitle.addListener(() async {
         saveToPrefs();
         try {
-          await sendNotification(newTitle: newItemTitle.value, url: newItemUrl);
-          if (ref.watch(provider.playSound)) AppUtil.playSound(newSound);
+          if (!ref.read(provider.focusedProvider)) {
+            await sendNotification(
+                newTitle: newItemTitle.value, url: newItem.link);
+            if (ref.watch(provider.playSound)) AppUtil.playSound(newSound);
+          } else {
+            if (newItem.isNews && newItem.isDev()) {
+              await sendNotification(
+                  newTitle: newItemTitle.value, url: newItem.link);
+              if (ref.watch(provider.playSound)) AppUtil.playSound(newSound);
+            }
+          }
         } catch (e, st) {
           await Sentry.captureException(e, stackTrace: st);
         }
@@ -295,7 +304,7 @@ class RSSViewState extends ConsumerState<RSSView>
   RssFeed? rssFeed;
   List<News>? newsList;
   StreamSubscription? subscription;
-  String? newItemUrl;
+  late News newItem;
   ValueNotifier<String?> newItemTitle = ValueNotifier(null);
   String? newRssUrl;
   ValueNotifier<String?> newRssTitle = ValueNotifier(null);
@@ -312,7 +321,7 @@ class RSSViewState extends ConsumerState<RSSView>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'WTNews v$appVersion',
+              'WTNews v$appVersion ${ref.watch(provider.premiumProvider) ? '(Premium!)' : ''}',
               textAlign: TextAlign.left,
               style: TextStyle(
                   fontSize: 20,
@@ -441,7 +450,7 @@ class RSSViewState extends ConsumerState<RSSView>
                           itemCount: newsList?.length ?? 0,
                           itemBuilder: (context, index) {
                             final item = newsList![index];
-                            newItemUrl = newsList!.first.link;
+                            newItem = newsList!.first;
                             newItemTitle.value = newsList!.first.title;
                             return HoverButton(
                               builder: (context, set) => Container(

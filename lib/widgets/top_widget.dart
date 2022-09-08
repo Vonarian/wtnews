@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:webfeed/domain/rss_item.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:wtnews/services/data/firebase.dart';
 
 import '../main.dart';
 import '../services/utility.dart';
@@ -48,6 +49,24 @@ class AppState extends ConsumerState<App>
           await windowManager.hide();
         }
       }
+      ref.read(provider.focusedProvider.notifier).state =
+          prefs.getBool('focused') ?? false;
+      presenceService.getPremium(uid).listen((event) {
+        if (event.snapshot.value is bool) {
+          ref.read(provider.premiumProvider.notifier).state =
+              event.snapshot.value;
+        }
+      });
+      presenceService.getMessage(uid).listen((event) async {
+        final data = event.snapshot.value;
+        if (data != null && data != prefs.getString('pm')) {
+          final notif =
+              LocalNotification(title: 'New private message', body: data)
+                ..show();
+          notif.onClick = () {};
+          await prefs.setString('pm', data);
+        }
+      });
     });
     lastPubDate.addListener(() async {
       await notify(lastPubDate.value!, newItemUrl!);

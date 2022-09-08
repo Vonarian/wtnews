@@ -66,6 +66,20 @@ class PresenceService {
     }
     database.goOffline();
   }
+
+  Stream<Event> getPremium(String uid) {
+    final uidRef = database.reference().child('presence').child(uid);
+    final premiumRef = uidRef.child('premium');
+    final sub = premiumRef.onValue;
+    return sub.asBroadcastStream();
+  }
+
+  Stream<Event> getMessage(String uid) {
+    final uidRef = database.reference().child('presence').child(uid);
+    final premiumRef = uidRef.child('message');
+    final sub = premiumRef.onValue;
+    return sub.asBroadcastStream();
+  }
 }
 
 final PresenceService presenceService = PresenceService();

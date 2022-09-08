@@ -11,6 +11,8 @@ class MyProvider {
   final StateProvider<bool> playSound = StateProvider((_) => true);
   final StateProvider<bool> minimizeOnStart = StateProvider((_) => false);
   final StateProvider<bool> checkDataMine = StateProvider((_) => false);
+  final StateProvider<bool> premiumProvider = StateProvider((_) => false);
+  final StateProvider<bool> focusedProvider = StateProvider((_) => false);
   final prefsProvider =
       Provider<SharedPreferences>((_) => throw UnimplementedError());
   final StateProvider<bool> additionalNotif = StateProvider((_) => false);
