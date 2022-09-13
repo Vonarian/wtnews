@@ -115,14 +115,12 @@ class News {
   }
 
   bool isDev() {
-    if ((title.contains(':') ||
-                !description.toLowerCase().contains('thunder show')) &&
-            (description.toLowerCase().contains('major') ||
-                description.toLowerCase().contains('update')) &&
-            (!title.toLowerCase().contains('shooting range') ||
-                title.toLowerCase().contains('major update')) ||
-        title.toLowerCase().contains('teaser') ||
-        title.toLowerCase().contains('trailer')) {
+    if (link.toLowerCase().contains('development') ||
+        (title.toLowerCase().contains('teaser') ||
+            title.toLowerCase().contains('trailer')) ||
+        title.toLowerCase().contains('major') ||
+        link.toLowerCase().contains('planned') ||
+        description.toLowerCase().contains('major update')) {
       return true;
     }
     return false;
