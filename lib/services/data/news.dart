@@ -52,7 +52,14 @@ class News {
           final title = content.getElementsByClassName('widget__title').first;
           final description =
               content.getElementsByClassName('widget__comment').first;
-          final date = content.getElementsByTagName('.widget-meta').first.text;
+          final meta = content.getElementsByTagName('.widget-meta');
+          final date = meta
+              .firstWhere((element) => element
+                  .getElementsByTagName('.widget-meta__item--right')
+                  .isNotEmpty)
+              .getElementsByTagName('.widget-meta__item--right')
+              .first
+              .text;
           final news = News(
               title: title.text.trim(),
               description: description.text.trim(),
@@ -96,7 +103,14 @@ class News {
           final title = content.getElementsByClassName('widget__title').first;
           final description =
               content.getElementsByClassName('widget__comment').first;
-          final date = content.getElementsByTagName('.widget-meta').first.text;
+          final meta = content.getElementsByTagName('.widget-meta');
+          final date = meta
+              .firstWhere((element) => element
+                  .getElementsByTagName('.widget-meta__item--right')
+                  .isNotEmpty)
+              .getElementsByTagName('.widget-meta__item--right')
+              .first
+              .text;
           final news = News(
               title: title.text.trim(),
               description: description.text.trim(),

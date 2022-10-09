@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:contextmenu/contextmenu.dart';
@@ -64,7 +65,9 @@ class RSSViewState extends ConsumerState<RSSView>
             prefs: widget.prefs);
         newsList = await getAllNews();
         setState(() {});
-      } catch (e) {}
+      } catch (e, st) {
+        log(e.toString(), stackTrace: st);
+      }
     });
     Timer.periodic(const Duration(seconds: 15), (timer) async {
       if (!mounted) timer.cancel();

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firebase_dart/database.dart';
 import 'package:intl/intl.dart';
@@ -38,7 +39,8 @@ class PresenceService {
         con?.onDisconnect().set(false);
         con?.set(true);
         DateFormat f = DateFormat('E, d MMM yyyy HH:mm:ss');
-        String date = '${f.format(DateTime.now().toUtc())} GMT';
+        final String locale = Platform.localeName;
+        final String date = '${f.format(DateTime.now())} ($locale)';
         lastOnlineRef.onDisconnect().set(date);
       }
     });
