@@ -6,7 +6,9 @@ import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../main.dart';
 import '../services/data/github.dart';
+import '../von_assistant/von_assistant.dart';
 import 'downloader.dart';
 import 'rss_feed.dart';
 
@@ -25,6 +27,10 @@ class LoadingState extends ConsumerState<Loading> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await checkGitVersion(await checkVersion());
+      if (await File(VonAssistant.path).exists()) {
+        ref.read(provider.startupEnabled.notifier).state =
+            await VonAssistant.checkStartup();
+      }
     });
   }
 
@@ -42,7 +48,7 @@ class LoadingState extends ConsumerState<Loading> {
 
   Future<void> checkGitVersion(String version) async {
     try {
-      Data data = await Data.getData();
+      GHData data = await GHData.getData();
       if (int.parse(data.tagName.replaceAll('.', '')) >
           int.parse(version.replaceAll('.', ''))) {
         if (!mounted) return;

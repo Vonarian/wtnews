@@ -48,3 +48,4 @@ app.*.map.json
 /lib/services/data/firebase_data.dart
 /lib/services/data/supabase_data.dart
 /lib/services/data/dsn.dart
+/lib/von_assistant/data.dart

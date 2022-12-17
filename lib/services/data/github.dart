@@ -4,12 +4,12 @@ import 'package:dio/dio.dart';
 
 import '../../main.dart';
 
-Data networkFromJson(String str) => Data.fromJson(json.decode(str));
+GHData networkFromJson(String str) => GHData.fromJson(json.decode(str));
 
-String networkToJson(Data data) => json.encode(data.toJson());
+String networkToJson(GHData data) => json.encode(data.toJson());
 
-class Data {
-  Data({
+class GHData {
+  GHData({
     required this.url,
     required this.assetsUrl,
     required this.uploadUrl,
@@ -49,7 +49,7 @@ class Data {
   final String zipballUrl;
   final String body;
 
-  factory Data.fromJson(Map<String, dynamic> json) => Data(
+  factory GHData.fromJson(Map<String, dynamic> json) => GHData(
         url: json['url'],
         assetsUrl: json['assets_url'],
         uploadUrl: json['upload_url'],
@@ -90,10 +90,10 @@ class Data {
         'body': body,
       };
 
-  static Future<Data> getData() async {
+  static Future<GHData> getData() async {
     Response response = await dio
         .get('https://api.github.com/repos/Vonarian/WTNews/releases/latest');
-    Data data = Data.fromJson(response.data);
+    GHData data = GHData.fromJson(response.data);
     return data;
   }
 }

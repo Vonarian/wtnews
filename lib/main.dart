@@ -11,6 +11,7 @@ import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_notifier/local_notifier.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:system_info2/system_info2.dart';
@@ -24,10 +25,6 @@ import 'package:wtnews/widgets/top_widget.dart';
 late final FirebaseApp app;
 final String pathToVersion =
     '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\install\\version.txt';
-final String pathToEcho =
-    '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\manifest\\echo.bat';
-final String pathToShortcut =
-    '${p.dirname(Platform.resolvedExecutable)}\\data\\flutter_assets\\assets\\manifest\\WTNewsShortcut.bat';
 final String newSound = p.joinAll([
   p.dirname(Platform.resolvedExecutable),
   'data\\flutter_assets\\assets\\sound\\new.wav'
@@ -37,12 +34,14 @@ final deviceInfo = DeviceInfoPlugin();
 final Dio dio = Dio();
 late final String appVersion;
 late final String uid;
+late String appDocPath;
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
   await Window.initialize();
   final prefs = await SharedPreferences.getInstance();
+  appDocPath = (await getApplicationDocumentsDirectory()).path;
   provider.userNameProvider =
       StateProvider((ref) => prefs.getString('userName'));
   windowManager.waitUntilReadyToShow().then((_) async {

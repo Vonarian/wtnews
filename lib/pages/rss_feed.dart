@@ -71,22 +71,20 @@ class RSSViewState extends ConsumerState<RSSView>
     });
     Timer.periodic(const Duration(seconds: 15), (timer) async {
       if (!mounted) timer.cancel();
-      try {
-        newsList = await getAllNews();
-        setState(() {});
-        rssFeed = await getForum();
-        final item = rssFeed?.items?.firstWhere((element) =>
-            element.title!.toLowerCase().contains('technical') ||
-            element.title!.toLowerCase().contains('opening') ||
-            element.title!.toLowerCase().contains('planned'));
-        newRssUrl = item?.link;
-        if (item?.title != null &&
-            item?.title != newRssTitle.value &&
-            newRssTitle.value !=
-                ref.read(provider.prefsProvider).getString('rssTitle')) {
-          newRssTitle.value = item?.title;
-        }
-      } catch (e) {}
+      newsList = await getAllNews();
+      setState(() {});
+      rssFeed = await getForum();
+      final item = rssFeed?.items?.firstWhere((element) =>
+          element.title!.toLowerCase().contains('technical') ||
+          element.title!.toLowerCase().contains('opening') ||
+          element.title!.toLowerCase().contains('planned'));
+      newRssUrl = item?.link;
+      if (item?.title != null &&
+          item?.title != newRssTitle.value &&
+          newRssTitle.value !=
+              ref.read(provider.prefsProvider).getString('rssTitle')) {
+        newRssTitle.value = item?.title;
+      }
     });
 
     Future.delayed(const Duration(seconds: 10), () {

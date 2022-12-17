@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:blinking_text/blinking_text.dart';
@@ -7,9 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:settings_ui/settings_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:wtnews/main.dart';
 
+import '../main.dart';
 import '../services/data/data_class.dart';
+import '../von_assistant/von_assistant.dart';
+import '../widgets/loading_widget.dart';
 import 'downloader.dart';
 
 class Settings extends ConsumerStatefulWidget {
@@ -26,8 +28,6 @@ class SettingsState extends ConsumerState<Settings> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      ref.read(provider.startupEnabled.notifier).state =
-          widget.prefs.getBool('startup') ?? false;
       ref.read(provider.minimizeOnStart.notifier).state =
           widget.prefs.getBool('minimize') ?? false;
 
@@ -62,25 +62,26 @@ class SettingsState extends ConsumerState<Settings> {
             tiles: [
               SettingsTile.switchTile(
                 initialValue: ref.watch(provider.startupEnabled),
+                description:
+                    const Text('Run WTNews on startup (Needs VonAssistant)'),
                 onToggle: (value) async {
-                  if (value) {
-                    final process = await Process.start(pathToEcho, []);
-                    String output = '';
-                    await for (final line
-                        in process.stdout.transform(utf8.decoder)) {
-                      output += line.replaceAll('\n', '').trim();
+                  try {
+                    final von = await showLoading<VonAssistant>(
+                        context: context,
+                        future: VonAssistant.initialize(appDocPath),
+                        message: 'Getting Startup Service ready!');
+                    if (von.installed) {
+                      await von.setStartup(value);
+                      ref.read(provider.startupEnabled.notifier).state = value;
                     }
-                    final file = File(pathToShortcut);
-                    final directory = Directory(
-                        '${output.replaceAll('"', '')}\\WTNewsShortcut.bat');
-                    await file.copy(directory.path);
-                  } else {
-                    Process.run(pathToRemoveShortcut, []);
-                    ref.read(provider.minimizeOnStart.notifier).state = false;
-                    widget.prefs.setBool('minimize', false);
+                    await Process.run(pathToRemoveShortcut, []);
+                  } catch (e, st) {
+                    log(e.toString(), stackTrace: st);
+                    showLoading(
+                        context: context,
+                        future: Future.delayed(const Duration(seconds: 4)),
+                        message: 'Error: $e');
                   }
-                  ref.read(provider.startupEnabled.notifier).state = value;
-                  widget.prefs.setBool('startup', value);
                 },
                 title: const Text('Run at Startup'),
                 leading: Icon(FluentIcons.app_icon_default,
@@ -93,7 +94,7 @@ class SettingsState extends ConsumerState<Settings> {
                   ref.read(provider.minimizeOnStart.notifier).state = value;
                   await widget.prefs.setBool('minimize', value);
                 },
-                title: const Text('Minimize on Startup'),
+                title: const Text('Minimize/Hide on Startup'),
                 leading: Icon(FluentIcons.settings, color: theme.accentColor),
                 activeSwitchColor: theme.accentColor.lightest,
               ),

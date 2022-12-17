@@ -1,9 +1,9 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:blinking_text/blinking_text.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show SnackBarAction;
 import 'package:local_notifier/local_notifier.dart';
 import 'package:path/path.dart' as p;
@@ -12,6 +12,7 @@ import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:tray_manager/tray_manager.dart' as tray;
 import 'package:window_manager/window_manager.dart';
+import 'package:wtnews/von_assistant/von_assistant.dart';
 
 import '../main.dart';
 import '../services/data/github.dart';
@@ -52,7 +53,7 @@ class DownloaderState extends State<Downloader>
     await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
     await windowManager.center();
     try {
-      Data data = await Data.getData();
+      GHData data = await GHData.getData();
       Directory tempDir = await getTemporaryDirectory();
       String tempPath = tempDir.path;
       Directory tempWtnews =
@@ -84,25 +85,11 @@ class DownloaderState extends State<Downloader>
                 .create(recursive: true);
           }
         }
-
-        String installer = (p.joinAll([
-          ...p.split(p.dirname(Platform.resolvedExecutable)),
-          'data',
-          'flutter_assets',
-          'assets',
-          'install',
-          'installer.bat'
-        ]));
-
-        LocalNotification(
-                title: 'Update process starting in a moment',
-                body:
-                    'Do not close the application until the update process is finished')
-            .show();
+        final path = '${tempWtnews.path}\\out\\WTNews.msix';
         text = 'Installing';
         setState(() {});
-        await Process.run(installer, [tempWtnews.path],
-            runInShell: true, workingDirectory: p.dirname(installer));
+        final von = await VonAssistant.initialize(appDocPath);
+        await von.installAppUpdate(path);
       }).timeout(const Duration(minutes: 8));
     } catch (e, st) {
       if (!mounted) return;
@@ -123,7 +110,8 @@ class DownloaderState extends State<Downloader>
               label: 'Retry',
             ),
             extended: true,
-          ));
+          ),
+          duration: const Duration(seconds: 10));
       windowManager.setSize(const Size(600, 600));
       await Sentry.captureException(e, stackTrace: st);
       error = true;
