@@ -39,7 +39,7 @@ if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()) {
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
-  if (!window.CreateAndShow(L"WTNews", origin, size)) {
+  if (!window.Create(L"WTNews", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

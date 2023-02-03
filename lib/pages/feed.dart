@@ -382,6 +382,87 @@ class RSSViewState extends ConsumerState<RSSView>
                 fontWeight: FontWeight.bold,
               ),
             ),
+            body: ScaffoldPage(
+              padding: const EdgeInsets.only(left: 8.0),
+              content: newsList != null
+                  ? AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 700),
+                      child: LayoutBuilder(builder: (context, constraints) {
+                        final width = constraints.maxWidth;
+                        final height = constraints.maxHeight;
+                        int crossAxisCount = 2;
+                        if (width / height >= 1.5 && width >= 600) {
+                          crossAxisCount = 3;
+                        }
+                        if ((width / height >= 2 || width >= 1300) &&
+                            width >= 1200) {
+                          crossAxisCount = 4;
+                        }
+                        return GridView.builder(
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: crossAxisCount,
+                                    childAspectRatio: 380 / 372),
+                            itemCount: newsList?.length ?? 0,
+                            itemBuilder: (context, index) {
+                              final item = newsList![index];
+                              newItem = newsList!.first;
+                              newItemTitle.value = newsList!.first.title;
+                              return HoverButton(
+                                builder: (context, set) => Container(
+                                  color:
+                                      set.isHovering ? Colors.grey[200] : null,
+                                  child: ContextMenuArea(
+                                    verticalPadding: 0,
+                                    builder: (context) {
+                                      return <Widget>[
+                                        ListTile(
+                                          title: const Text('Copy Link'),
+                                          onPressed: () async {
+                                            await Clipboard.setData(
+                                                ClipboardData(text: item.link));
+                                            if (!mounted) return;
+                                            Navigator.of(context).pop();
+                                          },
+                                          tileColor:
+                                              ButtonState.resolveWith<Color>(
+                                                  (states) {
+                                            late final Color color;
+                                            if (states.isHovering) {
+                                              color = theme.accentColor
+                                                  .withOpacity(0.31);
+                                            } else {
+                                              color =
+                                                  theme.scaffoldBackgroundColor;
+                                            }
+                                            return color;
+                                          }),
+                                        ),
+                                      ];
+                                    },
+                                    child: _buildGradient(
+                                        _buildCard(item, theme: theme),
+                                        item: item),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  launchUrl(Uri.parse(item.link));
+                                },
+                                cursor: SystemMouseCursors.click,
+                              );
+                            });
+                      }))
+                  : Center(
+                      child: SizedBox(
+                        width: 100,
+                        height: 100,
+                        child: ProgressRing(
+                          strokeWidth: 10,
+                          activeColor: theme.accentColor,
+                        ),
+                      ),
+                    ),
+            ),
           ),
           PaneItem(
             icon: const Icon(FluentIcons.settings),
@@ -405,6 +486,7 @@ class RSSViewState extends ConsumerState<RSSView>
               loading: () => null,
               error: (error, st) => null,
             ),
+            body: Settings(widget.prefs),
           ),
           PaneItem(
               icon: const Icon(FluentIcons.database),
@@ -413,7 +495,8 @@ class RSSViewState extends ConsumerState<RSSView>
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                 ),
-              )),
+              ),
+              body: DataMine(widget.prefs)),
           PaneItem(
               icon: const Icon(FluentIcons.news),
               title: const Text(
@@ -421,97 +504,8 @@ class RSSViewState extends ConsumerState<RSSView>
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                 ),
-              )),
-        ],
-      ),
-      content: NavigationBody(
-        index: index,
-        children: [
-          ScaffoldPage(
-            padding: const EdgeInsets.only(left: 8.0),
-            content: newsList != null
-                ? AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 700),
-                    child: LayoutBuilder(builder: (context, constraints) {
-                      final width = constraints.maxWidth;
-                      final height = constraints.maxHeight;
-                      int crossAxisCount = 2;
-                      if (width / height >= 1.5 && width >= 600) {
-                        crossAxisCount = 3;
-                      }
-                      if ((width / height >= 2 || width >= 1300) &&
-                          width >= 1200) {
-                        crossAxisCount = 4;
-                      }
-                      return GridView.builder(
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: crossAxisCount,
-                                  childAspectRatio: 380 / 372),
-                          itemCount: newsList?.length ?? 0,
-                          itemBuilder: (context, index) {
-                            final item = newsList![index];
-                            newItem = newsList!.first;
-                            newItemTitle.value = newsList!.first.title;
-                            return HoverButton(
-                              builder: (context, set) => Container(
-                                color: set.isHovering ? Colors.grey[200] : null,
-                                child: ContextMenuArea(
-                                  builder: (context) {
-                                    return <Widget>[
-                                      HoverButton(
-                                        builder: (context, set2) {
-                                          late final Color color;
-                                          if (set2.isHovering) {
-                                            color = theme.accentColor
-                                                .withOpacity(0.11);
-                                          } else {
-                                            color =
-                                                theme.scaffoldBackgroundColor;
-                                          }
-                                          return ListTile(
-                                            title: const Text('Copy Link'),
-                                            contentPadding:
-                                                const EdgeInsets.only(left: 20),
-                                            tileColor: color,
-                                          );
-                                        },
-                                        onPressed: () async {
-                                          await Clipboard.setData(
-                                              ClipboardData(text: item.link));
-                                          if (!mounted) return;
-                                          Navigator.of(context).pop();
-                                        },
-                                        margin: EdgeInsets.zero,
-                                      ),
-                                    ];
-                                  },
-                                  child: _buildGradient(
-                                      _buildCard(item, theme: theme),
-                                      item: item),
-                                ),
-                              ),
-                              onPressed: () {
-                                launchUrl(Uri.parse(item.link));
-                              },
-                              cursor: SystemMouseCursors.click,
-                            );
-                          });
-                    }))
-                : Center(
-                    child: SizedBox(
-                      width: 100,
-                      height: 100,
-                      child: ProgressRing(
-                        strokeWidth: 10,
-                        activeColor: theme.accentColor,
-                      ),
-                    ),
-                  ),
-          ),
-          Settings(widget.prefs),
-          DataMine(widget.prefs),
-          CustomRSSView(widget.prefs),
+              ),
+              body: CustomRSSView(widget.prefs)),
         ],
       ),
     );

@@ -35,12 +35,6 @@ class DataMineState extends ConsumerState<DataMine> {
       await notify(lastPubDate.value!, newItemUrl!);
       await widget.prefs.setString('previous', lastPubDate.value!);
     });
-    Timer.periodic(const Duration(seconds: 10), (timer) async {
-      if (!mounted) timer.cancel();
-      if (ref.watch(provider.checkDataMine)) {
-        ref.refresh(provider.dataMineFutureProvider);
-      }
-    });
   }
 
   Future<void> notify(String pubDate, String url) async {
@@ -118,9 +112,9 @@ class DataMineState extends ConsumerState<DataMine> {
                                         }
                                         return ListTile(
                                           title: const Text('Copy Link'),
-                                          contentPadding:
-                                              const EdgeInsets.only(left: 20),
-                                          tileColor: color,
+                                          tileColor:
+                                              ButtonState.resolveWith<Color>(
+                                                  (states) => color),
                                         );
                                       },
                                       onPressed: () async {
@@ -161,8 +155,6 @@ class DataMineState extends ConsumerState<DataMine> {
                                     style: const TextStyle(
                                         letterSpacing: 0.52, fontSize: 14),
                                   ),
-                                  contentPadding: EdgeInsets.zero,
-                                  isThreeLine: true,
                                 ),
                               ),
                             ),
@@ -229,8 +221,6 @@ class DataMineState extends ConsumerState<DataMine> {
                                     style: const TextStyle(
                                         letterSpacing: 0.52, fontSize: 14),
                                   ),
-                                  contentPadding: EdgeInsets.zero,
-                                  isThreeLine: true,
                                 ),
                                 onPressed: () {
                                   if (data.link != null) {

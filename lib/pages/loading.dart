@@ -10,7 +10,7 @@ import '../main.dart';
 import '../services/data/github.dart';
 import '../von_assistant/von_assistant.dart';
 import 'downloader.dart';
-import 'rss_feed.dart';
+import 'feed.dart';
 
 class Loading extends ConsumerStatefulWidget {
   final SharedPreferences prefs;

@@ -50,12 +50,12 @@ class SettingsState extends ConsumerState<Settings> {
         darkTheme: SettingsThemeData(
           settingsListBackground: Colors.transparent,
           settingsSectionBackground: Colors.transparent,
-          tileHighlightColor: theme.accentColor.resolve(context),
+          tileHighlightColor: theme.accentColor,
         ),
         lightTheme: SettingsThemeData(
             settingsListBackground: Colors.transparent,
             settingsSectionBackground: Colors.transparent,
-            tileHighlightColor: theme.accentColor.resolve(context)),
+            tileHighlightColor: theme.accentColor),
         sections: [
           SettingsSection(
             title: const Text('Main'),

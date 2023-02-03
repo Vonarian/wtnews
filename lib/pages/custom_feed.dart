@@ -194,8 +194,6 @@ class CustomRSSViewState extends ConsumerState<CustomRSSView> {
                         style:
                             const TextStyle(letterSpacing: 0.52, fontSize: 14),
                       ),
-                      contentPadding: EdgeInsets.zero,
-                      isThreeLine: true,
                     ),
                     onPressed: () {
                       if (data.link != null) {
