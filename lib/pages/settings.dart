@@ -220,6 +220,7 @@ class SettingsState extends ConsumerState<Settings> {
             title: const Text('Additional'),
             tiles: [
               SettingsTile.switchTile(
+                enabled: false,
                 initialValue: ref.watch(provider.checkDataMine),
                 onToggle: (value) async {
                   widget.prefs.setBool('checkDataMine', value);
@@ -231,8 +232,10 @@ class SettingsState extends ConsumerState<Settings> {
                   width: 30,
                   height: 30,
                 ),
-                description: const Text(
-                    'WTNews Checks for updates of data mines and notifies you when a new one is available.'),
+                description: Text(
+                  'Temporarily Disabled',
+                  style: TextStyle(color: Colors.red),
+                ),
                 activeSwitchColor: theme.accentColor.lightest,
               ),
               ref.watch(provider.premiumProvider)

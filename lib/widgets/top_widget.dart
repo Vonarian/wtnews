@@ -10,7 +10,6 @@ import 'package:system_theme/system_theme.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webfeed/domain/rss_feed.dart';
-import 'package:webfeed/domain/rss_item.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/services/data/firebase.dart';
 
@@ -84,36 +83,6 @@ class AppState extends ConsumerState<App>
       }
       if (brightness != ref.read(provider.systemThemeProvider.notifier).state) {
         ref.read(provider.systemThemeProvider.notifier).state = brightness;
-      }
-    });
-    Timer.periodic(const Duration(seconds: 10), (timer) async {
-      if (ref.watch(provider.checkDataMine)) {
-        rssFeed = await getDataMine()
-            .timeout(const Duration(seconds: 25))
-            .whenComplete(() async {
-          if (rssFeed != null && rssFeed?.items != null) {
-            rssFeed?.items!.removeWhere((item) {
-              var itemDescription = item.description;
-              bool isDataMine = itemDescription!.contains('Raw changes:') &&
-                  itemDescription.contains('→') &&
-                  itemDescription.contains('Current dev version');
-              return !isDataMine;
-            });
-            RssItem item = rssFeed!.items!.first;
-            if (item.description != null) {
-              String itemDescription = item.description!;
-              bool isDataMine = (itemDescription.contains('Raw changes:') &&
-                  itemDescription.contains('→') &&
-                  itemDescription.contains('Current dev version'));
-              if (isDataMine) {
-                if (lastPubDate.value != item.pubDate.toString()) {
-                  newItemUrl = item.link;
-                  lastPubDate.value = item.pubDate.toString();
-                }
-              }
-            }
-          }
-        });
       }
     });
   }

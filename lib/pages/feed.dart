@@ -23,7 +23,6 @@ import 'package:wtnews/services/extensions.dart';
 import '../main.dart';
 import '../services/data/data_class.dart';
 import '../services/utility.dart';
-import 'datamine.dart';
 import 'downloader.dart';
 
 class RSSView extends ConsumerStatefulWidget {
@@ -318,29 +317,32 @@ class RSSViewState extends ConsumerState<RSSView>
     final firebaseValue = ref.watch(provider.versionFBProvider);
     return NavigationView(
       appBar: NavigationAppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'WTNews v$appVersion ${ref.watch(provider.premiumProvider) ? '(Premium!)' : ''}',
-              textAlign: TextAlign.left,
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: theme.accentColor.lighter),
-            ),
-            devMessageValue.when(
-              data: (data) => Text(
-                data != null ? 'Vonarian\'s Message: $data' : '',
+        title: Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'WTNews v$appVersion ${ref.watch(provider.premiumProvider) ? '(Premium!)' : ''}',
+                textAlign: TextAlign.left,
                 style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.red),
+                    color: theme.accentColor.lighter),
               ),
-              loading: () => const SizedBox(),
-              error: (error, st) => const SizedBox(),
-            ),
-          ],
+              devMessageValue.when(
+                data: (data) => Text(
+                  data != null ? 'Vonarian\'s Message: $data' : '',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red),
+                ),
+                loading: () => const SizedBox(),
+                error: (error, st) => const SizedBox(),
+              ),
+            ],
+          ),
         ),
         automaticallyImplyLeading: false,
         actions: firebaseValue.when(
@@ -383,7 +385,7 @@ class RSSViewState extends ConsumerState<RSSView>
               ),
             ),
             body: ScaffoldPage(
-              padding: const EdgeInsets.only(left: 8.0),
+              padding: EdgeInsets.zero,
               content: newsList != null
                   ? AnimatedSwitcher(
                       duration: const Duration(milliseconds: 700),
@@ -399,10 +401,11 @@ class RSSViewState extends ConsumerState<RSSView>
                           crossAxisCount = 4;
                         }
                         return GridView.builder(
+                            padding: EdgeInsets.zero,
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: crossAxisCount,
-                                    childAspectRatio: 380 / 372),
+                              crossAxisCount: crossAxisCount,
+                            ),
                             itemCount: newsList?.length ?? 0,
                             itemBuilder: (context, index) {
                               final item = newsList![index];
@@ -488,15 +491,6 @@ class RSSViewState extends ConsumerState<RSSView>
             ),
             body: Settings(widget.prefs),
           ),
-          PaneItem(
-              icon: const Icon(FluentIcons.database),
-              title: const Text(
-                'DataMine',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              body: DataMine(widget.prefs)),
           PaneItem(
               icon: const Icon(FluentIcons.news),
               title: const Text(
