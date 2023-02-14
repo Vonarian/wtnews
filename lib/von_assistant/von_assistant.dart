@@ -90,9 +90,9 @@ class VonAssistant {
     return data;
   }
 
-  Future<void> installAppUpdate(String msixPath) async {
-    await Process.run(filePath, ['-u', '-p', msixPath, '-n', 'wtnews'],
-        runInShell: true, workingDirectory: p.dirname(filePath));
+  Future<void> installAppUpdate(String msixDir) async {
+    await Process.run(filePath, ['-u', '-p', msixDir, '-n', 'wtnews'],
+        runInShell: true, workingDirectory: msixDir);
   }
 
   ///Returns true if the GH version is newer than the current version.

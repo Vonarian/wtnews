@@ -85,7 +85,7 @@ class DownloaderState extends State<Downloader>
                 .create(recursive: true);
           }
         }
-        final path = '${tempWtnews.path}\\out\\WTNews.msix';
+        final path = '${tempWtnews.path}\\out';
         text = 'Installing';
         setState(() {});
         final von = await VonAssistant.initialize(appDocPath);

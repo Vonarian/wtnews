@@ -318,7 +318,7 @@ class RSSViewState extends ConsumerState<RSSView>
     return NavigationView(
       appBar: NavigationAppBar(
         title: Padding(
-          padding: const EdgeInsets.only(top: 8.0),
+          padding: const EdgeInsets.only(top: 7.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
