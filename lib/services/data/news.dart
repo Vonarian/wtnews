@@ -1,5 +1,5 @@
-import 'package:html/dom.dart' as dom;
-import 'package:html/parser.dart';
+import 'dart:convert';
+
 import 'package:intl/intl.dart';
 
 import '../../main.dart';
@@ -12,6 +12,7 @@ class News {
   final String dateString;
   final String link;
   final bool isNews;
+  final bool dev;
 
   const News(
       {required this.title,
@@ -20,123 +21,50 @@ class News {
       required this.date,
       required this.link,
       required this.dateString,
-      required this.isNews});
+      required this.isNews,
+      required this.dev});
 
   @override
   String toString() {
-    return 'News ==> title: $title, description: $description, imageUrl: $imageUrl, date: $date, link: $link';
+    return 'News{title: $title, description: $description, imageUrl: $imageUrl, date: $date, dateString: $dateString, link: $link, isNews: $isNews, dev: $dev}';
   }
 
-  static Future<List<News>?> getNews() async {
+  factory News.fromJson(Map<String, dynamic> json) => News(
+        title: json['title'],
+        description: json['description'],
+        imageUrl: json['imageUrl'],
+        date: DateFormat('d-LLLL-y').parseLoose(json['date']),
+        link: json['link'],
+        isNews: json['isNews'],
+        dev: json['dev'],
+        dateString: json['date'],
+      );
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'description': description,
+        'imageUrl': imageUrl,
+        'date': date.toString(),
+        'link': link,
+        'isNews': isNews,
+        'dev': dev,
+      };
+
+  static Future<List<News>> getNews() async {
     //Get from news section
-    final responseNews = await dio.get('https://warthunder.com/en/news');
-    const rootUrl = 'https://warthunder.com';
-    final document = parse(responseNews.data);
-    final List<dom.Element> elements =
-        document.getElementsByClassName('showcase__content-wrapper');
-    List<News> list = [];
-    if (elements.isNotEmpty) {
-      final items =
-          elements[0].getElementsByClassName('showcase__item widget  ');
-      if (items.isNotEmpty) {
-        for (var item in items) {
-          final url = rootUrl +
-              (item.getElementsByClassName('widget__link')[0].attributes['href']
-                      as String)
-                  .replaceAll('//', '');
-          final imageUrl = item
-              .getElementsByClassName('widget__poster-media')[0]
-              .attributes['data-src']
-              .toString();
-          final content = item.getElementsByClassName('widget__content').first;
-          final title = content.getElementsByClassName('widget__title').first;
-          final description =
-              content.getElementsByClassName('widget__comment').first;
-          final meta = content.getElementsByTagName('.widget-meta');
-          final date = meta
-              .firstWhere((element) => element
-                  .getElementsByTagName('.widget-meta__item--right')
-                  .isNotEmpty)
-              .getElementsByTagName('.widget-meta__item--right')
-              .first
-              .text;
-          final news = News(
-              title: title.text.trim(),
-              description: description.text.trim(),
-              imageUrl: 'https://${imageUrl.trim()}'
-                  .replaceAll('https:////', 'https://'),
-              date: DateFormat('d-LLLL-y').parseLoose(date.trim()),
-              dateString: date.trim(),
-              link: url,
-              isNews: true);
-          list.add(news);
-        }
-        return list;
-      }
-    }
-    return null;
+    final responseNews =
+        await dio.get('https://wtnews-server.vonarian.workers.dev/');
+    final list = jsonDecode(responseNews.data) as List;
+    final newsList = list.map((e) => News.fromJson(e)).toList();
+    return newsList;
   }
 
-  static Future<List<News>?> getChangelog() async {
+  static Future<List<News>> getChangelog() async {
     //Get from changelog section
     final responseNews =
-        await dio.get('https://warthunder.com/en/game/changelog/');
-    const rootUrl = 'https://warthunder.com';
-    final document = parse(responseNews.data);
-    final List<dom.Element> elements =
-        document.getElementsByClassName('showcase__content-wrapper');
-    List<News> list = [];
-    if (elements.isNotEmpty) {
-      final items =
-          elements[0].getElementsByClassName('showcase__item widget  ');
-      if (items.isNotEmpty) {
-        for (var item in items) {
-          final url = rootUrl +
-              (item.getElementsByClassName('widget__link')[0].attributes['href']
-                      as String)
-                  .replaceAll('//', '');
-          final imageUrl = item
-              .getElementsByClassName('widget__poster-media')[0]
-              .attributes['data-src']
-              .toString();
-          final content = item.getElementsByClassName('widget__content').first;
-          final title = content.getElementsByClassName('widget__title').first;
-          final description =
-              content.getElementsByClassName('widget__comment').first;
-          final meta = content.getElementsByTagName('.widget-meta');
-          final date = meta
-              .firstWhere((element) => element
-                  .getElementsByTagName('.widget-meta__item--right')
-                  .isNotEmpty)
-              .getElementsByTagName('.widget-meta__item--right')
-              .first
-              .text;
-          final news = News(
-              title: title.text.trim(),
-              description: description.text.trim(),
-              imageUrl: 'https://${imageUrl.trim()}'
-                  .replaceAll('https:////', 'https://'),
-              date: DateFormat('d-LLLL-y').parseLoose(date.trim()),
-              dateString: date.trim(),
-              link: url,
-              isNews: false);
-          list.add(news);
-        }
-        return list;
-      }
-    }
-    return null;
-  }
-
-  bool isDev() {
-    if (link.toLowerCase().contains('development') ||
-        (title.toLowerCase().contains('teaser') ||
-            title.toLowerCase().contains('trailer')) ||
-        title.toLowerCase().contains('major') ||
-        link.toLowerCase().contains('planned') ||
-        description.toLowerCase().contains('major update')) {
-      return true;
-    }
-    return false;
+        await dio.get('https://wtnews-server-changelog.vonarian.workers.dev/');
+    final list = jsonDecode(responseNews.data) as List;
+    final newsList = list.map((e) => News.fromJson(e)).toList();
+    return newsList;
   }
 }

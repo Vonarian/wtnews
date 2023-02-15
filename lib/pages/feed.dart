@@ -45,6 +45,8 @@ class RSSViewState extends ConsumerState<RSSView>
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
       subscription = startListening();
+      newsList = await getAllNews();
+      setState(() {});
       final devMessageValue = ref.watch(provider.devMessageProvider.stream);
       devMessageValue.listen((String? event) async {
         if (event != widget.prefs.getString('devMessage')) {
@@ -62,7 +64,6 @@ class RSSViewState extends ConsumerState<RSSView>
             widget.prefs.getBool('startup') ?? false,
             appVersion,
             prefs: widget.prefs);
-        newsList = await getAllNews();
         setState(() {});
       } catch (e, st) {
         log(e.toString(), stackTrace: st);
@@ -95,7 +96,7 @@ class RSSViewState extends ConsumerState<RSSView>
                 newTitle: newItemTitle.value, url: newItem.link);
             if (ref.watch(provider.playSound)) AppUtil.playSound(newSound);
           } else {
-            if (newItem.isNews && newItem.isDev()) {
+            if (newItem.isNews && newItem.dev) {
               await sendNotification(
                   newTitle: newItemTitle.value, url: newItem.link);
               if (ref.watch(provider.playSound)) AppUtil.playSound(newSound);
@@ -280,8 +281,8 @@ class RSSViewState extends ConsumerState<RSSView>
 
   Future<List<News>> getAllNews() async {
     try {
-      final List<News> newsList = await News.getNews() ?? [];
-      final List<News> changeLogList = await News.getChangelog() ?? [];
+      final List<News> newsList = await News.getNews();
+      final List<News> changeLogList = await News.getChangelog();
       List<News> finalList = [...newsList, ...changeLogList];
       finalList.sort((a, b) => b.date.compareTo(a.date));
       return finalList.isNotEmpty ? finalList : [];
