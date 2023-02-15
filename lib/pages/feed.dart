@@ -283,7 +283,7 @@ class RSSViewState extends ConsumerState<RSSView>
     try {
       final List<News> newsList = await News.getNews();
       final List<News> changeLogList = await News.getChangelog();
-      List<News> finalList = [...newsList, ...changeLogList];
+      final List<News> finalList = [...newsList, ...changeLogList];
       finalList.sort((a, b) => b.date.compareTo(a.date));
       return finalList.isNotEmpty ? finalList : [];
     } catch (e) {
