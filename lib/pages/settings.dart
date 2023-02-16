@@ -9,7 +9,7 @@ import 'package:settings_ui/settings_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../main.dart';
-import '../services/data/data_class.dart';
+import '../services/data/rtdb_model.dart';
 import '../von_assistant/von_assistant.dart';
 import '../widgets/loading_widget.dart';
 import 'downloader.dart';

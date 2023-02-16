@@ -21,7 +21,7 @@ import 'package:wtnews/services/data/news.dart';
 import 'package:wtnews/services/extensions.dart';
 
 import '../main.dart';
-import '../services/data/data_class.dart';
+import '../services/data/rtdb_model.dart';
 import '../services/utility.dart';
 import 'downloader.dart';
 
@@ -94,12 +94,12 @@ class RSSViewState extends ConsumerState<RSSView>
           if (!ref.read(provider.focusedProvider)) {
             await sendNotification(
                 newTitle: newItemTitle.value, url: newItem.link);
-            if (ref.watch(provider.playSound)) AppUtil.playSound(newSound);
+            if (ref.read(provider.playSound)) AppUtil.playSound(newSound);
           } else {
             if (newItem.isNews && newItem.dev) {
               await sendNotification(
                   newTitle: newItemTitle.value, url: newItem.link);
-              if (ref.watch(provider.playSound)) AppUtil.playSound(newSound);
+              if (ref.read(provider.playSound)) AppUtil.playSound(newSound);
             }
           }
         } catch (e, st) {
@@ -112,7 +112,7 @@ class RSSViewState extends ConsumerState<RSSView>
               .read(provider.prefsProvider)
               .setString('rssTitle', newRssTitle.value!);
           await sendNotification(newTitle: newRssTitle.value, url: newRssUrl);
-          if (ref.watch(provider.playSound)) AppUtil.playSound(newSound);
+          if (ref.read(provider.playSound)) AppUtil.playSound(newSound);
         } catch (e, st) {
           await Sentry.captureException(e, stackTrace: st);
         }
