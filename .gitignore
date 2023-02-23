@@ -50,3 +50,4 @@ app.*.map.json
 /lib/services/data/dsn.dart
 /lib/von_assistant/data.dart
 /.puro.json
+local.properties

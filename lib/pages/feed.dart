@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -12,6 +13,7 @@ import 'package:local_notifier/local_notifier.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:webfeed/domain/rss_feed.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/custom_feed.dart';
@@ -36,16 +38,71 @@ class RSSView extends ConsumerStatefulWidget {
 
 class RSSViewState extends ConsumerState<RSSView>
     with WidgetsBindingObserver, TickerProviderStateMixin {
+  final List<StreamSubscription> subscriptions = [];
+
   @override
   void initState() {
     super.initState();
     loadFromPrefs();
+    getAllNews().then((value) {
+      setState(() {
+        newsList.addAll(value);
+        newsList.toSet().toList();
+      });
+    });
     WidgetsBinding.instance.addObserver(this);
-
+    channels.addAll(getAllChannels());
+    if (channels.isNotEmpty) {
+      final newsChannel = channels.first;
+      subscriptions.add(newsChannel.stream.listen((event) {
+        final json = jsonDecode(event);
+        if (json['error'] != null) return;
+        if (json is! List) {
+          final news = News.fromJson(json);
+          newsList.add(news);
+          newsList.toSet().toList();
+          newsList.sort(
+            (a, b) => b.date.compareTo(a.date),
+          );
+          setState(() {});
+          return;
+        }
+        final listNews =
+            (jsonDecode(event) as List).map((e) => News.fromJson(e)).toList();
+        newsList.addAll(listNews);
+        newsList.toSet().toList();
+        newsList.sort(
+          (a, b) => b.date.compareTo(a.date),
+        );
+        setState(() {});
+      }));
+      final changelogChannel = channels.last;
+      subscriptions.add(changelogChannel.stream.listen((event) {
+        final json = jsonDecode(event);
+        if (json['error'] != null) return;
+        if (json is! List) {
+          final news = News.fromJson(json);
+          newsList.add(news);
+          newsList.toSet().toList();
+          newsList.sort(
+            (a, b) => b.date.compareTo(a.date),
+          );
+          setState(() {});
+          return;
+        }
+        final listNews =
+            (jsonDecode(event) as List).map((e) => News.fromJson(e)).toList();
+        newsList.addAll(listNews);
+        newsList.toSet().toList();
+        newsList.sort(
+          (a, b) => b.date.compareTo(a.date),
+        );
+        setState(() {});
+      }));
+    }
     Future.delayed(Duration.zero, () async {
       if (!mounted) return;
       subscription = startListening();
-      newsList = await getAllNews();
       setState(() {});
       final devMessageValue = ref.watch(provider.devMessageProvider.stream);
       devMessageValue.listen((String? event) async {
@@ -71,8 +128,6 @@ class RSSViewState extends ConsumerState<RSSView>
     });
     Timer.periodic(const Duration(seconds: 15), (timer) async {
       if (!mounted) timer.cancel();
-      newsList = await getAllNews();
-      setState(() {});
       rssFeed = await getForum();
       final item = rssFeed?.items?.firstWhere((element) =>
           element.title!.toLowerCase().contains('technical') ||
@@ -138,6 +193,9 @@ class RSSViewState extends ConsumerState<RSSView>
     super.dispose();
     WidgetsBinding.instance.removeObserver(this);
     subscription?.cancel();
+    for (var sub in subscriptions) {
+      sub.cancel();
+    }
   }
 
   StreamSubscription? startListening() {
@@ -200,15 +258,12 @@ class RSSViewState extends ConsumerState<RSSView>
       toast.onClick = () async {
         if (url != null) {
           launchUrl(Uri.parse(url));
-          if (!(await windowManager.isFocused())) {
-            windowManager.minimize();
-          }
         }
       };
     }
   }
 
-  Widget _buildCard(News item, {required FluentThemeData theme}) {
+  Widget _buildCard(News item) {
     return Card(
         child: Column(
       children: [
@@ -221,7 +276,10 @@ class RSSViewState extends ConsumerState<RSSView>
         Flexible(
           child: Text(
             item.title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: item.dev ? Colors.teal : null),
             textAlign: TextAlign.left,
           ),
         ),
@@ -284,11 +342,19 @@ class RSSViewState extends ConsumerState<RSSView>
       final result = await Future.wait([News.getNews(), News.getChangelog()]);
       final List<News> finalList = [...result.first, ...result.last];
       finalList.sort((a, b) => b.date.compareTo(a.date));
-      return finalList.isNotEmpty ? finalList : [];
+      return finalList;
     } catch (e) {
       rethrow;
     }
   }
+
+  List<WebSocketChannel> getAllChannels() {
+    final newsChannel = News.connectNews();
+    final changelogChannel = News.connectChangelog();
+    return [newsChannel, changelogChannel];
+  }
+
+  final List<WebSocketChannel> channels = [];
 
   Future<void> saveToPrefs() async {
     await widget.prefs.setString('lastTitle', newItemTitle.value ?? '');
@@ -302,7 +368,7 @@ class RSSViewState extends ConsumerState<RSSView>
   }
 
   RssFeed? rssFeed;
-  List<News>? newsList;
+  final List<News> newsList = [];
   StreamSubscription? subscription;
   late News newItem;
   ValueNotifier<String?> newItemTitle = ValueNotifier(null);
@@ -386,7 +452,7 @@ class RSSViewState extends ConsumerState<RSSView>
             ),
             body: ScaffoldPage(
               padding: EdgeInsets.zero,
-              content: newsList != null
+              content: newsList.isNotEmpty
                   ? AnimatedSwitcher(
                       duration: const Duration(milliseconds: 700),
                       child: LayoutBuilder(builder: (context, constraints) {
@@ -406,11 +472,11 @@ class RSSViewState extends ConsumerState<RSSView>
                                 SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: crossAxisCount,
                             ),
-                            itemCount: newsList?.length ?? 0,
+                            itemCount: newsList.length,
                             itemBuilder: (context, index) {
-                              final item = newsList![index];
-                              newItem = newsList!.first;
-                              newItemTitle.value = newsList!.first.title;
+                              final item = newsList[index];
+                              newItem = newsList.first;
+                              newItemTitle.value = newsList.first.title;
                               return HoverButton(
                                 builder: (context, set) => Container(
                                   color:
@@ -443,8 +509,7 @@ class RSSViewState extends ConsumerState<RSSView>
                                         ),
                                       ];
                                     },
-                                    child: _buildGradient(
-                                        _buildCard(item, theme: theme),
+                                    child: _buildGradient(_buildCard(item),
                                         item: item),
                                   ),
                                 ),

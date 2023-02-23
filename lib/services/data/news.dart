@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:equatable/equatable.dart';
 import 'package:intl/intl.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../main.dart';
 
-class News {
+class News extends Equatable {
   final String title;
   final String description;
   final String imageUrl;
@@ -50,8 +52,24 @@ class News {
         'dev': dev,
       };
 
-  static Future<List<News>> getNews() async {
+  static WebSocketChannel connectNews() {
     //Get from news section
+    final channel = WebSocketChannel.connect(
+      Uri.parse('wss://wtnews-pro.vonarian.workers.dev/ws?onlyUpdates=true'),
+    );
+    return channel;
+  }
+
+  static WebSocketChannel connectChangelog() {
+    //Get from changelog section
+    final channel = WebSocketChannel.connect(
+      Uri.parse(
+          'wss://wtnews-changelog-pro.vonarian.workers.dev/ws?onlyUpdates=true'),
+    );
+    return channel;
+  }
+
+  static Future<List<News>> getNews() async {
     final responseNews =
         await dio.get('https://wtnews-server.vonarian.workers.dev/');
     final list = jsonDecode(responseNews.data) as List;
@@ -60,11 +78,13 @@ class News {
   }
 
   static Future<List<News>> getChangelog() async {
-    //Get from changelog section
     final responseNews =
         await dio.get('https://wtnews-server-changelog.vonarian.workers.dev/');
     final list = jsonDecode(responseNews.data) as List;
     final newsList = list.map((e) => News.fromJson(e)).toList();
     return newsList;
   }
+
+  @override
+  List<Object?> get props => [title];
 }
