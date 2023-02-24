@@ -6,9 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../main.dart';
 import '../services/data/github.dart';
-import '../von_assistant/von_assistant.dart';
 import 'downloader.dart';
 import 'feed.dart';
 
@@ -27,10 +25,6 @@ class LoadingState extends ConsumerState<Loading> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await checkGitVersion(await checkVersion());
-      if (await File(VonAssistant.path).exists()) {
-        ref.read(provider.startupEnabled.notifier).state =
-            await VonAssistant.checkStartup();
-      }
     });
   }
 
@@ -63,7 +57,7 @@ class LoadingState extends ConsumerState<Loading> {
                     Navigator.pushReplacement(
                       context,
                       PageRouteBuilder(
-                        pageBuilder: (c, a1, a2) => RSSView(widget.prefs),
+                        pageBuilder: (c, a1, a2) => HomeFeed(widget.prefs),
                         transitionsBuilder: (c, anim, a2, child) =>
                             FadeTransition(opacity: anim, child: child),
                         transitionDuration: const Duration(milliseconds: 1000),
@@ -93,7 +87,7 @@ class LoadingState extends ConsumerState<Loading> {
           Navigator.pushReplacement(
             context,
             PageRouteBuilder(
-              pageBuilder: (c, a1, a2) => RSSView(widget.prefs),
+              pageBuilder: (c, a1, a2) => HomeFeed(widget.prefs),
               transitionsBuilder: (c, anim, a2, child) =>
                   FadeTransition(opacity: anim, child: child),
               transitionDuration: const Duration(milliseconds: 1000),
@@ -114,7 +108,7 @@ class LoadingState extends ConsumerState<Loading> {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
-            pageBuilder: (c, a1, a2) => RSSView(widget.prefs),
+            pageBuilder: (c, a1, a2) => HomeFeed(widget.prefs),
             transitionsBuilder: (c, anim, a2, child) =>
                 FadeTransition(opacity: anim, child: child),
             transitionDuration: const Duration(milliseconds: 1000),
@@ -127,21 +121,26 @@ class LoadingState extends ConsumerState<Loading> {
   @override
   Widget build(BuildContext context) {
     return ScaffoldPage(
-      content: Stack(
+      content: Center(
+          child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Center(
-            child: Center(
-                child: SizedBox(
-              width: 100,
-              height: 100,
-              child: ProgressRing(
-                strokeWidth: 10,
-                activeColor: FluentTheme.of(context).accentColor,
-              ),
-            )),
+          SizedBox(
+            width: 100,
+            height: 100,
+            child: ProgressRing(
+              strokeWidth: 10,
+              activeColor: FluentTheme.of(context).accentColor,
+            ),
+          ),
+          const SizedBox(
+            height: 10,
+          ),
+          const Text(
+            'Checking for updates...',
           ),
         ],
-      ),
+      )),
     );
   }
 }

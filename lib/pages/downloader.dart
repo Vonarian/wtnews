@@ -8,7 +8,6 @@ import 'package:flutter/material.dart' show SnackBarAction;
 import 'package:local_notifier/local_notifier.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:tray_manager/tray_manager.dart' as tray;
 import 'package:window_manager/window_manager.dart';
@@ -136,61 +135,31 @@ class DownloaderState extends State<Downloader>
         child: SizedBox(
           height: 200,
           width: 200,
-          child: text == 'Downloading'
-              ? CircularPercentIndicator(
-                  center: !error
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              text,
-                              style: const TextStyle(
-                                  fontSize: 15, color: Colors.white),
-                            ),
-                            Text(
-                              '${progress.toStringAsFixed(1)} %',
-                              style: const TextStyle(
-                                  fontSize: 15, color: Colors.white),
-                            ),
-                          ],
-                        )
-                      : const Center(
-                          child: Text(
-                            'ERROR',
-                            style: TextStyle(fontSize: 15),
-                          ),
-                        ),
-                  backgroundColor: Colors.blue,
-                  percent: double.parse(progress.toStringAsFixed(0)) / 100,
-                  radius: 100,
-                )
-              : Center(
-                  child: Stack(
-                    children: [
-                      const Center(
-                          child: ProgressRing(
-                        strokeWidth: 10,
-                      )),
-                      Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              text,
-                              style: const TextStyle(
-                                  fontSize: 15, color: Colors.white),
-                            ),
-                            Text(
-                              '${progress.toStringAsFixed(1)} %',
-                              style: const TextStyle(
-                                  fontSize: 15, color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+          child: Stack(
+            children: [
+              SizedBox(
+                  height: 200,
+                  width: 200,
+                  child: ProgressRing(
+                    value: progress,
+                  )),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      text,
+                      style: const TextStyle(fontSize: 15, color: Colors.white),
+                    ),
+                    Text(
+                      '${progress.toStringAsFixed(1)} %',
+                      style: const TextStyle(fontSize: 15, color: Colors.white),
+                    ),
+                  ],
                 ),
+              ),
+            ],
+          ),
         ),
       )),
     );

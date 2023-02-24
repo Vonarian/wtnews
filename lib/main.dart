@@ -17,7 +17,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:system_info2/system_info2.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/loading.dart';
-import 'package:wtnews/providers.dart';
 import 'package:wtnews/services/data/dsn.dart';
 import 'package:wtnews/services/data/firebase_data.dart';
 import 'package:wtnews/widgets/top_widget.dart';
@@ -29,36 +28,31 @@ final String newSound = p.joinAll([
   p.dirname(Platform.resolvedExecutable),
   'data\\flutter_assets\\assets\\sound\\new.wav'
 ]);
-final provider = MyProvider();
 final deviceInfo = DeviceInfoPlugin();
 final Dio dio = Dio();
 late final String appVersion;
 late final String uid;
 late String appDocPath;
+late final SharedPreferences prefs;
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
   await Window.initialize();
-  final prefs = await SharedPreferences.getInstance();
+  prefs = await SharedPreferences.getInstance();
   appDocPath = (await getApplicationDocumentsDirectory()).path;
-  provider.userNameProvider =
-      StateProvider((ref) => prefs.getString('userName'));
   windowManager.waitUntilReadyToShow().then((_) async {
     await windowManager.setResizable(true);
     await windowManager.setTitle('WTNews');
     await windowManager.setIcon('assets/app_icon.ico');
     await windowManager.setMinimumSize(const Size(628, 90));
     if (SysInfo.operatingSystemName.contains('Windows 11')) {
-      await Window.setEffect(
-          effect: WindowEffect.acrylic,
-          color: const Color(0xCC222222),
-          dark: true);
+      await Window.setEffect(effect: WindowEffect.acrylic);
     } else {
       await Window.setEffect(
-          effect: WindowEffect.aero,
-          color: const Color(0xCC222222),
-          dark: true);
+        effect: WindowEffect.aero,
+        color: const Color(0xCC222222),
+      );
     }
 
     await windowManager.show();
@@ -70,9 +64,8 @@ Future<void> main(List<String> args) async {
   app = await Firebase.initializeApp(
       options: FirebaseOptions.fromMap(firebaseConfig), name: 'wtnews-54364');
   runZonedGuarded(() async {
-    Sentry.configureScope((scope) => scope.setUser(SentryUser(
-        username: prefs.getString('userName'),
-        ipAddress: scope.user?.ipAddress)));
+    Sentry.configureScope((scope) =>
+        scope.setUser(SentryUser(username: prefs.getString('userName'))));
     appVersion = await File(pathToVersion).readAsString();
     await SentryFlutter.init(
       (options) {
@@ -83,9 +76,6 @@ Future<void> main(List<String> args) async {
               if (exception != null)
                 log('Exception: $exception', stackTrace: stackTrace),
             };
-        options.tracesSampleRate = 1.0;
-        options.enableAutoSessionTracking = true;
-        options.enableOutOfMemoryTracking = true;
         options.release = 'WTNews@$appVersion';
         options.tracesSampler = (samplingContext) {
           return 0.6;
@@ -93,7 +83,6 @@ Future<void> main(List<String> args) async {
       },
     );
     runApp(ProviderScope(
-      overrides: [provider.prefsProvider.overrideWithValue(prefs)],
       child: App(startup: args.isNotEmpty, child: Loading(prefs)),
     ));
   }, (exception, stackTrace) async {

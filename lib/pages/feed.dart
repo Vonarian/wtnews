@@ -4,52 +4,59 @@ import 'dart:developer';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:contextmenu/contextmenu.dart';
-import 'package:dio/dio.dart';
 import 'package:firebase_dart/database.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:local_notifier/local_notifier.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:webfeed/domain/rss_feed.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:wtnews/pages/custom_feed.dart';
 import 'package:wtnews/pages/settings.dart';
 import 'package:wtnews/services/data/firebase.dart';
 import 'package:wtnews/services/data/news.dart';
 import 'package:wtnews/services/extensions.dart';
+import 'package:wtnews/widgets/LinkPane.dart';
+import 'package:wtnews/widgets/item_webview.dart';
 
 import '../main.dart';
+import '../providers.dart';
 import '../services/data/rtdb_model.dart';
 import '../services/utility.dart';
 import 'downloader.dart';
 
-class RSSView extends ConsumerStatefulWidget {
+class HomeFeed extends ConsumerStatefulWidget {
   final SharedPreferences prefs;
 
-  const RSSView(this.prefs, {Key? key}) : super(key: key);
+  const HomeFeed(this.prefs, {Key? key}) : super(key: key);
 
   @override
-  RSSViewState createState() => RSSViewState();
+  HomeFeedState createState() => HomeFeedState();
 }
 
-class RSSViewState extends ConsumerState<RSSView>
+class HomeFeedState extends ConsumerState<HomeFeed>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   final List<StreamSubscription> subscriptions = [];
+  late final FlutterTts tts;
 
   @override
   void initState() {
     super.initState();
     loadFromPrefs();
+    AppUtil.setupTTS().then((value) => tts = value);
+
     getAllNews().then((value) {
       setState(() {
         newsList.addAll(value);
         newsList.toSet().toList();
       });
     });
+    final prefs = ref.read(provider.prefsProvider);
     WidgetsBinding.instance.addObserver(this);
     channels.addAll(getAllChannels());
     if (channels.isNotEmpty) {
@@ -101,6 +108,25 @@ class RSSViewState extends ConsumerState<RSSView>
       }));
     }
     Future.delayed(Duration.zero, () async {
+      presenceService.getMessage(uid).listen((event) async {
+        final data = event.snapshot.value;
+        if (data != null && data != widget.prefs.getString('pm')) {
+          LocalNotification(title: 'New private message', body: data).show();
+          displayInfoBar(context, builder: (context, close) {
+            return InfoBar(
+              title: const Text('New Private Message from Vonarian!'),
+              content: Text(data),
+              action: IconButton(
+                icon: const Icon(FluentIcons.clear),
+                onPressed: close,
+              ),
+              severity: InfoBarSeverity.info,
+            );
+          });
+          await widget.prefs.setString('pm', data);
+        }
+      });
+
       if (!mounted) return;
       subscription = startListening();
       setState(() {});
@@ -118,7 +144,7 @@ class RSSViewState extends ConsumerState<RSSView>
       try {
         await presenceService.configureUserPresence(
             (await deviceInfo.windowsInfo).computerName,
-            widget.prefs.getBool('startup') ?? false,
+            ref.read(provider.prefsProvider).runAtStartup,
             appVersion,
             prefs: widget.prefs);
         setState(() {});
@@ -126,48 +152,38 @@ class RSSViewState extends ConsumerState<RSSView>
         log(e.toString(), stackTrace: st);
       }
     });
-    Timer.periodic(const Duration(seconds: 15), (timer) async {
-      if (!mounted) timer.cancel();
-      rssFeed = await getForum();
-      final item = rssFeed?.items?.firstWhere((element) =>
-          element.title!.toLowerCase().contains('technical') ||
-          element.title!.toLowerCase().contains('opening') ||
-          element.title!.toLowerCase().contains('planned'));
-      newRssUrl = item?.link;
-      if (item?.title != null &&
-          item?.title != newRssTitle.value &&
-          newRssTitle.value !=
-              ref.read(provider.prefsProvider).getString('rssTitle')) {
-        newRssTitle.value = item?.title;
-      }
-    });
 
     Future.delayed(const Duration(seconds: 10), () {
       newItemTitle.addListener(() async {
         saveToPrefs();
         try {
-          if (!ref.read(provider.focusedProvider)) {
+          if (!prefs.focusedMode) {
             await sendNotification(
                 newTitle: newItemTitle.value, url: newItem.link);
-            if (ref.read(provider.playSound)) AppUtil.playSound(newSound);
+            if (prefs.playSound) {
+              await compute(AppUtil.playSound, newSound);
+            }
+            if (prefs.readNewTitle) {
+              await tts.speak(newItemTitle.value ?? '');
+            }
+            if (prefs.readNewCaption) {
+              await tts.speak(newsList.first.description);
+            }
           } else {
             if (newItem.isNews && newItem.dev) {
               await sendNotification(
                   newTitle: newItemTitle.value, url: newItem.link);
-              if (ref.read(provider.playSound)) AppUtil.playSound(newSound);
+              if (prefs.playSound) {
+                await compute(AppUtil.playSound, newSound);
+              }
+              if (prefs.readNewTitle) {
+                await tts.speak(newItemTitle.value ?? '');
+              }
+              if (prefs.readNewCaption) {
+                await tts.speak(newsList.first.description);
+              }
             }
           }
-        } catch (e, st) {
-          await Sentry.captureException(e, stackTrace: st);
-        }
-      });
-      newRssTitle.addListener(() async {
-        try {
-          await ref
-              .read(provider.prefsProvider)
-              .setString('rssTitle', newRssTitle.value!);
-          await sendNotification(newTitle: newRssTitle.value, url: newRssUrl);
-          if (ref.read(provider.playSound)) AppUtil.playSound(newSound);
         } catch (e, st) {
           await Sentry.captureException(e, stackTrace: st);
         }
@@ -224,19 +240,6 @@ class RSSViewState extends ConsumerState<RSSView>
                 launchUrl(Uri.parse(message.url!));
               }
             };
-            if (message.operation != null) {
-              switch (message.operation) {
-                case 'getUserName':
-                  if (!mounted) return;
-                  await Message.getUserName(context, data, ref);
-                  break;
-                case 'getFeedback':
-                  if (!mounted) return;
-                  Message.getFeedback(context, data, mounted,
-                      prefs: widget.prefs);
-                  break;
-              }
-            }
             await widget.prefs.setInt('id', message.id);
           }
         }
@@ -246,7 +249,6 @@ class RSSViewState extends ConsumerState<RSSView>
 
   void loadFromPrefs() {
     newItemTitle.value = widget.prefs.getString('lastTitle');
-    newRssTitle.value = widget.prefs.getString('rssTitle');
   }
 
   Future<void> sendNotification(
@@ -360,27 +362,37 @@ class RSSViewState extends ConsumerState<RSSView>
     await widget.prefs.setString('lastTitle', newItemTitle.value ?? '');
   }
 
-  Future<RssFeed> getForum() async {
-    Response response = await dio
-        .get('https://forum.warthunder.com/index.php?/discover/693.xml');
-    RssFeed rssFeed = RssFeed.parse(response.data);
-    return rssFeed;
-  }
-
-  RssFeed? rssFeed;
   final List<News> newsList = [];
   StreamSubscription? subscription;
   late News newItem;
   ValueNotifier<String?> newItemTitle = ValueNotifier(null);
-  String? newRssUrl;
-  ValueNotifier<String?> newRssTitle = ValueNotifier(null);
   int index = 0;
+  int tabIndex = 0;
+
+  final List<Tab> tabs = [];
+
+  Tab generateTab(News item) {
+    late Tab tab;
+    tab = Tab(
+      text: Text(item.title),
+      icon: const Icon(FluentIcons.site_scan),
+      body: ItemWebView(url: item.link),
+      onClosed: () {
+        setState(() {
+          tabs.remove(tab);
+          if (tabIndex > 0) tabIndex--;
+        });
+      },
+    );
+    return tab;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = FluentTheme.of(context);
     final devMessageValue = ref.watch(provider.devMessageProvider);
     final firebaseValue = ref.watch(provider.versionFBProvider);
+    final preferences = ref.watch(provider.prefsProvider);
     return NavigationView(
       appBar: NavigationAppBar(
         title: Padding(
@@ -389,7 +401,7 @@ class RSSViewState extends ConsumerState<RSSView>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'WTNews v$appVersion ${ref.watch(provider.premiumProvider) ? '(Premium!)' : ''}',
+                'WTNews v$appVersion',
                 textAlign: TextAlign.left,
                 style: TextStyle(
                     fontSize: 20,
@@ -434,139 +446,239 @@ class RSSViewState extends ConsumerState<RSSView>
         ),
       ),
       pane: NavigationPane(
-        selected: index,
-        displayMode: PaneDisplayMode.auto,
-        onChanged: (newIndex) {
-          setState(() {
-            index = newIndex;
-          });
-        },
-        items: [
-          PaneItem(
-            icon: const Icon(FluentIcons.home),
-            title: const Text(
-              'Home',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            body: ScaffoldPage(
-              padding: EdgeInsets.zero,
-              content: newsList.isNotEmpty
-                  ? AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 700),
-                      child: LayoutBuilder(builder: (context, constraints) {
-                        final width = constraints.maxWidth;
-                        final height = constraints.maxHeight;
-                        int crossAxisCount = 2;
-                        if (width / height >= 1.5 && width >= 600) {
-                          crossAxisCount = 3;
-                        }
-                        if ((width / height >= 2 || width >= 1300) &&
-                            width >= 1200) {
-                          crossAxisCount = 4;
-                        }
-                        return GridView.builder(
-                            padding: EdgeInsets.zero,
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                            ),
-                            itemCount: newsList.length,
-                            itemBuilder: (context, index) {
-                              final item = newsList[index];
-                              newItem = newsList.first;
-                              newItemTitle.value = newsList.first.title;
-                              return HoverButton(
-                                builder: (context, set) => Container(
-                                  color:
-                                      set.isHovering ? Colors.grey[200] : null,
-                                  child: ContextMenuArea(
-                                    verticalPadding: 0,
-                                    builder: (context) {
-                                      return <Widget>[
-                                        ListTile(
-                                          title: const Text('Copy Link'),
-                                          onPressed: () async {
-                                            await Clipboard.setData(
-                                                ClipboardData(text: item.link));
-                                            if (!mounted) return;
-                                            Navigator.of(context).pop();
-                                          },
-                                          tileColor:
-                                              ButtonState.resolveWith<Color>(
-                                                  (states) {
-                                            late final Color color;
-                                            if (states.isHovering) {
-                                              color = theme.accentColor
-                                                  .withOpacity(0.31);
-                                            } else {
-                                              color =
-                                                  theme.scaffoldBackgroundColor;
-                                            }
-                                            return color;
-                                          }),
-                                        ),
-                                      ];
-                                    },
-                                    child: _buildGradient(_buildCard(item),
-                                        item: item),
-                                  ),
-                                ),
-                                onPressed: () {
-                                  launchUrl(Uri.parse(item.link));
-                                },
-                                cursor: SystemMouseCursors.click,
-                              );
-                            });
-                      }))
-                  : Center(
-                      child: SizedBox(
-                        width: 100,
-                        height: 100,
-                        child: ProgressRing(
-                          strokeWidth: 10,
-                          activeColor: theme.accentColor,
-                        ),
-                      ),
-                    ),
-            ),
-          ),
-          PaneItem(
-            icon: const Icon(FluentIcons.settings),
-            title: const Text(
-              'Settings',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            infoBadge: firebaseValue.when(
-              data: (data) {
-                final version = int.parse(data.replaceAll('.', ''));
-                final currentVersion =
-                    int.parse(appVersion.replaceAll('.', ''));
-                if (version > currentVersion) {
-                  return const InfoBadge(source: Text('!'));
-                } else {
-                  return null;
-                }
-              },
-              loading: () => null,
-              error: (error, st) => null,
-            ),
-            body: Settings(widget.prefs),
-          ),
-          PaneItem(
-              icon: const Icon(FluentIcons.news),
+          selected: index,
+          displayMode: preferences.paneDisplayMode,
+          onChanged: (newIndex) {
+            setState(() {
+              index = newIndex;
+            });
+          },
+          items: [
+            PaneItem(
+              icon: const Icon(FluentIcons.home),
               title: const Text(
-                'Custom Feed',
+                'Home',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              body: CustomRSSView(widget.prefs)),
-        ],
-      ),
+              body: TabView(
+                  shortcutsEnabled: true,
+                  onChanged: (index) => setState(() => tabIndex = index),
+                  closeButtonVisibility: CloseButtonVisibilityMode.onHover,
+                  currentIndex: tabIndex,
+                  onReorder: (oldIndex, newIndex) {
+                    if (oldIndex < newIndex) {
+                      newIndex -= 1;
+                    }
+                    final item = tabs.removeAt(oldIndex);
+                    tabs.insert(newIndex, item);
+                    if (tabIndex == newIndex) {
+                      tabIndex = oldIndex;
+                    } else if (tabIndex == oldIndex) {
+                      tabIndex = newIndex;
+                    }
+                    setState(() {});
+                  },
+                  tabs: [
+                    Tab(
+                        text: const Text('News'),
+                        closeIcon: null,
+                        body: ScaffoldPage(
+                          padding: EdgeInsets.zero,
+                          content: newsList.isNotEmpty
+                              ? AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 700),
+                                  child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                    final width = constraints.maxWidth;
+                                    final height = constraints.maxHeight;
+                                    int crossAxisCount = 2;
+                                    if (width / height >= 1.5 && width >= 600) {
+                                      crossAxisCount = 3;
+                                    }
+                                    if ((width / height >= 2 ||
+                                            width >= 1300) &&
+                                        width >= 1200) {
+                                      crossAxisCount = 4;
+                                    }
+                                    return GridView.builder(
+                                        padding: EdgeInsets.zero,
+                                        gridDelegate:
+                                            SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: crossAxisCount,
+                                        ),
+                                        itemCount: newsList.length,
+                                        itemBuilder: (context, index) {
+                                          final item = newsList[index];
+                                          newItem = newsList.first;
+                                          newItemTitle.value =
+                                              newsList.first.title;
+                                          return HoverButton(
+                                            builder: (context, set) =>
+                                                Container(
+                                              color: set.isHovering
+                                                  ? Colors.grey[200]
+                                                  : null,
+                                              child: ContextMenuArea(
+                                                verticalPadding: 0,
+                                                builder: (context) {
+                                                  return <Widget>[
+                                                    ListTile(
+                                                      leading: const Icon(
+                                                          FluentIcons
+                                                              .open_in_new_tab),
+                                                      title: const Text(
+                                                          'Open in new tab'),
+                                                      onPressed: () {
+                                                        final tab =
+                                                            generateTab(item);
+                                                        tabs.add(tab);
+                                                        tabIndex = tabs.length;
+                                                        setState(() {});
+                                                      },
+                                                      tileColor: ButtonState
+                                                          .resolveWith<Color>(
+                                                              (states) {
+                                                        late final Color color;
+                                                        if (states.isHovering) {
+                                                          color = theme
+                                                              .accentColor
+                                                              .withOpacity(
+                                                                  0.31);
+                                                        } else {
+                                                          color = theme
+                                                              .scaffoldBackgroundColor;
+                                                        }
+                                                        return color;
+                                                      }),
+                                                    ),
+                                                    ListTile(
+                                                      leading: const Icon(
+                                                          FluentIcons
+                                                              .open_in_new_window),
+                                                      title: const Text(
+                                                          'Launch in browser'),
+                                                      onPressed: () {
+                                                        launchUrlString(
+                                                            item.link);
+                                                      },
+                                                      tileColor: ButtonState
+                                                          .resolveWith<Color>(
+                                                              (states) {
+                                                        late final Color color;
+                                                        if (states.isHovering) {
+                                                          color = theme
+                                                              .accentColor
+                                                              .withOpacity(
+                                                                  0.31);
+                                                        } else {
+                                                          color = theme
+                                                              .scaffoldBackgroundColor;
+                                                        }
+                                                        return color;
+                                                      }),
+                                                    ),
+                                                    ListTile(
+                                                      leading: const Icon(
+                                                          FluentIcons
+                                                              .clipboard_list_add),
+                                                      title: const Text(
+                                                          'Copy Link'),
+                                                      onPressed: () async {
+                                                        await Clipboard.setData(
+                                                            ClipboardData(
+                                                                text:
+                                                                    item.link));
+                                                        if (!mounted) return;
+                                                        Navigator.of(context)
+                                                            .pop();
+                                                      },
+                                                      tileColor: ButtonState
+                                                          .resolveWith<Color>(
+                                                              (states) {
+                                                        late final Color color;
+                                                        if (states.isHovering) {
+                                                          color = theme
+                                                              .accentColor
+                                                              .withOpacity(
+                                                                  0.31);
+                                                        } else {
+                                                          color = theme
+                                                              .scaffoldBackgroundColor;
+                                                        }
+                                                        return color;
+                                                      }),
+                                                    ),
+                                                  ];
+                                                },
+                                                child: _buildGradient(
+                                                    _buildCard(item),
+                                                    item: item),
+                                              ),
+                                            ),
+                                            onPressed: () {
+                                              if (preferences.openInsideApp) {
+                                                final tab = generateTab(item);
+                                                tabs.add(tab);
+                                                tabIndex = tabs.length;
+                                                setState(() {});
+                                              } else {
+                                                launchUrlString(item.link);
+                                              }
+                                            },
+                                            cursor: SystemMouseCursors.click,
+                                          );
+                                        });
+                                  }))
+                              : Center(
+                                  child: SizedBox(
+                                    width: 100,
+                                    height: 100,
+                                    child: ProgressRing(
+                                      strokeWidth: 10,
+                                      activeColor: theme.accentColor,
+                                    ),
+                                  ),
+                                ),
+                        ),
+                        icon: const Icon(FluentIcons.news)),
+                    ...tabs
+                  ]),
+            ),
+          ],
+          footerItems: [
+            PaneItem(
+              icon: const Icon(FluentIcons.settings),
+              title: const Text(
+                'Settings',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              infoBadge: firebaseValue.when(
+                data: (data) {
+                  final version = int.parse(data.replaceAll('.', ''));
+                  final currentVersion =
+                      int.parse(appVersion.replaceAll('.', ''));
+                  if (version > currentVersion) {
+                    return const InfoBadge(source: Text('!'));
+                  } else {
+                    return null;
+                  }
+                },
+                loading: () => null,
+                error: (error, st) => null,
+              ),
+              body: Settings(widget.prefs),
+            ),
+            LinkPaneItemAction(
+              icon: const Icon(FluentIcons.info),
+              link: 'https://github.com/Vonarian/wtnews/',
+              body: const Placeholder(),
+              title: const Text('About'),
+            ),
+          ]),
     );
   }
 }

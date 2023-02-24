@@ -15,7 +15,7 @@ class PresenceService {
   DatabaseReference? con;
 
   Future<void> configureUserPresence(String uid, bool startup, String version,
-      {required SharedPreferences prefs}) async {
+      {required SharedPreferences prefs, String? userName}) async {
     final uidRef = database.reference().child('presence').child(uid);
     final myConnectionsRef = uidRef.child('connected');
     final lastOnlineRef = uidRef.child('lastOnline');
@@ -23,7 +23,6 @@ class PresenceService {
     final startupRef = uidRef.child('startup');
     final versionRef = uidRef.child('version');
     await database.goOnline();
-    String? userName = prefs.getString('userName');
     if (userName != '' && userName != null) {
       userNameRef.set(userName);
     }
@@ -69,17 +68,10 @@ class PresenceService {
     database.goOffline();
   }
 
-  Stream<Event> getPremium(String uid) {
-    final uidRef = database.reference().child('presence').child(uid);
-    final premiumRef = uidRef.child('premium');
-    final sub = premiumRef.onValue;
-    return sub.asBroadcastStream();
-  }
-
   Stream<Event> getMessage(String uid) {
     final uidRef = database.reference().child('presence').child(uid);
-    final premiumRef = uidRef.child('message');
-    final sub = premiumRef.onValue;
+    final messageRef = uidRef.child('message');
+    final sub = messageRef.onValue;
     return sub.asBroadcastStream();
   }
 }
