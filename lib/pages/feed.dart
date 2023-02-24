@@ -4,7 +4,7 @@ import 'dart:developer';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:contextmenu/contextmenu.dart';
-import 'package:firebase_dart/database.dart';
+import 'package:dio/dio.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -28,7 +28,6 @@ import '../main.dart';
 import '../providers.dart';
 import '../services/data/rtdb_model.dart';
 import '../services/utility.dart';
-import 'downloader.dart';
 
 class HomeFeed extends ConsumerStatefulWidget {
   final SharedPreferences prefs;
@@ -48,14 +47,8 @@ class HomeFeedState extends ConsumerState<HomeFeed>
   void initState() {
     super.initState();
     loadFromPrefs();
+    avoidEmptyNews();
     AppUtil.setupTTS().then((value) => tts = value);
-
-    getAllNews().then((value) {
-      setState(() {
-        newsList.addAll(value);
-        newsList.toSet().toList();
-      });
-    });
     final prefs = ref.read(provider.prefsProvider);
     WidgetsBinding.instance.addObserver(this);
     channels.addAll(getAllChannels());
@@ -74,8 +67,7 @@ class HomeFeedState extends ConsumerState<HomeFeed>
           setState(() {});
           return;
         }
-        final listNews =
-            (jsonDecode(event) as List).map((e) => News.fromJson(e)).toList();
+        final listNews = (json).map((e) => News.fromJson(e)).toList();
         newsList.addAll(listNews);
         newsList.toSet().toList();
         newsList.sort(
@@ -97,8 +89,7 @@ class HomeFeedState extends ConsumerState<HomeFeed>
           setState(() {});
           return;
         }
-        final listNews =
-            (jsonDecode(event) as List).map((e) => News.fromJson(e)).toList();
+        final listNews = (json).map((e) => News.fromJson(e)).toList();
         newsList.addAll(listNews);
         newsList.toSet().toList();
         newsList.sort(
@@ -137,7 +128,12 @@ class HomeFeedState extends ConsumerState<HomeFeed>
             ..show();
           await widget.prefs.setString('devMessage', event ?? '');
           toast.onClick = () async {
-            windowManager.show();
+            displayInfoBar(context,
+                builder: (context, close) => InfoBar(
+                      title: const Text('New Developer Message'),
+                      content: Text(event ?? ''),
+                    ),
+                duration: const Duration(seconds: 10));
           };
         }
       });
@@ -170,7 +166,7 @@ class HomeFeedState extends ConsumerState<HomeFeed>
               await tts.speak(newsList.first.description);
             }
           } else {
-            if (newItem.isNews && newItem.dev) {
+            if (newItem.dev) {
               await sendNotification(
                   newTitle: newItemTitle.value, url: newItem.link);
               if (prefs.playSound) {
@@ -189,6 +185,23 @@ class HomeFeedState extends ConsumerState<HomeFeed>
         }
       });
     });
+  }
+
+  Future<void> avoidEmptyNews() async {
+    while (newsList.isEmpty) {
+      try {
+        final value = await getAllNews()
+            .timeout(const Duration(seconds: 5), onTimeout: () => []);
+        if (value.isNotEmpty) {
+          setState(() {
+            newsList.addAll(value);
+            newsList.toSet().toList();
+          });
+        }
+      } on DioError catch (e, st) {
+        log(e.toString(), stackTrace: st);
+      }
+    }
   }
 
   @override
@@ -215,12 +228,14 @@ class HomeFeedState extends ConsumerState<HomeFeed>
   }
 
   StreamSubscription? startListening() {
-    FirebaseDatabase db = FirebaseDatabase(
-        app: app,
-        databaseURL:
-            'https://wtnews-54364-default-rtdb.europe-west1.firebasedatabase.app');
+    final db = PresenceService.database;
     db.goOnline();
-    return db.reference().onValue.listen((event) async {
+    return db
+        .reference()
+        .child('notification')
+        .onChildChanged
+        .listen((event) async {
+      log(event.snapshot.value);
       final data = event.snapshot.value;
       if (data != null &&
           data['title'] != null &&
@@ -350,6 +365,22 @@ class HomeFeedState extends ConsumerState<HomeFeed>
     }
   }
 
+  Tab generateTab(News item) {
+    late Tab tab;
+    tab = Tab(
+      text: Text(item.title),
+      icon: const Icon(FluentIcons.site_scan),
+      body: ItemWebView(url: item.link),
+      onClosed: () {
+        setState(() {
+          tabs.remove(tab);
+          if (tabIndex > 0) tabIndex--;
+        });
+      },
+    );
+    return tab;
+  }
+
   List<WebSocketChannel> getAllChannels() {
     final newsChannel = News.connectNews();
     final changelogChannel = News.connectChangelog();
@@ -371,314 +402,285 @@ class HomeFeedState extends ConsumerState<HomeFeed>
 
   final List<Tab> tabs = [];
 
-  Tab generateTab(News item) {
-    late Tab tab;
-    tab = Tab(
-      text: Text(item.title),
-      icon: const Icon(FluentIcons.site_scan),
-      body: ItemWebView(url: item.link),
-      onClosed: () {
-        setState(() {
-          tabs.remove(tab);
-          if (tabIndex > 0) tabIndex--;
-        });
-      },
-    );
-    return tab;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = FluentTheme.of(context);
-    final devMessageValue = ref.watch(provider.devMessageProvider);
     final firebaseValue = ref.watch(provider.versionFBProvider);
     final preferences = ref.watch(provider.prefsProvider);
-    return NavigationView(
-      appBar: NavigationAppBar(
-        title: Padding(
-          padding: const EdgeInsets.only(top: 7.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'WTNews v$appVersion',
-                textAlign: TextAlign.left,
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: theme.accentColor.lighter),
-              ),
-              devMessageValue.when(
-                data: (data) => Text(
-                  data != null ? 'Vonarian\'s Message: $data' : '',
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red),
-                ),
-                loading: () => const SizedBox(),
-                error: (error, st) => const SizedBox(),
-              ),
-            ],
+    return Column(
+      children: [
+        SizedBox(
+          height: kWindowCaptionHeight,
+          child: WindowCaption(
+            title: Text(
+              'WTNews v$appVersion',
+              textAlign: TextAlign.left,
+            ),
+            brightness: theme.brightness,
+            backgroundColor: theme.scaffoldBackgroundColor,
           ),
         ),
-        automaticallyImplyLeading: false,
-        actions: firebaseValue.when(
-          data: (data) {
-            final version = int.parse(data.replaceAll('.', ''));
-            final currentVersion = int.parse(appVersion.replaceAll('.', ''));
-            if (version > currentVersion) {
-              return IconButton(
-                icon: const Icon(FluentIcons.download),
-                onPressed: () async {
-                  Navigator.of(context)
-                      .pushReplacement(FluentPageRoute(builder: (context) {
-                    return const Downloader();
-                  }));
+        Expanded(
+          child: NavigationView(
+            pane: NavigationPane(
+                selected: index,
+                displayMode: preferences.paneDisplayMode,
+                onChanged: (newIndex) {
+                  setState(() {
+                    index = newIndex;
+                  });
                 },
-              );
-            } else {
-              return const SizedBox();
-            }
-          },
-          loading: () => const SizedBox(),
-          error: (error, st) => const SizedBox(),
-        ),
-      ),
-      pane: NavigationPane(
-          selected: index,
-          displayMode: preferences.paneDisplayMode,
-          onChanged: (newIndex) {
-            setState(() {
-              index = newIndex;
-            });
-          },
-          items: [
-            PaneItem(
-              icon: const Icon(FluentIcons.home),
-              title: const Text(
-                'Home',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              body: TabView(
-                  shortcutsEnabled: true,
-                  onChanged: (index) => setState(() => tabIndex = index),
-                  closeButtonVisibility: CloseButtonVisibilityMode.onHover,
-                  currentIndex: tabIndex,
-                  onReorder: (oldIndex, newIndex) {
-                    if (oldIndex < newIndex) {
-                      newIndex -= 1;
-                    }
-                    final item = tabs.removeAt(oldIndex);
-                    tabs.insert(newIndex, item);
-                    if (tabIndex == newIndex) {
-                      tabIndex = oldIndex;
-                    } else if (tabIndex == oldIndex) {
-                      tabIndex = newIndex;
-                    }
-                    setState(() {});
-                  },
-                  tabs: [
-                    Tab(
-                        text: const Text('News'),
-                        closeIcon: null,
-                        body: ScaffoldPage(
-                          padding: EdgeInsets.zero,
-                          content: newsList.isNotEmpty
-                              ? AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 700),
-                                  child: LayoutBuilder(
-                                      builder: (context, constraints) {
-                                    final width = constraints.maxWidth;
-                                    final height = constraints.maxHeight;
-                                    int crossAxisCount = 2;
-                                    if (width / height >= 1.5 && width >= 600) {
-                                      crossAxisCount = 3;
-                                    }
-                                    if ((width / height >= 2 ||
-                                            width >= 1300) &&
-                                        width >= 1200) {
-                                      crossAxisCount = 4;
-                                    }
-                                    return GridView.builder(
-                                        padding: EdgeInsets.zero,
-                                        gridDelegate:
-                                            SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: crossAxisCount,
-                                        ),
-                                        itemCount: newsList.length,
-                                        itemBuilder: (context, index) {
-                                          final item = newsList[index];
-                                          newItem = newsList.first;
-                                          newItemTitle.value =
-                                              newsList.first.title;
-                                          return HoverButton(
-                                            builder: (context, set) =>
-                                                Container(
-                                              color: set.isHovering
-                                                  ? Colors.grey[200]
-                                                  : null,
-                                              child: ContextMenuArea(
-                                                verticalPadding: 0,
-                                                builder: (context) {
-                                                  return <Widget>[
-                                                    ListTile(
-                                                      leading: const Icon(
-                                                          FluentIcons
-                                                              .open_in_new_tab),
-                                                      title: const Text(
-                                                          'Open in new tab'),
-                                                      onPressed: () {
-                                                        final tab =
-                                                            generateTab(item);
-                                                        tabs.add(tab);
-                                                        tabIndex = tabs.length;
-                                                        setState(() {});
-                                                      },
-                                                      tileColor: ButtonState
-                                                          .resolveWith<Color>(
-                                                              (states) {
-                                                        late final Color color;
-                                                        if (states.isHovering) {
-                                                          color = theme
-                                                              .accentColor
-                                                              .withOpacity(
-                                                                  0.31);
-                                                        } else {
-                                                          color = theme
-                                                              .scaffoldBackgroundColor;
-                                                        }
-                                                        return color;
-                                                      }),
-                                                    ),
-                                                    ListTile(
-                                                      leading: const Icon(
-                                                          FluentIcons
-                                                              .open_in_new_window),
-                                                      title: const Text(
-                                                          'Launch in browser'),
-                                                      onPressed: () {
-                                                        launchUrlString(
-                                                            item.link);
-                                                      },
-                                                      tileColor: ButtonState
-                                                          .resolveWith<Color>(
-                                                              (states) {
-                                                        late final Color color;
-                                                        if (states.isHovering) {
-                                                          color = theme
-                                                              .accentColor
-                                                              .withOpacity(
-                                                                  0.31);
-                                                        } else {
-                                                          color = theme
-                                                              .scaffoldBackgroundColor;
-                                                        }
-                                                        return color;
-                                                      }),
-                                                    ),
-                                                    ListTile(
-                                                      leading: const Icon(
-                                                          FluentIcons
-                                                              .clipboard_list_add),
-                                                      title: const Text(
-                                                          'Copy Link'),
-                                                      onPressed: () async {
-                                                        await Clipboard.setData(
-                                                            ClipboardData(
-                                                                text:
-                                                                    item.link));
-                                                        if (!mounted) return;
-                                                        Navigator.of(context)
-                                                            .pop();
-                                                      },
-                                                      tileColor: ButtonState
-                                                          .resolveWith<Color>(
-                                                              (states) {
-                                                        late final Color color;
-                                                        if (states.isHovering) {
-                                                          color = theme
-                                                              .accentColor
-                                                              .withOpacity(
-                                                                  0.31);
-                                                        } else {
-                                                          color = theme
-                                                              .scaffoldBackgroundColor;
-                                                        }
-                                                        return color;
-                                                      }),
-                                                    ),
-                                                  ];
-                                                },
-                                                child: _buildGradient(
-                                                    _buildCard(item),
-                                                    item: item),
+                items: [
+                  PaneItem(
+                    icon: const Icon(FluentIcons.home),
+                    title: const Text(
+                      'Home',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    body: TabView(
+                        shortcutsEnabled: true,
+                        onChanged: (index) => setState(() => tabIndex = index),
+                        closeButtonVisibility:
+                            CloseButtonVisibilityMode.onHover,
+                        currentIndex: tabIndex,
+                        onReorder: (oldIndex, newIndex) {
+                          if (oldIndex < newIndex) {
+                            newIndex -= 1;
+                          }
+                          final item = tabs.removeAt(oldIndex);
+                          tabs.insert(newIndex, item);
+                          if (tabIndex == newIndex) {
+                            tabIndex = oldIndex;
+                          } else if (tabIndex == oldIndex) {
+                            tabIndex = newIndex;
+                          }
+                          setState(() {});
+                        },
+                        tabs: [
+                          Tab(
+                              text: const Text('News'),
+                              closeIcon: null,
+                              body: ScaffoldPage(
+                                padding: EdgeInsets.zero,
+                                content: newsList.isNotEmpty
+                                    ? AnimatedSwitcher(
+                                        duration:
+                                            const Duration(milliseconds: 700),
+                                        child: LayoutBuilder(
+                                            builder: (context, constraints) {
+                                          final width = constraints.maxWidth;
+                                          final height = constraints.maxHeight;
+                                          int crossAxisCount = 2;
+                                          if (width / height >= 1.5 &&
+                                              width >= 600) {
+                                            crossAxisCount = 3;
+                                          }
+                                          if ((width / height >= 2 ||
+                                                  width >= 1300) &&
+                                              width >= 1200) {
+                                            crossAxisCount = 4;
+                                          }
+                                          return GridView.builder(
+                                              padding: EdgeInsets.zero,
+                                              gridDelegate:
+                                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                                crossAxisCount: crossAxisCount,
                                               ),
-                                            ),
-                                            onPressed: () {
-                                              if (preferences.openInsideApp) {
-                                                final tab = generateTab(item);
-                                                tabs.add(tab);
-                                                tabIndex = tabs.length;
-                                                setState(() {});
-                                              } else {
-                                                launchUrlString(item.link);
-                                              }
-                                            },
-                                            cursor: SystemMouseCursors.click,
-                                          );
-                                        });
-                                  }))
-                              : Center(
-                                  child: SizedBox(
-                                    width: 100,
-                                    height: 100,
-                                    child: ProgressRing(
-                                      strokeWidth: 10,
-                                      activeColor: theme.accentColor,
-                                    ),
-                                  ),
-                                ),
-                        ),
-                        icon: const Icon(FluentIcons.news)),
-                    ...tabs
-                  ]),
-            ),
-          ],
-          footerItems: [
-            PaneItem(
-              icon: const Icon(FluentIcons.settings),
-              title: const Text(
-                'Settings',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              infoBadge: firebaseValue.when(
-                data: (data) {
-                  final version = int.parse(data.replaceAll('.', ''));
-                  final currentVersion =
-                      int.parse(appVersion.replaceAll('.', ''));
-                  if (version > currentVersion) {
-                    return const InfoBadge(source: Text('!'));
-                  } else {
-                    return null;
-                  }
-                },
-                loading: () => null,
-                error: (error, st) => null,
-              ),
-              body: Settings(widget.prefs),
-            ),
-            LinkPaneItemAction(
-              icon: const Icon(FluentIcons.info),
-              link: 'https://github.com/Vonarian/wtnews/',
-              body: const Placeholder(),
-              title: const Text('About'),
-            ),
-          ]),
+                                              itemCount: newsList.length,
+                                              itemBuilder: (context, index) {
+                                                final item = newsList[index];
+                                                newItem = newsList.first;
+                                                newItemTitle.value =
+                                                    newsList.first.title;
+                                                return HoverButton(
+                                                  builder: (context, set) =>
+                                                      Container(
+                                                    color: set.isHovering
+                                                        ? Colors.grey[200]
+                                                        : null,
+                                                    child: ContextMenuArea(
+                                                      verticalPadding: 0,
+                                                      builder: (context) {
+                                                        return <Widget>[
+                                                          ListTile(
+                                                            leading: const Icon(
+                                                                FluentIcons
+                                                                    .open_in_new_tab),
+                                                            title: const Text(
+                                                                'Open in new tab'),
+                                                            onPressed: () {
+                                                              final tab =
+                                                                  generateTab(
+                                                                      item);
+                                                              tabs.add(tab);
+                                                              tabIndex =
+                                                                  tabs.length;
+                                                              setState(() {});
+                                                            },
+                                                            tileColor: ButtonState
+                                                                .resolveWith<
+                                                                        Color>(
+                                                                    (states) {
+                                                              late final Color
+                                                                  color;
+                                                              if (states
+                                                                  .isHovering) {
+                                                                color = theme
+                                                                    .accentColor
+                                                                    .withOpacity(
+                                                                        0.31);
+                                                              } else {
+                                                                color = theme
+                                                                    .scaffoldBackgroundColor;
+                                                              }
+                                                              return color;
+                                                            }),
+                                                          ),
+                                                          ListTile(
+                                                            leading: const Icon(
+                                                                FluentIcons
+                                                                    .open_in_new_window),
+                                                            title: const Text(
+                                                                'Launch in browser'),
+                                                            onPressed: () {
+                                                              launchUrlString(
+                                                                  item.link);
+                                                            },
+                                                            tileColor: ButtonState
+                                                                .resolveWith<
+                                                                        Color>(
+                                                                    (states) {
+                                                              late final Color
+                                                                  color;
+                                                              if (states
+                                                                  .isHovering) {
+                                                                color = theme
+                                                                    .accentColor
+                                                                    .withOpacity(
+                                                                        0.31);
+                                                              } else {
+                                                                color = theme
+                                                                    .scaffoldBackgroundColor;
+                                                              }
+                                                              return color;
+                                                            }),
+                                                          ),
+                                                          ListTile(
+                                                            leading: const Icon(
+                                                                FluentIcons
+                                                                    .clipboard_list_add),
+                                                            title: const Text(
+                                                                'Copy Link'),
+                                                            onPressed:
+                                                                () async {
+                                                              await Clipboard.setData(
+                                                                  ClipboardData(
+                                                                      text: item
+                                                                          .link));
+                                                              if (!mounted) {
+                                                                return;
+                                                              }
+                                                              Navigator.of(
+                                                                      context)
+                                                                  .pop();
+                                                            },
+                                                            tileColor: ButtonState
+                                                                .resolveWith<
+                                                                        Color>(
+                                                                    (states) {
+                                                              late final Color
+                                                                  color;
+                                                              if (states
+                                                                  .isHovering) {
+                                                                color = theme
+                                                                    .accentColor
+                                                                    .withOpacity(
+                                                                        0.31);
+                                                              } else {
+                                                                color = theme
+                                                                    .scaffoldBackgroundColor;
+                                                              }
+                                                              return color;
+                                                            }),
+                                                          ),
+                                                        ];
+                                                      },
+                                                      child: _buildGradient(
+                                                          _buildCard(item),
+                                                          item: item),
+                                                    ),
+                                                  ),
+                                                  onPressed: () {
+                                                    if (preferences
+                                                        .openInsideApp) {
+                                                      final tab =
+                                                          generateTab(item);
+                                                      tabs.add(tab);
+                                                      tabIndex = tabs.length;
+                                                      setState(() {});
+                                                    } else {
+                                                      launchUrlString(
+                                                          item.link);
+                                                    }
+                                                  },
+                                                  cursor:
+                                                      SystemMouseCursors.click,
+                                                );
+                                              });
+                                        }))
+                                    : Center(
+                                        child: SizedBox(
+                                          width: 100,
+                                          height: 100,
+                                          child: ProgressRing(
+                                            strokeWidth: 10,
+                                            activeColor: theme.accentColor,
+                                          ),
+                                        ),
+                                      ),
+                              ),
+                              icon: const Icon(FluentIcons.news)),
+                          ...tabs
+                        ]),
+                  ),
+                ],
+                footerItems: [
+                  PaneItem(
+                    icon: const Icon(FluentIcons.settings),
+                    title: const Text(
+                      'Settings',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    infoBadge: firebaseValue.when(
+                      data: (data) {
+                        final version = int.parse(data.replaceAll('.', ''));
+                        final currentVersion =
+                            int.parse(appVersion.replaceAll('.', ''));
+                        if (version > currentVersion) {
+                          return const InfoBadge(source: Text('!'));
+                        } else {
+                          return null;
+                        }
+                      },
+                      loading: () => null,
+                      error: (error, st) => null,
+                    ),
+                    body: Settings(widget.prefs),
+                  ),
+                  LinkPaneItemAction(
+                    icon: const Icon(FluentIcons.info),
+                    link: 'https://github.com/Vonarian/wtnews/',
+                    body: const Placeholder(),
+                    title: const Text('About'),
+                  ),
+                ]),
+          ),
+        ),
+      ],
     );
   }
 }

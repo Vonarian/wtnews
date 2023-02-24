@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
@@ -42,7 +43,7 @@ Future<void> main(List<String> args) async {
   prefs = await SharedPreferences.getInstance();
   appDocPath = (await getApplicationDocumentsDirectory()).path;
   windowManager.waitUntilReadyToShow().then((_) async {
-    await windowManager.setResizable(true);
+    await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
     await windowManager.setTitle('WTNews');
     await windowManager.setIcon('assets/app_icon.ico');
     await windowManager.setMinimumSize(const Size(628, 90));
@@ -54,8 +55,11 @@ Future<void> main(List<String> args) async {
         color: const Color(0xCC222222),
       );
     }
-
-    await windowManager.show();
+    await _handleStartupShow(
+        startup: args.isNotEmpty,
+        minimizeAtStartup: jsonDecode(
+                prefs.getString('preferences') ?? '{}')['minimizeAtStartup'] ==
+            true);
   });
   await localNotifier.setup(
       appName: 'WTNews', shortcutPolicy: ShortcutPolicy.ignore);
@@ -88,4 +92,17 @@ Future<void> main(List<String> args) async {
   }, (exception, stackTrace) async {
     await Sentry.captureException(exception, stackTrace: stackTrace);
   });
+}
+
+Future<void> _handleStartupShow(
+    {required bool startup, required bool minimizeAtStartup}) async {
+  if (!startup && !minimizeAtStartup) {
+    await windowManager.show();
+  } else if (startup && !minimizeAtStartup) {
+    await windowManager.show();
+  } else if (startup && minimizeAtStartup) {
+    await windowManager.hide();
+  } else {
+    await windowManager.show();
+  }
 }

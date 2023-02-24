@@ -9,8 +9,7 @@ import '../../main.dart';
 import 'firebase_data.dart';
 
 class PresenceService {
-  FirebaseDatabase database =
-      FirebaseDatabase(app: app, databaseURL: dataBaseUrl);
+  static final database = FirebaseDatabase(app: app, databaseURL: dataBaseUrl);
   StreamSubscription? subscription;
   DatabaseReference? con;
 

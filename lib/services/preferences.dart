@@ -64,7 +64,7 @@ class Preferences {
       this.readNewTitle = false,
       this.readNewCaption = false,
       this.paneDisplayMode = PaneDisplayMode.auto,
-      this.openInsideApp = true,
+      this.openInsideApp = false,
       this.username});
 
   Map<String, dynamic> toMap() {
@@ -96,7 +96,7 @@ class Preferences {
       readNewCaption: map['readNewCaption'] ?? false,
       paneDisplayMode:
           getPane(map['paneDisplayMode'] ?? PaneDisplayMode.auto.name),
-      openInsideApp: map['openInsideApp'] ?? true,
+      openInsideApp: map['openInsideApp'] ?? false,
       username: map['username'],
     );
   }

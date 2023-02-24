@@ -25,8 +25,12 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     super.initState();
     trayManager.addListener(this);
     windowManager.addListener(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(provider.prefsProvider.notifier).load();
+      if (widget.startup &&
+          ref.read(provider.prefsProvider).minimizeAtStartup) {
+        await _trayInit();
+      }
     });
     Timer.periodic(const Duration(seconds: 2), (timer) async {
       if (!focused) return;
