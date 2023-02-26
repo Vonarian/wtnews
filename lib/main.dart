@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:bitsdojo_window/bitsdojo_window.dart'
+    show doWhenWindowReady, appWindow;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_dart/firebase_dart.dart';
@@ -42,25 +44,6 @@ Future<void> main(List<String> args) async {
   await Window.initialize();
   prefs = await SharedPreferences.getInstance();
   appDocPath = (await getApplicationDocumentsDirectory()).path;
-  windowManager.waitUntilReadyToShow().then((_) async {
-    await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
-    await windowManager.setTitle('WTNews');
-    await windowManager.setIcon('assets/app_icon.ico');
-    await windowManager.setMinimumSize(const Size(628, 90));
-    if (SysInfo.operatingSystemName.contains('Windows 11')) {
-      await Window.setEffect(effect: WindowEffect.acrylic);
-    } else {
-      await Window.setEffect(
-        effect: WindowEffect.aero,
-        color: const Color(0xCC222222),
-      );
-    }
-    await _handleStartupShow(
-        startup: args.isNotEmpty,
-        minimizeAtStartup: jsonDecode(
-                prefs.getString('preferences') ?? '{}')['minimizeAtStartup'] ==
-            true);
-  });
   await localNotifier.setup(
       appName: 'WTNews', shortcutPolicy: ShortcutPolicy.ignore);
   uid = (await deviceInfo.windowsInfo).computerName;
@@ -89,20 +72,46 @@ Future<void> main(List<String> args) async {
     runApp(ProviderScope(
       child: App(startup: args.isNotEmpty, child: Loading(prefs)),
     ));
+    await Window.hideWindowControls();
+    await setEffect();
+    appWindow.title = 'WTNews';
+    doWhenWindowReady(() async {
+      await _handleStartupShow(
+          startup: args.isNotEmpty,
+          minimizeAtStartup: jsonDecode(prefs.getString('preferences') ?? '{}')[
+                  'minimizeAtStartup'] ==
+              true);
+    });
   }, (exception, stackTrace) async {
     await Sentry.captureException(exception, stackTrace: stackTrace);
   });
 }
 
+Future<void> setEffect() async {
+  if (int.parse(SysInfo.operatingSystemVersion.split('.')[2]) >= 22523) {
+    log('Tabbed');
+    await Window.setEffect(effect: WindowEffect.tabbed);
+  } else if (int.parse(SysInfo.operatingSystemVersion.split('.')[1]) <= 22523 &&
+      int.parse(SysInfo.operatingSystemVersion.split('.')[2]) >= 22000) {
+    log('Acrylic');
+    await Window.setEffect(effect: WindowEffect.acrylic);
+  } else {
+    log('Aero');
+    await Window.setEffect(
+      effect: WindowEffect.aero,
+    );
+  }
+}
+
 Future<void> _handleStartupShow(
     {required bool startup, required bool minimizeAtStartup}) async {
   if (!startup && !minimizeAtStartup) {
-    await windowManager.show();
+    appWindow.show();
   } else if (startup && !minimizeAtStartup) {
-    await windowManager.show();
+    appWindow.show();
   } else if (startup && minimizeAtStartup) {
-    await windowManager.hide();
+    appWindow.hide();
   } else {
-    await windowManager.show();
+    appWindow.show();
   }
 }

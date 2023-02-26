@@ -16,7 +16,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:window_manager/window_manager.dart';
+import 'package:window_manager/window_manager.dart'
+    show WindowCaption, kWindowCaptionHeight;
 import 'package:wtnews/pages/settings.dart';
 import 'package:wtnews/services/data/firebase.dart';
 import 'package:wtnews/services/data/news.dart';

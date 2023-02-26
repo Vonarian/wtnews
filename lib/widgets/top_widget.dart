@@ -54,18 +54,19 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
 
   @override
   Widget build(BuildContext context) {
+    final sysColor = ref.watch(provider.systemColorProvider);
+    final bgColor = Colors.black.withOpacity(0.45);
     return FluentApp(
         theme: FluentThemeData(
             brightness: Brightness.dark,
             visualDensity: VisualDensity.adaptivePlatformDensity,
-            scaffoldBackgroundColor: Colors.black.withOpacity(0.41),
-            accentColor:
-                ref.watch(provider.systemColorProvider).toAccentColor(),
+            scaffoldBackgroundColor: bgColor,
+            accentColor: sysColor.toAccentColor(),
             navigationPaneTheme: NavigationPaneThemeData(
               animationDuration: const Duration(milliseconds: 600),
               animationCurve: Curves.easeInOut,
-              highlightColor: ref.watch(provider.systemColorProvider),
-              backgroundColor: Colors.black.withOpacity(0.41),
+              highlightColor: sysColor,
+              backgroundColor: bgColor,
             )),
         debugShowCheckedModeBanner: false,
         title: 'WTNews',
@@ -107,6 +108,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
 
   @override
   void onWindowRestore() {
+    focused = true;
     setState(() {});
   }
 
@@ -131,6 +133,6 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
 
   @override
   void onWindowFocus() {
-    focused = false;
+    focused = true;
   }
 }

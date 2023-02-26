@@ -12,7 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   dio: ^5.0.0
-  window_manager: ^0.3.0
+  window_manager: ^0.3.1
   shared_preferences: ^2.0.13
   local_notifier:
     path: ../local_notifier
@@ -33,7 +33,7 @@ dependencies:
   path_provider: ^2.0.13
   blinking_text: ^1.0.2
   intl: ^0.17.0
-  fluent_ui: ^4.3.0
+  fluent_ui: ^4.4.0
   system_theme: ^2.1.0
   dynamic_color: ^1.6.2
   system_info2: ^3.0.1
@@ -43,7 +43,7 @@ dependencies:
   equatable: ^2.0.5
   flutter_tts: ^3.6.3
   webview_windows: ^0.2.2
-
+  bitsdojo_window: ^0.1.5
 dependency_overrides:
   win32: 4.1.1
 
