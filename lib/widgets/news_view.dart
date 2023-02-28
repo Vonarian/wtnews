@@ -567,7 +567,7 @@ class _NewsViewState extends ConsumerState<NewsView>
                                     );
                                   });
                             }))
-                        : searchList.isNotEmpty
+                        : searchList.isNotEmpty //DRY!
                             ? AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 700),
                                 child: LayoutBuilder(
