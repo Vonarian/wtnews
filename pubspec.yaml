@@ -43,7 +43,7 @@ dependencies:
   equatable: ^2.0.5
   flutter_tts: ^3.6.3
   webview_windows: ^0.2.2
-  bitsdojo_window: ^0.1.5
+
 dependency_overrides:
   win32: 4.1.1
 

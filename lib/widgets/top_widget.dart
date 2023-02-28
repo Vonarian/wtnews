@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../main.dart';
 import '../providers.dart';
 
 class App extends ConsumerStatefulWidget {
@@ -55,8 +56,26 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   @override
   Widget build(BuildContext context) {
     final sysColor = ref.watch(provider.systemColorProvider);
-    final bgColor = Colors.black.withOpacity(0.45);
+    final bgColor = Colors.black.withOpacity(0.50);
     return FluentApp(
+        builder: (context, child) {
+          return Column(
+            children: [
+              SizedBox(
+                height: kWindowCaptionHeight,
+                child: WindowCaption(
+                  title: Text(
+                    'WTNews v$appVersion',
+                    textAlign: TextAlign.left,
+                  ),
+                  brightness: Brightness.dark,
+                  backgroundColor: bgColor,
+                ),
+              ),
+              Expanded(child: child ?? const SizedBox()),
+            ],
+          );
+        },
         theme: FluentThemeData(
             brightness: Brightness.dark,
             visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -109,7 +128,6 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   @override
   void onWindowRestore() {
     focused = true;
-    setState(() {});
   }
 
   @override

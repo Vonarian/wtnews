@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/data/github.dart';
 import 'downloader.dart';
-import 'feed.dart';
+import 'home.dart';
 
 class Loading extends ConsumerStatefulWidget {
   final SharedPreferences prefs;
@@ -57,7 +57,7 @@ class LoadingState extends ConsumerState<Loading> {
                     Navigator.pushReplacement(
                       context,
                       PageRouteBuilder(
-                        pageBuilder: (c, a1, a2) => HomeFeed(widget.prefs),
+                        pageBuilder: (c, a1, a2) => Home(widget.prefs),
                         transitionsBuilder: (c, anim, a2, child) =>
                             FadeTransition(opacity: anim, child: child),
                         transitionDuration: const Duration(milliseconds: 1000),
@@ -87,7 +87,7 @@ class LoadingState extends ConsumerState<Loading> {
           Navigator.pushReplacement(
             context,
             PageRouteBuilder(
-              pageBuilder: (c, a1, a2) => HomeFeed(widget.prefs),
+              pageBuilder: (c, a1, a2) => Home(widget.prefs),
               transitionsBuilder: (c, anim, a2, child) =>
                   FadeTransition(opacity: anim, child: child),
               transitionDuration: const Duration(milliseconds: 1000),
@@ -108,7 +108,7 @@ class LoadingState extends ConsumerState<Loading> {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
-            pageBuilder: (c, a1, a2) => HomeFeed(widget.prefs),
+            pageBuilder: (c, a1, a2) => Home(widget.prefs),
             transitionsBuilder: (c, anim, a2, child) =>
                 FadeTransition(opacity: anim, child: child),
             transitionDuration: const Duration(milliseconds: 1000),

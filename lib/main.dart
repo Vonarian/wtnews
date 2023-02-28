@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:bitsdojo_window/bitsdojo_window.dart'
-    show doWhenWindowReady, appWindow;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_dart/firebase_dart.dart';
@@ -42,6 +40,9 @@ Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
   await Window.initialize();
+  await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+  await setEffect();
+  await Window.hideWindowControls();
   prefs = await SharedPreferences.getInstance();
   appDocPath = (await getApplicationDocumentsDirectory()).path;
   await localNotifier.setup(
@@ -72,16 +73,11 @@ Future<void> main(List<String> args) async {
     runApp(ProviderScope(
       child: App(startup: args.isNotEmpty, child: Loading(prefs)),
     ));
-    await Window.hideWindowControls();
-    await setEffect();
-    appWindow.title = 'WTNews';
-    doWhenWindowReady(() async {
-      await _handleStartupShow(
-          startup: args.isNotEmpty,
-          minimizeAtStartup: jsonDecode(prefs.getString('preferences') ?? '{}')[
-                  'minimizeAtStartup'] ==
-              true);
-    });
+    await _handleStartupShow(
+        startup: args.isNotEmpty,
+        minimizeAtStartup: jsonDecode(
+                prefs.getString('preferences') ?? '{}')['minimizeAtStartup'] ==
+            true);
   }, (exception, stackTrace) async {
     await Sentry.captureException(exception, stackTrace: stackTrace);
   });
@@ -92,7 +88,7 @@ Future<void> setEffect() async {
     log('Tabbed');
     await Window.setEffect(effect: WindowEffect.tabbed);
   } else if (int.parse(SysInfo.operatingSystemVersion.split('.')[1]) <= 22523 &&
-      int.parse(SysInfo.operatingSystemVersion.split('.')[2]) >= 22000) {
+      int.parse(SysInfo.operatingSystemVersion.split('.')[2]) >= 19042) {
     log('Acrylic');
     await Window.setEffect(effect: WindowEffect.acrylic);
   } else {
@@ -106,12 +102,12 @@ Future<void> setEffect() async {
 Future<void> _handleStartupShow(
     {required bool startup, required bool minimizeAtStartup}) async {
   if (!startup && !minimizeAtStartup) {
-    appWindow.show();
+    windowManager.show();
   } else if (startup && !minimizeAtStartup) {
-    appWindow.show();
+    windowManager.show();
   } else if (startup && minimizeAtStartup) {
-    appWindow.hide();
+    windowManager.hide();
   } else {
-    appWindow.show();
+    windowManager.show();
   }
 }

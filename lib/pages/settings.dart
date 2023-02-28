@@ -23,6 +23,7 @@ class SettingsState extends ConsumerState<Settings> {
   }
 
   final controller = ScrollController(keepScrollOffset: true);
+
   @override
   Widget build(BuildContext context) {
     final theme = FluentTheme.of(context);
@@ -126,8 +127,14 @@ class SettingsState extends ConsumerState<Settings> {
                   'Interface',
                   style: theme.typography.subtitle,
                 ),
-                Text('Open news items inside the app',
-                    style: theme.typography.body),
+                Row(
+                  children: [
+                    Text('Open news items in a new tab',
+                        style: theme.typography.body),
+                    Text(' (Requires Windows 10 1809+ & WebView2 Runtime)',
+                        style: theme.typography.body?.copyWith(fontSize: 10)),
+                  ],
+                ),
                 ToggleSwitch(
                     checked: prefs.openInsideApp,
                     onChanged: (v) => prefsNotifier.update(openInsideApp: v),
