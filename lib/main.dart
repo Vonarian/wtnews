@@ -10,6 +10,7 @@ import 'package:firebase_dart_flutter/firebase_dart_flutter.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:local_notifier/local_notifier.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -43,6 +44,7 @@ Future<void> main(List<String> args) async {
   await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
   await setEffect();
   await Window.hideWindowControls();
+  hotKeyManager.unregisterAll();
   prefs = await SharedPreferences.getInstance();
   appDocPath = (await getApplicationDocumentsDirectory()).path;
   await localNotifier.setup(
