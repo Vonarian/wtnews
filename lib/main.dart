@@ -16,11 +16,11 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:system_info2/system_info2.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/loading.dart';
 import 'package:wtnews/services/data/dsn.dart';
 import 'package:wtnews/services/data/firebase_data.dart';
+import 'package:wtnews/services/utility.dart';
 import 'package:wtnews/widgets/top_widget.dart';
 
 late final FirebaseApp app;
@@ -42,10 +42,12 @@ Future<void> main(List<String> args) async {
   await windowManager.ensureInitialized();
   await Window.initialize();
   await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
-  await setEffect();
+  prefs = await SharedPreferences.getInstance();
+  final preferences = prefs.getString('preferences');
+  await AppUtil.setEffect(
+      jsonDecode(preferences ?? '{}')['disableBackgroundTransparency'] == true);
   await Window.hideWindowControls();
   hotKeyManager.unregisterAll();
-  prefs = await SharedPreferences.getInstance();
   appDocPath = (await getApplicationDocumentsDirectory()).path;
   await localNotifier.setup(
       appName: 'WTNews', shortcutPolicy: ShortcutPolicy.ignore);
@@ -77,28 +79,11 @@ Future<void> main(List<String> args) async {
     ));
     await _handleStartupShow(
         startup: args.isNotEmpty,
-        minimizeAtStartup: jsonDecode(
-                prefs.getString('preferences') ?? '{}')['minimizeAtStartup'] ==
-            true);
+        minimizeAtStartup:
+            jsonDecode(preferences ?? '{}')['minimizeAtStartup'] == true);
   }, (exception, stackTrace) async {
     await Sentry.captureException(exception, stackTrace: stackTrace);
   });
-}
-
-Future<void> setEffect() async {
-  if (int.parse(SysInfo.operatingSystemVersion.split('.')[2]) >= 22523) {
-    log('Tabbed');
-    await Window.setEffect(effect: WindowEffect.tabbed);
-  } else if (int.parse(SysInfo.operatingSystemVersion.split('.')[1]) <= 22523 &&
-      int.parse(SysInfo.operatingSystemVersion.split('.')[2]) >= 19042) {
-    log('Acrylic');
-    await Window.setEffect(effect: WindowEffect.acrylic);
-  } else {
-    log('Aero');
-    await Window.setEffect(
-      effect: WindowEffect.aero,
-    );
-  }
 }
 
 Future<void> _handleStartupShow(

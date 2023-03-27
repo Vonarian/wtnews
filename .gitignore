@@ -51,3 +51,4 @@ app.*.map.json
 /lib/von_assistant/data.dart
 /.puro.json
 local.properties
+/.vscode/launch.json

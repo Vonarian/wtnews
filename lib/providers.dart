@@ -13,13 +13,6 @@ class MyProvider {
       }
     },
   );
-  final devMessageProvider = StreamProvider<String?>(
-    (_) async* {
-      await for (Event e in presenceService.getDevMessage()) {
-        yield e.snapshot.value as String?;
-      }
-    },
-  );
 
   final prefsProvider = StateNotifierProvider<PreferencesNotifier, Preferences>(
       (ref) => PreferencesNotifier(const Preferences()));

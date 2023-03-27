@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:system_info2/system_info2.dart';
 import 'package:win32/win32.dart';
 
 class AppUtil {
@@ -38,5 +41,25 @@ class AppUtil {
     await flutterTts.setPitch(0.9);
 
     return flutterTts;
+  }
+
+  static Future<void> setEffect(bool disabled) async {
+    if (disabled == true) {
+      return;
+    }
+    if (int.parse(SysInfo.operatingSystemVersion.split('.')[2]) >= 22523) {
+      log('Tabbed');
+      await Window.setEffect(effect: WindowEffect.tabbed);
+    } else if (int.parse(SysInfo.operatingSystemVersion.split('.')[1]) <=
+            22523 &&
+        int.parse(SysInfo.operatingSystemVersion.split('.')[2]) >= 19042) {
+      log('Acrylic');
+      await Window.setEffect(effect: WindowEffect.acrylic);
+    } else {
+      log('Aero');
+      await Window.setEffect(
+        effect: WindowEffect.aero,
+      );
+    }
   }
 }

@@ -15,6 +15,7 @@ import 'package:local_notifier/local_notifier.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:wtnews/widgets/gradient_widget.dart';
 
 import '../main.dart';
 import '../providers.dart';
@@ -35,7 +36,6 @@ class NewsView extends ConsumerStatefulWidget {
 class _NewsViewState extends ConsumerState<NewsView>
     with AutomaticKeepAliveClientMixin {
   late final FlutterTts tts;
-  final List<StreamSubscription> subscriptions = [];
   final List<WebSocketChannel> channels = [];
 
   Future<List<News>> getAllNews() async {
@@ -113,50 +113,56 @@ class _NewsViewState extends ConsumerState<NewsView>
     AppUtil.setupTTS().then((value) => tts = value);
     channels.addAll(getAllChannels());
     if (channels.isNotEmpty) {
-      final newsChannel = channels.first;
-      subscriptions.add(newsChannel.stream.listen((event) {
-        final json = jsonDecode(event);
-        if (json['error'] != null) return;
-        if (json is! List) {
-          final news = News.fromJson(json);
-          newsList.add(news);
-          newsList.toSet().toList();
-          newsList.sort(
-            (a, b) => b.date.compareTo(a.date),
-          );
-          setState(() {});
-          return;
-        }
-        final listNews = (json).map((e) => News.fromJson(e)).toList();
-        newsList.addAll(listNews);
-        newsList.toSet().toList();
-        newsList.sort(
-          (a, b) => b.date.compareTo(a.date),
-        );
-        setState(() {});
-      }));
-      final changelogChannel = channels.last;
-      subscriptions.add(changelogChannel.stream.listen((event) {
-        final json = jsonDecode(event);
-        if (json['error'] != null) return;
-        if (json is! List) {
-          final news = News.fromJson(json);
-          newsList.add(news);
-          newsList.toSet().toList();
-          newsList.sort(
-            (a, b) => b.date.compareTo(a.date),
-          );
-          setState(() {});
-          return;
-        }
-        final listNews = (json).map((e) => News.fromJson(e)).toList();
-        newsList.addAll(listNews);
-        newsList.toSet().toList();
-        newsList.sort(
-          (a, b) => b.date.compareTo(a.date),
-        );
-        setState(() {});
-      }));
+      Future.delayed(Duration.zero, () async {
+        final newsChannel = channels.first;
+        newsChannel.ready.then((_) {
+          newsChannel.stream.listen((event) {
+            final json = jsonDecode(event);
+            if (json['error'] != null) return;
+            if (json is! List) {
+              final news = News.fromJson(json);
+              newsList.add(news);
+              newsList.toSet().toList();
+              newsList.sort(
+                (a, b) => b.date.compareTo(a.date),
+              );
+              setState(() {});
+              return;
+            }
+            final listNews = (json).map((e) => News.fromJson(e)).toList();
+            newsList.addAll(listNews);
+            newsList.toSet().toList();
+            newsList.sort(
+              (a, b) => b.date.compareTo(a.date),
+            );
+            setState(() {});
+          });
+        });
+        final changelogChannel = channels.last;
+        changelogChannel.ready.then((_) {
+          changelogChannel.stream.listen((event) {
+            final json = jsonDecode(event);
+            if (json['error'] != null) return;
+            if (json is! List) {
+              final news = News.fromJson(json);
+              newsList.add(news);
+              newsList.toSet().toList();
+              newsList.sort(
+                (a, b) => b.date.compareTo(a.date),
+              );
+              setState(() {});
+              return;
+            }
+            final listNews = (json).map((e) => News.fromJson(e)).toList();
+            newsList.addAll(listNews);
+            newsList.toSet().toList();
+            newsList.sort(
+              (a, b) => b.date.compareTo(a.date),
+            );
+            setState(() {});
+          });
+        });
+      });
     }
     Future.delayed(const Duration(seconds: 10), () {
       newItemTitle.addListener(() async {
@@ -218,11 +224,11 @@ class _NewsViewState extends ConsumerState<NewsView>
 
   @override
   void dispose() {
-    for (var sub in subscriptions) {
-      sub.cancel();
+    for (var ch in channels) {
+      ch.sink.close();
     }
-    super.dispose();
     boxFocus.dispose();
+    super.dispose();
   }
 
   Widget _buildCard(News item) {
@@ -261,42 +267,6 @@ class _NewsViewState extends ConsumerState<NewsView>
         ),
       ],
     ));
-  }
-
-  Widget _buildGradient(Widget widget, {required News item}) {
-    return Stack(children: [
-      Positioned.fill(child: widget),
-      Positioned.fill(
-        child: Container(
-          decoration: const BoxDecoration(
-              gradient: LinearGradient(
-            colors: [
-              Colors.black,
-              Colors.transparent,
-            ],
-            stops: [0, 0.4],
-            begin: Alignment.bottomCenter,
-            end: Alignment.center,
-          )),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  item.dateString,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: HexColor.fromHex('#8da0aa'),
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ]);
   }
 
   List<WebSocketChannel> getAllChannels() {
@@ -548,8 +518,7 @@ class _NewsViewState extends ConsumerState<NewsView>
                                               ),
                                             ];
                                           },
-                                          child: _buildGradient(
-                                              _buildCard(item),
+                                          child: GradientView(_buildCard(item),
                                               item: item),
                                         ),
                                       ),
@@ -690,7 +659,7 @@ class _NewsViewState extends ConsumerState<NewsView>
                                                   ),
                                                 ];
                                               },
-                                              child: _buildGradient(
+                                              child: GradientView(
                                                   _buildCard(item),
                                                   item: item),
                                             ),

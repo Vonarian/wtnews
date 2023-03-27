@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:firebase_dart/database.dart' show Event;
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_notifier/local_notifier.dart';
@@ -8,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wtnews/pages/settings.dart';
 import 'package:wtnews/services/data/firebase.dart';
-import 'package:wtnews/widgets/LinkPane.dart';
+import 'package:wtnews/widgets/link_pane.dart';
 import 'package:wtnews/widgets/news_view.dart';
 
 import '../main.dart';
@@ -24,49 +25,14 @@ class Home extends ConsumerStatefulWidget {
   HomeState createState() => HomeState();
 }
 
-class HomeState extends ConsumerState<Home>
-    with WidgetsBindingObserver, TickerProviderStateMixin {
+class HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     Future.delayed(Duration.zero, () async {
-      presenceService.getMessage(uid).listen((event) async {
-        final data = event.snapshot.value;
-        if (data != null && data != widget.prefs.getString('pm')) {
-          LocalNotification(title: 'New private message', body: data).show();
-          displayInfoBar(context, builder: (context, close) {
-            return InfoBar(
-              title: const Text('New Private Message from Vonarian!'),
-              content: Text(data),
-              action: IconButton(
-                icon: const Icon(FluentIcons.clear),
-                onPressed: close,
-              ),
-              severity: InfoBarSeverity.info,
-            );
-          });
-          await widget.prefs.setString('pm', data);
-        }
-      });
       if (!mounted) return;
       subscription = startListening();
-      final devMessageValue = ref.watch(provider.devMessageProvider.stream);
-      devMessageValue.listen((String? event) async {
-        if (event != widget.prefs.getString('devMessage')) {
-          final toast = LocalNotification(title: 'New Message from Vonarian')
-            ..show();
-          await widget.prefs.setString('devMessage', event ?? '');
-          toast.onClick = () {
-            displayInfoBar(context,
-                builder: (context, close) => InfoBar(
-                      title: const Text('New Developer Message'),
-                      content: Text(event ?? ''),
-                    ),
-                duration: const Duration(seconds: 10));
-          };
-        }
-      });
       try {
         await presenceService.configureUserPresence(
             (await deviceInfo.windowsInfo).computerName,
@@ -75,6 +41,41 @@ class HomeState extends ConsumerState<Home>
             prefs: widget.prefs);
       } catch (e, st) {
         log(e.toString(), stackTrace: st);
+      }
+    });
+    final devMessageValue = presenceService.getDevMessage();
+    devMessageValue.listen((Event e) async {
+      final event = e.snapshot.value as String;
+      if (event != widget.prefs.getString('devMessage')) {
+        final toast = LocalNotification(title: 'New Message from Vonarian')
+          ..show();
+        await widget.prefs.setString('devMessage', event);
+        toast.onClick = () {
+          displayInfoBar(context,
+              builder: (context, close) => InfoBar(
+                    title: const Text('New Developer Message'),
+                    content: Text(event),
+                  ),
+              duration: const Duration(seconds: 10));
+        };
+      }
+    });
+    presenceService.getMessage(uid).listen((event) async {
+      final data = event.snapshot.value;
+      if (data != null && data != widget.prefs.getString('pm')) {
+        LocalNotification(title: 'New private message', body: data).show();
+        displayInfoBar(context, builder: (context, close) {
+          return InfoBar(
+            title: const Text('New Private Message from Vonarian!'),
+            content: Text(data),
+            action: IconButton(
+              icon: const Icon(FluentIcons.clear),
+              onPressed: close,
+            ),
+            severity: InfoBarSeverity.info,
+          );
+        });
+        await widget.prefs.setString('pm', data);
       }
     });
   }

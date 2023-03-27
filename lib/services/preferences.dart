@@ -28,7 +28,8 @@ class PreferencesNotifier extends StateNotifier<Preferences> {
       bool? readNewCaption,
       PaneDisplayMode? paneDisplayMode,
       bool? openInsideApp,
-      String? username}) {
+      String? username,
+      bool? disableBackgroundTransparency}) {
     state = state.copyWith(
       runAtStartup: runAtStartup ?? state.runAtStartup,
       focusedMode: focusedMode ?? state.focusedMode,
@@ -39,6 +40,8 @@ class PreferencesNotifier extends StateNotifier<Preferences> {
       readNewTitle: readNewTitle ?? state.readNewTitle,
       openInsideApp: openInsideApp ?? state.openInsideApp,
       username: username ?? state.username,
+      disableBackgroundTransparency:
+          disableBackgroundTransparency ?? state.disableBackgroundTransparency,
     );
     save();
   }
@@ -55,6 +58,7 @@ class Preferences {
   final PaneDisplayMode paneDisplayMode;
   final String? username;
   final bool openInsideApp;
+  final bool disableBackgroundTransparency;
 
   const Preferences(
       {this.runAtStartup = false,
@@ -65,7 +69,8 @@ class Preferences {
       this.readNewCaption = false,
       this.paneDisplayMode = PaneDisplayMode.auto,
       this.openInsideApp = false,
-      this.username});
+      this.username,
+      this.disableBackgroundTransparency = false});
 
   Map<String, dynamic> toMap() {
     return {
@@ -78,6 +83,7 @@ class Preferences {
       'paneDisplayMode': paneDisplayMode.name,
       'username': username,
       'openInsideApp': openInsideApp,
+      'disableBackgroundTransparency': disableBackgroundTransparency,
     };
   }
 
@@ -98,6 +104,8 @@ class Preferences {
           getPane(map['paneDisplayMode'] ?? PaneDisplayMode.auto.name),
       openInsideApp: map['openInsideApp'] ?? false,
       username: map['username'],
+      disableBackgroundTransparency:
+          map['disableBackgroundTransparency'] ?? false,
     );
   }
 
@@ -111,6 +119,7 @@ class Preferences {
     PaneDisplayMode? paneDisplayMode,
     String? username,
     bool? openInsideApp,
+    bool? disableBackgroundTransparency,
   }) {
     return Preferences(
       runAtStartup: runAtStartup ?? this.runAtStartup,
@@ -122,6 +131,8 @@ class Preferences {
       paneDisplayMode: paneDisplayMode ?? this.paneDisplayMode,
       openInsideApp: openInsideApp ?? this.openInsideApp,
       username: username ?? this.username,
+      disableBackgroundTransparency:
+          disableBackgroundTransparency ?? this.disableBackgroundTransparency,
     );
   }
 }
