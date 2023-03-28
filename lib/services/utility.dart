@@ -44,6 +44,7 @@ class AppUtil {
   }
 
   static Future<void> setEffect(bool disabled) async {
+    log('Disabled transparent effects: $disabled');
     if (disabled == true) {
       return;
     }

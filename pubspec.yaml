@@ -11,7 +11,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  dio: ^5.0.0
+  dio: ^5.1.0
   window_manager: ^0.3.1
   shared_preferences: ^2.0.13
   local_notifier:
@@ -27,7 +27,7 @@ dependencies:
   firebase_core: ^2.7.0
   device_info_plus: ^8.1.0
   sentry_flutter: ^6.9.1
-  flutter_acrylic: ^1.1.0+1
+  flutter_acrylic: ^1.1.2
   path: ^1.8.1
   ffi: ^2.0.1
   path_provider: ^2.0.13
