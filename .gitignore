@@ -52,3 +52,4 @@ app.*.map.json
 /.puro.json
 local.properties
 /.vscode/launch.json
+/.vscode/settings.json

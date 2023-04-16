@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -36,7 +35,6 @@ class NewsView extends ConsumerStatefulWidget {
 class _NewsViewState extends ConsumerState<NewsView>
     with AutomaticKeepAliveClientMixin {
   late final FlutterTts tts;
-  final List<WebSocketChannel> channels = [];
 
   Future<List<News>> getAllNews() async {
     try {
@@ -63,6 +61,21 @@ class _NewsViewState extends ConsumerState<NewsView>
       } on DioError catch (e, st) {
         log(e.toString(), stackTrace: st);
       }
+    }
+  }
+
+  Future<void> intervalNews() async {
+    try {
+      final value = await getAllNews()
+          .timeout(const Duration(seconds: 5), onTimeout: () => []);
+      if (value.isNotEmpty) {
+        setState(() {
+          newsList.addAll(value);
+          newsList.toSet().toList();
+        });
+      }
+    } on DioError catch (e, st) {
+      log(e.toString(), stackTrace: st);
     }
   }
 
@@ -111,59 +124,12 @@ class _NewsViewState extends ConsumerState<NewsView>
     };
     final appPrefs = ref.read(provider.prefsProvider);
     AppUtil.setupTTS().then((value) => tts = value);
-    channels.addAll(getAllChannels());
-    if (channels.isNotEmpty) {
-      Future.delayed(Duration.zero, () async {
-        final newsChannel = channels.first;
-        newsChannel.ready.then((_) {
-          newsChannel.stream.listen((event) {
-            final json = jsonDecode(event);
-            if (json['error'] != null) return;
-            if (json is! List) {
-              final news = News.fromJson(json);
-              newsList.add(news);
-              newsList.toSet().toList();
-              newsList.sort(
-                (a, b) => b.date.compareTo(a.date),
-              );
-              setState(() {});
-              return;
-            }
-            final listNews = (json).map((e) => News.fromJson(e)).toList();
-            newsList.addAll(listNews);
-            newsList.toSet().toList();
-            newsList.sort(
-              (a, b) => b.date.compareTo(a.date),
-            );
-            setState(() {});
-          });
-        });
-        final changelogChannel = channels.last;
-        changelogChannel.ready.then((_) {
-          changelogChannel.stream.listen((event) {
-            final json = jsonDecode(event);
-            if (json['error'] != null) return;
-            if (json is! List) {
-              final news = News.fromJson(json);
-              newsList.add(news);
-              newsList.toSet().toList();
-              newsList.sort(
-                (a, b) => b.date.compareTo(a.date),
-              );
-              setState(() {});
-              return;
-            }
-            final listNews = (json).map((e) => News.fromJson(e)).toList();
-            newsList.addAll(listNews);
-            newsList.toSet().toList();
-            newsList.sort(
-              (a, b) => b.date.compareTo(a.date),
-            );
-            setState(() {});
-          });
-        });
-      });
-    }
+
+    Timer.periodic(const Duration(seconds: 10), (timer) async {
+      await intervalNews();
+      print('Ran interval');
+    });
+
     Future.delayed(const Duration(seconds: 10), () {
       newItemTitle.addListener(() async {
         saveToPrefs();
@@ -224,9 +190,6 @@ class _NewsViewState extends ConsumerState<NewsView>
 
   @override
   void dispose() {
-    for (var ch in channels) {
-      ch.sink.close();
-    }
     boxFocus.dispose();
     super.dispose();
   }

@@ -11,21 +11,21 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  dio: ^5.1.0
+  dio: ^5.1.1
   window_manager: ^0.3.1
-  shared_preferences: ^2.0.13
+  shared_preferences: ^2.1.0
   local_notifier:
-    path: ../local_notifier
+    path: ../local_notifier # https://github.com/leanflutter/local_notifier
   tray_manager: ^0.2.0
-  archive: ^3.3.0
+  archive: ^3.3.7
   url_launcher: ^6.1.0
-  flutter_riverpod: ^2.1.3
+  flutter_riverpod: ^2.3.4
   win32: ^4.1.1
-  file_picker: ^5.2.5
+  file_picker: ^5.2.9
   firebase_dart: ^1.0.9
   firebase_dart_flutter:
-  firebase_core: ^2.7.0
-  device_info_plus: ^8.1.0
+  firebase_core: ^2.9.0
+  device_info_plus: ^8.2.0
   sentry_flutter: ^6.9.1
   flutter_acrylic: ^1.1.2
   path: ^1.8.1
@@ -33,9 +33,9 @@ dependencies:
   path_provider: ^2.0.13
   blinking_text: ^1.0.2
   intl: ^0.17.0
-  fluent_ui: ^4.4.0
+  fluent_ui: ^4.4.2
   system_theme: ^2.1.0
-  dynamic_color: ^1.6.2
+  dynamic_color: ^1.6.3
   system_info2: ^3.0.1
   cached_network_image: ^3.2.1
   contextmenu: ^3.0.0
