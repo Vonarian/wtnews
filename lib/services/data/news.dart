@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -87,4 +88,12 @@ class News extends Equatable {
 
   @override
   List<Object?> get props => [title];
+}
+
+class NewsNotifier extends StateNotifier<List<News>> {
+  NewsNotifier() : super([]);
+
+  void add(News item) => [item, ...state];
+
+  News get newestItem => state.first;
 }
