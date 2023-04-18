@@ -95,5 +95,17 @@ class NewsNotifier extends StateNotifier<List<News>> {
 
   void add(News item) => [item, ...state];
 
+  void addAll(List<News> items) => [...items, ...state];
+
+  void sortByTime() => state.sort((a, b) => b.date.compareTo(a.date));
+
+  void deduplicate() => state = state.toSet().toList();
+
+  @override
+  set state(List<News> value) {
+    super.state = value;
+    prefs.setString('lastItem', newestItem.title);
+  }
+
   News get newestItem => state.first;
 }

@@ -1,26 +1,17 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:contextmenu/contextmenu.dart';
-import 'package:dio/dio.dart';
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:local_notifier/local_notifier.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:wtnews/widgets/gradient_widget.dart';
 
-import '../main.dart';
 import '../providers.dart';
 import '../services/data/news.dart';
 import '../services/extensions.dart';
-import '../services/utility.dart';
 import 'item_webview.dart';
 
 class NewsView extends ConsumerStatefulWidget {
@@ -32,71 +23,7 @@ class NewsView extends ConsumerStatefulWidget {
   ConsumerState createState() => _NewsViewState();
 }
 
-class _NewsViewState extends ConsumerState<NewsView>
-    with AutomaticKeepAliveClientMixin {
-  late final FlutterTts tts;
-
-  Future<List<News>> getAllNews() async {
-    try {
-      final result = await Future.wait([News.getNews(), News.getChangelog()]);
-      final List<News> finalList = [...result.first, ...result.last];
-      finalList.sort((a, b) => b.date.compareTo(a.date));
-      return finalList;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> avoidEmptyNews() async {
-    while (newsList.isEmpty) {
-      try {
-        final value = await getAllNews()
-            .timeout(const Duration(seconds: 5), onTimeout: () => []);
-        if (value.isNotEmpty) {
-          setState(() {
-            newsList.addAll(value);
-            newsList.toSet().toList();
-          });
-        }
-      } on DioError catch (e, st) {
-        log(e.toString(), stackTrace: st);
-      }
-    }
-  }
-
-  Future<void> intervalNews() async {
-    try {
-      final value = await getAllNews()
-          .timeout(const Duration(seconds: 5), onTimeout: () => []);
-      if (value.isNotEmpty) {
-        setState(() {
-          newsList.addAll(value);
-          newsList.toSet().toList();
-        });
-      }
-    } on DioError catch (e, st) {
-      log(e.toString(), stackTrace: st);
-    }
-  }
-
-  void loadFromPrefs() {
-    newItemTitle.value = prefs.getString('lastTitle');
-  }
-
-  Future<void> sendNotification(
-      {required String? newTitle, required String? url}) async {
-    if (newTitle != null) {
-      final toast = LocalNotification(
-          title: 'New item in WarThunder news', body: newTitle)
-        ..show();
-      toast.onClick = () async {
-        if (url != null) {
-          launchUrlString(url);
-        }
-      };
-    }
-  }
-
+class _NewsViewState extends ConsumerState<NewsView> {
   final _searchHotKey = HotKey(
     KeyCode.keyF,
     scope: HotKeyScope.inapp,
@@ -106,8 +33,6 @@ class _NewsViewState extends ConsumerState<NewsView>
   @override
   void initState() {
     super.initState();
-    avoidEmptyNews();
-    loadFromPrefs();
     registerHotkeys([_searchHotKey]);
     boxFocus.onKeyEvent = (node, kE) {
       if (kE.logicalKey == LogicalKeyboardKey.enter) {
@@ -122,50 +47,6 @@ class _NewsViewState extends ConsumerState<NewsView>
       }
       return KeyEventResult.ignored;
     };
-    final appPrefs = ref.read(provider.prefsProvider);
-    AppUtil.setupTTS().then((value) => tts = value);
-
-    Timer.periodic(const Duration(seconds: 10), (timer) async {
-      await intervalNews();
-      print('Ran interval');
-    });
-
-    Future.delayed(const Duration(seconds: 10), () {
-      newItemTitle.addListener(() async {
-        saveToPrefs();
-        try {
-          if (!appPrefs.focusedMode) {
-            await sendNotification(
-                newTitle: newItemTitle.value, url: newItem.link);
-            if (appPrefs.playSound) {
-              await compute(AppUtil.playSound, newSound);
-            }
-            if (appPrefs.readNewTitle) {
-              await tts.speak(newItemTitle.value ?? '');
-            }
-            if (appPrefs.readNewCaption) {
-              await tts.speak(newsList.first.description);
-            }
-          } else {
-            if (newItem.dev) {
-              await sendNotification(
-                  newTitle: newItemTitle.value, url: newItem.link);
-              if (appPrefs.playSound) {
-                await compute(AppUtil.playSound, newSound);
-              }
-              if (appPrefs.readNewTitle) {
-                await tts.speak(newItemTitle.value ?? '');
-              }
-              if (appPrefs.readNewCaption) {
-                await tts.speak(newsList.first.description);
-              }
-            }
-          }
-        } catch (e, st) {
-          await Sentry.captureException(e, stackTrace: st);
-        }
-      });
-    });
   }
 
   Future<void> registerHotkeys(List<HotKey> hotkeys) async {
@@ -232,20 +113,7 @@ class _NewsViewState extends ConsumerState<NewsView>
     ));
   }
 
-  List<WebSocketChannel> getAllChannels() {
-    final newsChannel = News.connectNews();
-    final changelogChannel = News.connectChangelog();
-    return [newsChannel, changelogChannel];
-  }
-
-  Future<void> saveToPrefs() async {
-    await prefs.setString('lastTitle', newItemTitle.value ?? '');
-  }
-
-  final List<News> newsList = [];
   final List<News> searchList = [];
-  late News newItem;
-  ValueNotifier<String?> newItemTitle = ValueNotifier(null);
 
   Tab generateTab(News item) {
     late Tab tab;
@@ -263,7 +131,7 @@ class _NewsViewState extends ConsumerState<NewsView>
     return tab;
   }
 
-  void _handleSearch(String v) {
+  void _handleSearch(String v, {required List<News> newsList}) {
     searchList.clear();
     bool hasMatch = false;
     for (final item in newsList) {
@@ -285,6 +153,7 @@ class _NewsViewState extends ConsumerState<NewsView>
   bool showSearch = false;
 
   Widget searchBox() {
+    final newsList = ref.read(provider.newsProvider);
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
@@ -297,7 +166,7 @@ class _NewsViewState extends ConsumerState<NewsView>
               width: 400,
               child: TextBox(
                 focusNode: boxFocus,
-                onChanged: _handleSearch,
+                onChanged: (v) => _handleSearch(v, newsList: newsList),
                 onSubmitted: (_) {
                   showSearch = false;
                   setState(() {});
@@ -322,7 +191,7 @@ class _NewsViewState extends ConsumerState<NewsView>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
+    final newsList = ref.watch(provider.newsProvider);
     final appPrefs = ref.watch(provider.prefsProvider);
     final theme = FluentTheme.of(context);
     return Column(
@@ -392,8 +261,6 @@ class _NewsViewState extends ConsumerState<NewsView>
                                   itemCount: newsList.length,
                                   itemBuilder: (context, index) {
                                     final item = newsList[index];
-                                    newItem = newsList.first;
-                                    newItemTitle.value = newsList.first.title;
                                     return HoverButton(
                                       builder: (context, set) => Container(
                                         color: set.isHovering
@@ -661,7 +528,4 @@ class _NewsViewState extends ConsumerState<NewsView>
       ],
     );
   }
-
-  @override
-  bool get wantKeepAlive => true;
 }

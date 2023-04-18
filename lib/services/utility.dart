@@ -4,7 +4,9 @@ import 'dart:io';
 
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:local_notifier/local_notifier.dart';
 import 'package:system_info2/system_info2.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import 'package:win32/win32.dart';
 
 class AppUtil {
@@ -61,6 +63,20 @@ class AppUtil {
       await Window.setEffect(
         effect: WindowEffect.aero,
       );
+    }
+  }
+
+  static Future<void> sendNotification(
+      {required String? newTitle, required String? url}) async {
+    if (newTitle != null) {
+      final toast = LocalNotification(
+          title: 'New item in WarThunder news', body: newTitle)
+        ..show();
+      toast.onClick = () async {
+        if (url != null) {
+          launchUrlString(url);
+        }
+      };
     }
   }
 }

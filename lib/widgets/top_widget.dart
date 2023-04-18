@@ -1,13 +1,22 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:developer';
 
+import 'package:dio/dio.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:tray_manager/tray_manager.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../main.dart';
 import '../providers.dart';
+import '../services/data/news.dart';
+import '../services/utility.dart';
 
 class App extends ConsumerStatefulWidget {
   final bool startup;
@@ -21,9 +30,24 @@ class App extends ConsumerStatefulWidget {
 }
 
 class AppState extends ConsumerState<App> with TrayListener, WindowListener {
+  final List<WebSocketChannel> channels = [];
+  late final FlutterTts tts;
+
+  List<WebSocketChannel> getAllChannels() {
+    final newsChannel = News.connectNews();
+    final changelogChannel = News.connectChangelog();
+    return [newsChannel, changelogChannel];
+  }
+
+  void loadFromPrefs() {
+    newItemTitle.value = prefs.getString('lastTitle');
+  }
+
   @override
   void initState() {
     super.initState();
+    loadFromPrefs();
+    AppUtil.setupTTS().then((value) => tts = value);
     trayManager.addListener(this);
     windowManager.addListener(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -32,6 +56,86 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
           ref.read(provider.prefsProvider).minimizeAtStartup) {
         await _trayInit();
       }
+    });
+    channels.addAll(getAllChannels());
+    if (channels.isNotEmpty) {
+      Future.delayed(Duration.zero, () async {
+        final newsNotifier = ref.read(provider.newsProvider.notifier);
+        final newsChannel = channels.first;
+        newsChannel.ready.then((_) {
+          newsChannel.stream.listen((event) {
+            final json = jsonDecode(event);
+            if (json['error'] != null) return;
+            if (json is! List) {
+              final news = News.fromJson(json);
+              newsNotifier.add(news);
+              newsNotifier.deduplicate();
+              newsNotifier.sortByTime();
+              return;
+            }
+            final listNews = json.map((e) => News.fromJson(e)).toList();
+            newsNotifier.addAll(listNews);
+            newsNotifier.deduplicate();
+            newsNotifier.sortByTime();
+          });
+        });
+        final changelogChannel = channels.last;
+        changelogChannel.ready.then((_) {
+          changelogChannel.stream.listen((event) {
+            final json = jsonDecode(event);
+            if (json['error'] != null) return;
+            if (json is! List) {
+              final news = News.fromJson(json);
+              newsNotifier.add(news);
+              newsNotifier.deduplicate();
+              newsNotifier.sortByTime();
+              return;
+            }
+            final listNews = json.map((e) => News.fromJson(e)).toList();
+            newsNotifier.addAll(listNews);
+            newsNotifier.deduplicate();
+            newsNotifier.sortByTime();
+          });
+        });
+      });
+    }
+    final appPrefs = ref.read(provider.prefsProvider);
+    Future.delayed(const Duration(seconds: 10), () {
+      final newsList = ref.read(provider.newsProvider);
+      final newItem = newsList.first;
+      newItemTitle.addListener(() async {
+        try {
+          if (!appPrefs.focusedMode) {
+            await AppUtil.sendNotification(
+                newTitle: newItemTitle.value, url: newItem.link);
+            if (appPrefs.playSound) {
+              await compute(AppUtil.playSound, newSound);
+            }
+            if (appPrefs.readNewTitle) {
+              await tts.speak(newItemTitle.value ?? '');
+            }
+            if (appPrefs.readNewCaption) {
+              await tts.speak(newsList.first.description);
+            }
+          } else {
+            if (newItem.dev) {
+              await AppUtil.sendNotification(
+                  newTitle: newItemTitle.value, url: newItem.link);
+              if (appPrefs.playSound) {
+                await compute(AppUtil.playSound, newSound);
+              }
+              if (appPrefs.readNewTitle) {
+                await tts.speak(newItemTitle.value ?? '');
+              }
+              if (appPrefs.readNewCaption) {
+                await tts.speak(newsList.first.description);
+              }
+            }
+          }
+        } catch (e, st) {
+          await Sentry.captureException(e, stackTrace: st);
+        }
+      });
     });
     Timer.periodic(const Duration(seconds: 2), (timer) async {
       if (!focused) return;
@@ -44,14 +148,48 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     });
   }
 
+  Future<List<News>> getAllNews() async {
+    try {
+      final result = await Future.wait([News.getNews(), News.getChangelog()]);
+      final List<News> finalList = [...result.first, ...result.last];
+      finalList.sort((a, b) => b.date.compareTo(a.date));
+      return finalList;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> avoidEmptyNews() async {
+    final newsList = ref.read(provider.newsProvider);
+    final newsNotifier = ref.read(provider.newsProvider.notifier);
+    while (newsList.isEmpty) {
+      try {
+        final value = await getAllNews()
+            .timeout(const Duration(seconds: 7), onTimeout: () => []);
+        if (value.isNotEmpty) {
+          setState(() {
+            newsNotifier.addAll(value);
+            newsNotifier.deduplicate();
+          });
+        }
+      } on DioError catch (e, st) {
+        log(e.toString(), stackTrace: st);
+      }
+    }
+  }
+
   @override
   void dispose() {
     trayManager.removeListener(this);
     windowManager.removeListener(this);
+    for (var ch in channels) {
+      ch.sink.close();
+    }
     super.dispose();
   }
 
   bool focused = true;
+  ValueNotifier<String?> newItemTitle = ValueNotifier(null);
 
   @override
   Widget build(BuildContext context) {
