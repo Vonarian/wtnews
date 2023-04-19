@@ -93,11 +93,11 @@ class News extends Equatable {
 class NewsNotifier extends StateNotifier<List<News>> {
   NewsNotifier() : super([]);
 
-  void add(News item) => [item, ...state];
+  void add(News item) => state = [item, ...state];
 
-  void addAll(List<News> items) => [...items, ...state];
+  void addAll(List<News> items) => state = [...items, ...state];
 
-  void sortByTime() => state.sort((a, b) => b.date.compareTo(a.date));
+  void sortByTime() => state = state..sort((a, b) => b.date.compareTo(a.date));
 
   void deduplicate() => state = state.toSet().toList();
 

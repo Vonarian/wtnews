@@ -48,6 +48,7 @@ class AppUtil {
   static Future<void> setEffect(bool disabled) async {
     log('Disabled transparent effects: $disabled');
     if (disabled == true) {
+      Window.setEffect(effect: WindowEffect.disabled);
       return;
     }
     if (int.parse(SysInfo.operatingSystemVersion.split('.')[2]) >= 22523) {

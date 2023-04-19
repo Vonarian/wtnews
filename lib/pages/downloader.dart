@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:archive/archive.dart';
-import 'package:blinking_text/blinking_text.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show SnackBarAction;
@@ -96,10 +95,9 @@ class DownloaderState extends State<Downloader>
       showSnackbar(
           context,
           Snackbar(
-            content: BlinkText(
+            content: Text(
               e.toString(),
-              endColor: Colors.red,
-              duration: const Duration(milliseconds: 300),
+              style: TextStyle(color: Colors.red),
             ),
             action: SnackBarAction(
               onPressed: () {

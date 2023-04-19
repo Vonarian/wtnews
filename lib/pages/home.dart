@@ -7,10 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_notifier/local_notifier.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:wtnews/pages/settings.dart';
 import 'package:wtnews/services/data/firebase.dart';
-import 'package:wtnews/widgets/link_pane.dart';
 import 'package:wtnews/widgets/news_view.dart';
+import 'package:wtnews/widgets/settings.dart';
 
 import '../main.dart';
 import '../providers.dart';
@@ -103,12 +102,7 @@ class HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
   StreamSubscription? startListening() {
     final db = PresenceService.database;
     db.goOnline();
-    return db
-        .reference()
-        .child('notification')
-        .onChildChanged
-        .listen((event) async {
-      log(event.snapshot.value);
+    return db.reference().child('notification').onValue.listen((event) async {
       final data = event.snapshot.value;
       if (data != null &&
           data['title'] != null &&
@@ -177,11 +171,11 @@ class HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
                     ),
                     infoBadge: firebaseValue.when(
                       data: (data) {
-                        final version = int.parse(data.replaceAll('.', ''));
-                        final currentVersion =
-                            int.parse(appVersion.replaceAll('.', ''));
-                        if (version > currentVersion) {
-                          return const InfoBadge(source: Text('!'));
+                        if (data != null) {
+                          return const Tooltip(
+                            message: 'New update!',
+                            child: InfoBadge(source: Text('!')),
+                          );
                         } else {
                           return null;
                         }
@@ -190,12 +184,6 @@ class HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
                       error: (error, st) => null,
                     ),
                     body: Settings(widget.prefs),
-                  ),
-                  LinkPaneItemAction(
-                    icon: const Icon(FluentIcons.info),
-                    link: 'https://github.com/Vonarian/wtnews/',
-                    body: const Placeholder(),
-                    title: const Text('About'),
                   ),
                 ]),
           ),

@@ -1,4 +1,5 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:gap/gap.dart';
 
 extension HexColor on Color {
   /// String is in the format "aabbcc" or "ffaabbcc" with an optional leading "#".
@@ -16,4 +17,26 @@ extension HexColor on Color {
       '${red.toRadixString(16).padLeft(2, '0')}'
       '${green.toRadixString(16).padLeft(2, '0')}'
       '${blue.toRadixString(16).padLeft(2, '0')}';
+}
+
+extension EnhancedWidgetList on List<Widget> {
+  List<Widget> withSpaceBetween(double space) => [
+        if (isNotEmpty) this[0],
+        for (int i = 1; i < length; i++) ...[
+          Gap(space),
+          this[i],
+        ],
+      ];
+
+  List<Widget> withDividerBetween(BuildContext context) => [
+        if (isNotEmpty) this[0],
+        for (int i = 1; i < length; i++) ...[
+          this[i],
+          Divider(
+              style: DividerThemeData(
+            decoration: BoxDecoration(
+                color: FluentTheme.of(context).scaffoldBackgroundColor),
+          )),
+        ],
+      ];
 }

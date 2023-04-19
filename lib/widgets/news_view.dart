@@ -152,8 +152,7 @@ class _NewsViewState extends ConsumerState<NewsView> {
   final boxFocus = FocusNode();
   bool showSearch = false;
 
-  Widget searchBox() {
-    final newsList = ref.read(provider.newsProvider);
+  Widget searchBox(List<News> newsList) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
@@ -198,7 +197,7 @@ class _NewsViewState extends ConsumerState<NewsView> {
       children: [
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
-          child: showSearch ? searchBox() : null,
+          child: showSearch ? searchBox(newsList) : null,
         ),
         Expanded(
           child: TabView(
@@ -261,108 +260,116 @@ class _NewsViewState extends ConsumerState<NewsView> {
                                   itemCount: newsList.length,
                                   itemBuilder: (context, index) {
                                     final item = newsList[index];
-                                    return HoverButton(
-                                      builder: (context, set) => Container(
-                                        color: set.isHovering
-                                            ? Colors.grey[200]
-                                            : null,
-                                        child: ContextMenuArea(
-                                          verticalPadding: 0,
-                                          builder: (context) {
-                                            return <Widget>[
-                                              ListTile(
-                                                leading: const Icon(FluentIcons
-                                                    .open_in_new_tab),
-                                                title: const Text(
-                                                    'Open in new tab'),
-                                                onPressed: () {
-                                                  final tab = generateTab(item);
-                                                  tabs.add(tab);
-                                                  tabIndex = tabs.length;
-                                                  setState(() {});
-                                                  Navigator.of(context).pop();
-                                                },
-                                                tileColor:
-                                                    ButtonState.resolveWith<
-                                                        Color>((states) {
-                                                  late final Color color;
-                                                  if (states.isHovering) {
-                                                    color = theme.accentColor
-                                                        .withOpacity(0.31);
-                                                  } else {
-                                                    color = theme
-                                                        .scaffoldBackgroundColor;
-                                                  }
-                                                  return color;
-                                                }),
-                                              ),
-                                              ListTile(
-                                                leading: const Icon(FluentIcons
-                                                    .open_in_new_window),
-                                                title: const Text(
-                                                    'Launch in browser'),
-                                                onPressed: () {
-                                                  launchUrlString(item.link);
-                                                  Navigator.of(context).pop();
-                                                },
-                                                tileColor:
-                                                    ButtonState.resolveWith<
-                                                        Color>((states) {
-                                                  late final Color color;
-                                                  if (states.isHovering) {
-                                                    color = theme.accentColor
-                                                        .withOpacity(0.31);
-                                                  } else {
-                                                    color = theme
-                                                        .scaffoldBackgroundColor;
-                                                  }
-                                                  return color;
-                                                }),
-                                              ),
-                                              ListTile(
-                                                leading: const Icon(FluentIcons
-                                                    .clipboard_list_add),
-                                                title: const Text('Copy Link'),
-                                                onPressed: () async {
-                                                  await Clipboard.setData(
-                                                      ClipboardData(
-                                                          text: item.link));
-                                                  if (!mounted) {
-                                                    return;
-                                                  }
-                                                  Navigator.of(context).pop();
-                                                },
-                                                tileColor:
-                                                    ButtonState.resolveWith<
-                                                        Color>((states) {
-                                                  late final Color color;
-                                                  if (states.isHovering) {
-                                                    color = theme.accentColor
-                                                        .withOpacity(0.31);
-                                                  } else {
-                                                    color = theme
-                                                        .scaffoldBackgroundColor;
-                                                  }
-                                                  return color;
-                                                }),
-                                              ),
-                                            ];
-                                          },
-                                          child: GradientView(_buildCard(item),
-                                              item: item),
+                                    return Acrylic(
+                                      child: HoverButton(
+                                        builder: (context, set) => Container(
+                                          color: set.isHovering
+                                              ? Colors.grey[200]
+                                              : null,
+                                          child: ContextMenuArea(
+                                            verticalPadding: 0,
+                                            builder: (context) {
+                                              return <Widget>[
+                                                ListTile(
+                                                  leading: const Icon(
+                                                      FluentIcons
+                                                          .open_in_new_tab),
+                                                  title: const Text(
+                                                      'Open in new tab'),
+                                                  onPressed: () {
+                                                    final tab =
+                                                        generateTab(item);
+                                                    tabs.add(tab);
+                                                    tabIndex = tabs.length;
+                                                    setState(() {});
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  tileColor:
+                                                      ButtonState.resolveWith<
+                                                          Color>((states) {
+                                                    late final Color color;
+                                                    if (states.isHovering) {
+                                                      color = theme.accentColor
+                                                          .withOpacity(0.31);
+                                                    } else {
+                                                      color = theme
+                                                          .scaffoldBackgroundColor;
+                                                    }
+                                                    return color;
+                                                  }),
+                                                ),
+                                                ListTile(
+                                                  leading: const Icon(
+                                                      FluentIcons
+                                                          .open_in_new_window),
+                                                  title: const Text(
+                                                      'Launch in browser'),
+                                                  onPressed: () {
+                                                    launchUrlString(item.link);
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  tileColor:
+                                                      ButtonState.resolveWith<
+                                                          Color>((states) {
+                                                    late final Color color;
+                                                    if (states.isHovering) {
+                                                      color = theme.accentColor
+                                                          .withOpacity(0.31);
+                                                    } else {
+                                                      color = theme
+                                                          .scaffoldBackgroundColor;
+                                                    }
+                                                    return color;
+                                                  }),
+                                                ),
+                                                ListTile(
+                                                  leading: const Icon(
+                                                      FluentIcons
+                                                          .clipboard_list_add),
+                                                  title:
+                                                      const Text('Copy Link'),
+                                                  onPressed: () async {
+                                                    await Clipboard.setData(
+                                                        ClipboardData(
+                                                            text: item.link));
+                                                    if (!mounted) {
+                                                      return;
+                                                    }
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  tileColor:
+                                                      ButtonState.resolveWith<
+                                                          Color>((states) {
+                                                    late final Color color;
+                                                    if (states.isHovering) {
+                                                      color = theme.accentColor
+                                                          .withOpacity(0.31);
+                                                    } else {
+                                                      color = theme
+                                                          .scaffoldBackgroundColor;
+                                                    }
+                                                    return color;
+                                                  }),
+                                                ),
+                                              ];
+                                            },
+                                            child: GradientView(
+                                                _buildCard(item),
+                                                item: item),
+                                          ),
                                         ),
+                                        onPressed: () {
+                                          if (appPrefs.openInsideApp) {
+                                            final tab = generateTab(item);
+                                            tabs.add(tab);
+                                            tabIndex = tabs.length;
+                                            setState(() {});
+                                          } else {
+                                            launchUrlString(item.link);
+                                          }
+                                        },
+                                        cursor: SystemMouseCursors.click,
                                       ),
-                                      onPressed: () {
-                                        if (appPrefs.openInsideApp) {
-                                          final tab = generateTab(item);
-                                          tabs.add(tab);
-                                          tabIndex = tabs.length;
-                                          setState(() {});
-                                        } else {
-                                          launchUrlString(item.link);
-                                        }
-                                      },
-                                      cursor: SystemMouseCursors.click,
                                     );
                                   });
                             }))

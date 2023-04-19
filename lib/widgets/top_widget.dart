@@ -47,6 +47,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   void initState() {
     super.initState();
     loadFromPrefs();
+    avoidEmptyNews();
     AppUtil.setupTTS().then((value) => tts = value);
     trayManager.addListener(this);
     windowManager.addListener(this);
@@ -160,17 +161,14 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   }
 
   Future<void> avoidEmptyNews() async {
-    final newsList = ref.read(provider.newsProvider);
     final newsNotifier = ref.read(provider.newsProvider.notifier);
-    while (newsList.isEmpty) {
+    while (ref.read(provider.newsProvider).isEmpty) {
       try {
         final value = await getAllNews()
             .timeout(const Duration(seconds: 7), onTimeout: () => []);
         if (value.isNotEmpty) {
-          setState(() {
-            newsNotifier.addAll(value);
-            newsNotifier.deduplicate();
-          });
+          newsNotifier.addAll(value);
+          newsNotifier.deduplicate();
         }
       } on DioError catch (e, st) {
         log(e.toString(), stackTrace: st);
@@ -194,7 +192,14 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   @override
   Widget build(BuildContext context) {
     final sysColor = ref.watch(provider.systemColorProvider);
-    final bgColor = Colors.black.withOpacity(0.50);
+    final disableBackgroundTransparency = ref.watch(provider.prefsProvider
+        .select((value) => value.disableBackgroundTransparency));
+    late Color bgColor;
+    if (!disableBackgroundTransparency) {
+      bgColor = Colors.black.withOpacity(0.50).withAlpha(70);
+    } else {
+      bgColor = Colors.grey.withAlpha(50);
+    }
     return FluentApp(
         builder: (context, child) {
           return Column(
@@ -202,8 +207,8 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
               SizedBox(
                 height: kWindowCaptionHeight,
                 child: WindowCaption(
-                  title: Text(
-                    'WTNews v$appVersion',
+                  title: const Text(
+                    'WTNews',
                     textAlign: TextAlign.left,
                   ),
                   brightness: Brightness.dark,
@@ -214,17 +219,19 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
             ],
           );
         },
+        themeMode: ThemeMode.dark,
         theme: FluentThemeData(
-            brightness: Brightness.dark,
-            visualDensity: VisualDensity.adaptivePlatformDensity,
-            scaffoldBackgroundColor: bgColor,
-            accentColor: sysColor.toAccentColor(),
-            navigationPaneTheme: NavigationPaneThemeData(
-              animationDuration: const Duration(milliseconds: 600),
-              animationCurve: Curves.easeInOut,
-              highlightColor: sysColor,
-              backgroundColor: bgColor,
-            )),
+          brightness: Brightness.dark,
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+          scaffoldBackgroundColor: bgColor,
+          accentColor: sysColor.toAccentColor(),
+          navigationPaneTheme: NavigationPaneThemeData(
+            animationDuration: const Duration(milliseconds: 600),
+            animationCurve: Curves.easeInOut,
+            highlightColor: sysColor.toAccentColor().lighter,
+            backgroundColor: bgColor,
+          ),
+        ),
         debugShowCheckedModeBanner: false,
         title: 'WTNews',
         home: widget.child);
