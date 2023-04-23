@@ -60,51 +60,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
       }
     });
     channels.addAll(getAllChannels());
-    if (channels.isNotEmpty) {
-      Future.delayed(Duration.zero, () async {
-        final newsNotifier = ref.read(provider.newsProvider.notifier);
-        final newsChannel = channels.first;
-        newsChannel.ready.then((_) {
-          log('NewsChannel Ready');
-          newsChannel.stream.listen((event) {
-            final json = jsonDecode(event);
-            if (json['error'] != null) return;
-            if (json is! List) {
-              final news = News.fromJson(json, workers: false);
-              newsNotifier.add(news);
-              newsNotifier.deduplicate();
-              newsNotifier.sortByTime();
-              return;
-            }
-            final listNews =
-                json.map((e) => News.fromJson(e, workers: false)).toList();
-            newsNotifier.addAll(listNews);
-            newsNotifier.deduplicate();
-            newsNotifier.sortByTime();
-          });
-        });
-        final changelogChannel = channels.last;
-        changelogChannel.ready.then((_) {
-          log('ChangelogChannel Ready');
-          changelogChannel.stream.listen((event) {
-            final json = jsonDecode(event);
-            if (json['error'] != null) return;
-            if (json is! List) {
-              final news = News.fromJson(json, workers: false);
-              newsNotifier.add(news);
-              newsNotifier.deduplicate();
-              newsNotifier.sortByTime();
-              return;
-            }
-            final listNews =
-                json.map((e) => News.fromJson(e, workers: false)).toList();
-            newsNotifier.addAll(listNews);
-            newsNotifier.deduplicate();
-            newsNotifier.sortByTime();
-          });
-        });
-      });
-    }
+    listenWebSocket();
     final appPrefs = ref.read(provider.prefsProvider);
     Future.delayed(const Duration(seconds: 10), () {
       final newsList = ref.read(provider.newsProvider);
@@ -154,6 +110,88 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     });
   }
 
+  Future<void> reconnect(Duration delay) async {
+    await Future.delayed(delay);
+    channels.clear();
+    channels.addAll(getAllChannels());
+    await listenWebSocket();
+  }
+
+  void _onError(e, {required String channelName}) {
+    log('$channelName Error: ${e.toString()}');
+    temporaryLegacy = true;
+    reconnect(const Duration(seconds: 10));
+  }
+
+  void _onDone({required String channelName}) {
+    log('$channelName Done');
+    temporaryLegacy = true;
+    reconnect(const Duration(seconds: 10));
+  }
+
+  Future<void> listenWebSocket() async {
+    final newsNotifier = ref.read(provider.newsProvider.notifier);
+    if (channels.isNotEmpty) {
+      Future.delayed(Duration.zero, () async {
+        final newsChannel = channels.first;
+        newsChannel.ready.then((_) {
+          log('NewsChannel Ready');
+
+          newsChannel.stream.listen((event) {
+            temporaryLegacy = false;
+            final json = jsonDecode(event);
+            if (json['error'] != null) return;
+            if (json is! List) {
+              final news = News.fromJson(json, workers: false);
+
+              newsNotifier.add(news);
+              newsNotifier.deduplicate();
+              newsNotifier.sortByTime();
+              return;
+            }
+            final listNews =
+                json.map((e) => News.fromJson(e, workers: false)).toList();
+
+            newsNotifier.addAll(listNews);
+            newsNotifier.deduplicate();
+            newsNotifier.sortByTime();
+          },
+              cancelOnError: false,
+              onError: (e) => _onError(e, channelName: 'NewsChannel'),
+              onDone: () => _onDone(channelName: 'NewsChannel'));
+        });
+        final changelogChannel = channels.last;
+        changelogChannel.ready.then((_) {
+          log('ChangelogChannel Ready');
+
+          changelogChannel.stream.listen(
+            (event) {
+              final json = jsonDecode(event);
+              if (json['error'] != null) return;
+              if (json is! List) {
+                final news = News.fromJson(json, workers: false);
+
+                newsNotifier.add(news);
+                newsNotifier.deduplicate();
+                newsNotifier.sortByTime();
+                return;
+              }
+              final listNews =
+                  json.map((e) => News.fromJson(e, workers: false)).toList();
+
+              newsNotifier.addAll(listNews);
+              newsNotifier.deduplicate();
+              newsNotifier.sortByTime();
+            },
+            cancelOnError: false,
+            onError: (e) => _onError(e, channelName: 'ChangelogChannel'),
+            onDone: () => _onDone(channelName: 'ChangelogChannel'),
+          );
+        });
+      });
+    }
+  }
+
   Future<void> avoidEmptyNews() async {
     final newsNotifier = ref.read(provider.newsProvider.notifier);
     while (ref.read(provider.newsProvider).isEmpty) {
@@ -173,9 +211,11 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
 
   Future<void> legacyChecker() async {
     final newsNotifier = ref.read(provider.newsProvider.notifier);
+
     Timer.periodic(const Duration(seconds: 20), (timer) async {
-      if (ref
-          .read(provider.prefsProvider.select((value) => value.legacyUpdate))) {
+      if (ref.read(
+              provider.prefsProvider.select((value) => value.legacyUpdate)) ||
+          temporaryLegacy) {
         final value = await News.getAllNews()
             .timeout(const Duration(seconds: 7), onTimeout: () => []);
         if (value.isNotEmpty) {
@@ -186,6 +226,8 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
       }
     });
   }
+
+  bool temporaryLegacy = false;
 
   @override
   void dispose() {
