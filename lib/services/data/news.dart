@@ -35,15 +35,17 @@ class News extends Equatable {
     return 'News{title: $title, description: $description, imageUrl: $imageUrl, date: $date, dateString: $dateString, link: $link, isNews: $isNews, dev: $dev}';
   }
 
-  factory News.fromJson(Map<String, dynamic> json) => News(
+  factory News.fromJson(Map<String, dynamic> json, {required bool workers}) =>
+      News(
         title: json['title'],
         description: json['description'],
         imageUrl: json['imageUrl'],
-        date: DateFormat('d-LLLL-y').parseLoose(json['date']),
+        date: DateFormat('d-LLLL-y')
+            .parseLoose(json[workers ? 'date' : 'dateString']),
         link: json['link'],
         isNews: json['isNews'],
         dev: json['dev'],
-        dateString: json['date'],
+        dateString: json[workers ? 'date' : 'dateString'],
       );
 
   Map<String, dynamic> toJson() => {
@@ -54,6 +56,7 @@ class News extends Equatable {
         'link': link,
         'isNews': isNews,
         'dev': dev,
+        'dateString': dateString,
       };
 
   static WebSocketChannel connectNews() {
@@ -75,7 +78,7 @@ class News extends Equatable {
           .get('http://${vps.address}')
           .timeout(const Duration(seconds: 7));
       final jsonList = jsonDecode(response.data) as List;
-      news = (jsonList.map((e) => News.fromJson(e))).toList();
+      news = (jsonList.map((e) => News.fromJson(e, workers: false))).toList();
     } catch (e, st) {
       log(e.toString(), stackTrace: st);
       news = await getAllNewsFallback();
@@ -101,7 +104,7 @@ class News extends Equatable {
     final responseNews =
         await dio.get('https://wtnews-server.vonarian.workers.dev/');
     final list = jsonDecode(responseNews.data) as List;
-    final newsList = list.map((e) => News.fromJson(e)).toList();
+    final newsList = list.map((e) => News.fromJson(e, workers: true)).toList();
     return newsList;
   }
 
@@ -109,7 +112,7 @@ class News extends Equatable {
     final responseNews =
         await dio.get('https://wtnews-server-changelog.vonarian.workers.dev/');
     final list = jsonDecode(responseNews.data) as List;
-    final newsList = list.map((e) => News.fromJson(e)).toList();
+    final newsList = list.map((e) => News.fromJson(e, workers: true)).toList();
     return newsList;
   }
 

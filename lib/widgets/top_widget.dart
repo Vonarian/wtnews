@@ -70,13 +70,14 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
             final json = jsonDecode(event);
             if (json['error'] != null) return;
             if (json is! List) {
-              final news = News.fromJson(json);
+              final news = News.fromJson(json, workers: false);
               newsNotifier.add(news);
               newsNotifier.deduplicate();
               newsNotifier.sortByTime();
               return;
             }
-            final listNews = json.map((e) => News.fromJson(e)).toList();
+            final listNews =
+                json.map((e) => News.fromJson(e, workers: false)).toList();
             newsNotifier.addAll(listNews);
             newsNotifier.deduplicate();
             newsNotifier.sortByTime();
@@ -89,13 +90,14 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
             final json = jsonDecode(event);
             if (json['error'] != null) return;
             if (json is! List) {
-              final news = News.fromJson(json);
+              final news = News.fromJson(json, workers: false);
               newsNotifier.add(news);
               newsNotifier.deduplicate();
               newsNotifier.sortByTime();
               return;
             }
-            final listNews = json.map((e) => News.fromJson(e)).toList();
+            final listNews =
+                json.map((e) => News.fromJson(e, workers: false)).toList();
             newsNotifier.addAll(listNews);
             newsNotifier.deduplicate();
             newsNotifier.sortByTime();
