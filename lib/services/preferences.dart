@@ -29,7 +29,8 @@ class PreferencesNotifier extends StateNotifier<Preferences> {
       PaneDisplayMode? paneDisplayMode,
       bool? openInsideApp,
       String? username,
-      bool? disableBackgroundTransparency}) {
+      bool? disableBackgroundTransparency,
+      bool? legacyUpdate}) {
     state = state.copyWith(
       runAtStartup: runAtStartup ?? state.runAtStartup,
       focusedMode: focusedMode ?? state.focusedMode,
@@ -42,6 +43,7 @@ class PreferencesNotifier extends StateNotifier<Preferences> {
       username: username ?? state.username,
       disableBackgroundTransparency:
           disableBackgroundTransparency ?? state.disableBackgroundTransparency,
+      legacyUpdate: legacyUpdate ?? state.legacyUpdate,
     );
     save();
   }
@@ -59,18 +61,21 @@ class Preferences {
   final String? username;
   final bool openInsideApp;
   final bool disableBackgroundTransparency;
+  final bool legacyUpdate;
 
-  const Preferences(
-      {this.runAtStartup = false,
-      this.minimizeAtStartup = true,
-      this.playSound = true,
-      this.focusedMode = false,
-      this.readNewTitle = false,
-      this.readNewCaption = false,
-      this.paneDisplayMode = PaneDisplayMode.auto,
-      this.openInsideApp = false,
-      this.username,
-      this.disableBackgroundTransparency = false});
+  const Preferences({
+    this.runAtStartup = false,
+    this.minimizeAtStartup = true,
+    this.playSound = true,
+    this.focusedMode = false,
+    this.readNewTitle = false,
+    this.readNewCaption = false,
+    this.paneDisplayMode = PaneDisplayMode.auto,
+    this.openInsideApp = false,
+    this.username,
+    this.disableBackgroundTransparency = false,
+    this.legacyUpdate = false,
+  });
 
   Map<String, dynamic> toMap() {
     return {
@@ -84,6 +89,7 @@ class Preferences {
       'username': username,
       'openInsideApp': openInsideApp,
       'disableBackgroundTransparency': disableBackgroundTransparency,
+      'legacyUpdate': legacyUpdate,
     };
   }
 
@@ -106,6 +112,7 @@ class Preferences {
       username: map['username'],
       disableBackgroundTransparency:
           map['disableBackgroundTransparency'] ?? false,
+      legacyUpdate: map['legacyUpdate'] ?? false,
     );
   }
 
@@ -120,6 +127,7 @@ class Preferences {
     String? username,
     bool? openInsideApp,
     bool? disableBackgroundTransparency,
+    bool? legacyUpdate,
   }) {
     return Preferences(
       runAtStartup: runAtStartup ?? this.runAtStartup,
@@ -133,6 +141,7 @@ class Preferences {
       username: username ?? this.username,
       disableBackgroundTransparency:
           disableBackgroundTransparency ?? this.disableBackgroundTransparency,
+      legacyUpdate: legacyUpdate ?? this.legacyUpdate,
     );
   }
 }

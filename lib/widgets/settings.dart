@@ -263,6 +263,27 @@ class SettingsState extends ConsumerState<Settings> {
                       content: Text(prefs.readNewCaption ? 'On' : 'Off')),
                 ),
                 Text(
+                  'Advanced',
+                  style: theme.typography.bodyStrong,
+                ),
+                CardHighlight(
+                  leading: const Icon(
+                    FluentIcons.product_warning,
+                    size: 20,
+                  ),
+                  title:
+                      Text('Use Legacy Updates', style: theme.typography.body),
+                  description: Text(
+                    'This is a cost-ineffective method, use only when news items are not arriving',
+                    style: theme.typography.caption,
+                  ),
+                  trailing: ToggleSwitch(
+                      checked: prefs.legacyUpdate,
+                      onChanged: (v) => prefsNotifier.update(legacyUpdate: v),
+                      leadingContent: true,
+                      content: Text(prefs.legacyUpdate ? 'On' : 'Off')),
+                ),
+                Text(
                   'About',
                   style: theme.typography.bodyStrong,
                 ),

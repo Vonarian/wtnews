@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../main.dart';
+// Currently private
+import 'vps_data.dart' as vps;
 
 class News extends Equatable {
   final String title;
@@ -55,19 +58,43 @@ class News extends Equatable {
 
   static WebSocketChannel connectNews() {
     //Get from news section
-    final channel = WebSocketChannel.connect(
-      Uri.parse('wss://wtnews-pro.vonarian.workers.dev/ws?onlyUpdates=true'),
-    );
+    final channel = WebSocketChannel.connect(Uri.parse('ws://${vps.address}'));
     return channel;
   }
 
   static WebSocketChannel connectChangelog() {
     //Get from changelog section
-    final channel = WebSocketChannel.connect(
-      Uri.parse(
-          'wss://wtnews-changelog-pro.vonarian.workers.dev/ws?onlyUpdates=true'),
-    );
+    final channel = WebSocketChannel.connect(Uri.parse('ws://${vps.address}'));
     return channel;
+  }
+
+  static Future<List<News>> getAllNews() async {
+    List<News> news = [];
+    try {
+      final response = await dio
+          .get('http://${vps.address}')
+          .timeout(const Duration(seconds: 7));
+      final jsonList = jsonDecode(response.data) as List;
+      news = (jsonList.map((e) => News.fromJson(e))).toList();
+    } catch (e, st) {
+      log(e.toString(), stackTrace: st);
+      news = await getAllNewsFallback();
+    }
+    return news;
+  }
+
+  static Future<List<News>> getAllNewsFallback() async {
+    List<News> list = [];
+    try {
+      final news = await getNews();
+      final changelog = await getChangelog();
+      final finalList = [...news, ...changelog]
+        ..sort((a, b) => a.date.compareTo(b.date));
+      list.addAll(finalList);
+    } catch (e) {
+      //
+    }
+    return list;
   }
 
   static Future<List<News>> getNews() async {

@@ -53,3 +53,5 @@ app.*.map.json
 local.properties
 /.vscode/launch.json
 /.vscode/settings.json
+# Temporarily used
+lib/services/data/vps_data.dart

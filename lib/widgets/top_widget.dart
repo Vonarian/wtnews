@@ -48,6 +48,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     super.initState();
     loadFromPrefs();
     avoidEmptyNews();
+    legacyChecker();
     AppUtil.setupTTS().then((value) => tts = value);
     trayManager.addListener(this);
     windowManager.addListener(this);
@@ -64,6 +65,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
         final newsNotifier = ref.read(provider.newsProvider.notifier);
         final newsChannel = channels.first;
         newsChannel.ready.then((_) {
+          log('NewsChannel Ready');
           newsChannel.stream.listen((event) {
             final json = jsonDecode(event);
             if (json['error'] != null) return;
@@ -82,6 +84,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
         });
         final changelogChannel = channels.last;
         changelogChannel.ready.then((_) {
+          log('ChangelogChannel Ready');
           changelogChannel.stream.listen((event) {
             final json = jsonDecode(event);
             if (json['error'] != null) return;
@@ -149,31 +152,37 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     });
   }
 
-  Future<List<News>> getAllNews() async {
-    try {
-      final result = await Future.wait([News.getNews(), News.getChangelog()]);
-      final List<News> finalList = [...result.first, ...result.last];
-      finalList.sort((a, b) => b.date.compareTo(a.date));
-      return finalList;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
   Future<void> avoidEmptyNews() async {
     final newsNotifier = ref.read(provider.newsProvider.notifier);
     while (ref.read(provider.newsProvider).isEmpty) {
       try {
-        final value = await getAllNews()
+        final value = await News.getAllNews()
             .timeout(const Duration(seconds: 7), onTimeout: () => []);
         if (value.isNotEmpty) {
           newsNotifier.addAll(value);
           newsNotifier.deduplicate();
+          newsNotifier.sortByTime();
         }
       } on DioError catch (e, st) {
         log(e.toString(), stackTrace: st);
       }
     }
+  }
+
+  Future<void> legacyChecker() async {
+    final newsNotifier = ref.read(provider.newsProvider.notifier);
+    Timer.periodic(const Duration(seconds: 20), (timer) async {
+      if (ref
+          .read(provider.prefsProvider.select((value) => value.legacyUpdate))) {
+        final value = await News.getAllNews()
+            .timeout(const Duration(seconds: 7), onTimeout: () => []);
+        if (value.isNotEmpty) {
+          newsNotifier.addAll(value);
+          newsNotifier.deduplicate();
+          newsNotifier.sortByTime();
+        }
+      }
+    });
   }
 
   @override
