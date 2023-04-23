@@ -111,22 +111,23 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   }
 
   Future<void> reconnect(Duration delay) async {
+    log('Trying to reconnect in ${delay.inSeconds}');
     await Future.delayed(delay);
     channels.clear();
     channels.addAll(getAllChannels());
     await listenWebSocket();
   }
 
-  void _onError(e, {required String channelName}) {
+  Future<void> _onError(e, {required String channelName}) async {
     log('$channelName Error: ${e.toString()}');
     temporaryLegacy = true;
-    reconnect(const Duration(seconds: 10));
+    await reconnect(const Duration(seconds: 10));
   }
 
-  void _onDone({required String channelName}) {
+  Future<void> _onDone({required String channelName}) async {
     log('$channelName Done');
     temporaryLegacy = true;
-    reconnect(const Duration(seconds: 10));
+    await reconnect(const Duration(seconds: 10));
   }
 
   Future<void> listenWebSocket() async {
@@ -134,11 +135,36 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     if (channels.isNotEmpty) {
       Future.delayed(Duration.zero, () async {
         final newsChannel = channels.first;
-        newsChannel.ready.then((_) {
-          log('NewsChannel Ready');
 
-          newsChannel.stream.listen((event) {
-            temporaryLegacy = false;
+        newsChannel.stream.listen((event) async {
+          await newsChannel.ready;
+          log('NewsChannel Ready');
+          temporaryLegacy = false;
+          final json = jsonDecode(event);
+          if (json['error'] != null) return;
+          if (json is! List) {
+            final news = News.fromJson(json, workers: false);
+
+            newsNotifier.add(news);
+            newsNotifier.deduplicate();
+            newsNotifier.sortByTime();
+            return;
+          }
+          final listNews =
+              json.map((e) => News.fromJson(e, workers: false)).toList();
+
+          newsNotifier.addAll(listNews);
+          newsNotifier.deduplicate();
+          newsNotifier.sortByTime();
+        },
+            cancelOnError: false,
+            onError: (e) => _onError(e, channelName: 'NewsChannel'),
+            onDone: () => _onDone(channelName: 'NewsChannel'));
+        final changelogChannel = channels.last;
+        changelogChannel.stream.listen(
+          (event) async {
+            await changelogChannel.ready;
+            log('ChangelogChannel Ready');
             final json = jsonDecode(event);
             if (json['error'] != null) return;
             if (json is! List) {
@@ -156,38 +182,10 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
             newsNotifier.deduplicate();
             newsNotifier.sortByTime();
           },
-              cancelOnError: false,
-              onError: (e) => _onError(e, channelName: 'NewsChannel'),
-              onDone: () => _onDone(channelName: 'NewsChannel'));
-        });
-        final changelogChannel = channels.last;
-        changelogChannel.ready.then((_) {
-          log('ChangelogChannel Ready');
-
-          changelogChannel.stream.listen(
-            (event) {
-              final json = jsonDecode(event);
-              if (json['error'] != null) return;
-              if (json is! List) {
-                final news = News.fromJson(json, workers: false);
-
-                newsNotifier.add(news);
-                newsNotifier.deduplicate();
-                newsNotifier.sortByTime();
-                return;
-              }
-              final listNews =
-                  json.map((e) => News.fromJson(e, workers: false)).toList();
-
-              newsNotifier.addAll(listNews);
-              newsNotifier.deduplicate();
-              newsNotifier.sortByTime();
-            },
-            cancelOnError: false,
-            onError: (e) => _onError(e, channelName: 'ChangelogChannel'),
-            onDone: () => _onDone(channelName: 'ChangelogChannel'),
-          );
-        });
+          cancelOnError: false,
+          onError: (e) => _onError(e, channelName: 'ChangelogChannel'),
+          onDone: () => _onDone(channelName: 'ChangelogChannel'),
+        );
       });
     }
   }
