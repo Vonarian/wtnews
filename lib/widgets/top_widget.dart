@@ -60,7 +60,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
       }
     });
     channels.addAll(getAllChannels());
-    listenWebSocket();
+    webSocketConnect();
     final appPrefs = ref.read(provider.prefsProvider);
     Future.delayed(const Duration(seconds: 10), () {
       final newsList = ref.read(provider.newsProvider);
@@ -110,13 +110,13 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     });
   }
 
-  Future<void> reconnect(Duration delay) async {
+  Future<void> webSocketReconnect(Duration delay) async {
     reconnecting = true;
     log('Trying to reconnect in ${delay.inSeconds} Seconds');
     await Future.delayed(delay);
     channels.clear();
     channels.addAll(getAllChannels());
-    await listenWebSocket();
+    await webSocketConnect();
     reconnecting = false;
   }
 
@@ -124,25 +124,23 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     log('$channelName Error: ${e.toString()}');
     temporaryLegacy = true;
     if (reconnecting) return;
-    await reconnect(const Duration(seconds: 10));
+    await webSocketReconnect(const Duration(seconds: 10));
   }
 
   Future<void> _onDone({required String channelName}) async {
     log('$channelName Done');
     temporaryLegacy = true;
     if (reconnecting) return;
-    await reconnect(const Duration(seconds: 10));
+    await webSocketReconnect(const Duration(seconds: 10));
   }
 
-  Future<void> listenWebSocket() async {
+  Future<void> webSocketConnect() async {
     final newsNotifier = ref.read(provider.newsProvider.notifier);
     if (channels.isNotEmpty) {
       Future.delayed(Duration.zero, () async {
         final newsChannel = channels.first;
 
         newsChannel.stream.listen((event) async {
-          await newsChannel.ready;
-          log('NewsChannel Ready');
           temporaryLegacy = false;
           final json = jsonDecode(event);
           if (json['error'] != null) return;
@@ -167,8 +165,6 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
         final changelogChannel = channels.last;
         changelogChannel.stream.listen(
           (event) async {
-            await changelogChannel.ready;
-            log('ChangelogChannel Ready');
             final json = jsonDecode(event);
             if (json['error'] != null) return;
             if (json is! List) {
