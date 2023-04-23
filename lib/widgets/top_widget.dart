@@ -111,22 +111,26 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   }
 
   Future<void> reconnect(Duration delay) async {
+    reconnecting = true;
     log('Trying to reconnect in ${delay.inSeconds}');
     await Future.delayed(delay);
     channels.clear();
     channels.addAll(getAllChannels());
     await listenWebSocket();
+    reconnecting = false;
   }
 
   Future<void> _onError(e, {required String channelName}) async {
     log('$channelName Error: ${e.toString()}');
     temporaryLegacy = true;
+    if (reconnecting) return;
     await reconnect(const Duration(seconds: 10));
   }
 
   Future<void> _onDone({required String channelName}) async {
     log('$channelName Done');
     temporaryLegacy = true;
+    if (reconnecting) return;
     await reconnect(const Duration(seconds: 10));
   }
 
@@ -226,6 +230,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   }
 
   bool temporaryLegacy = false;
+  bool reconnecting = false;
 
   @override
   void dispose() {
