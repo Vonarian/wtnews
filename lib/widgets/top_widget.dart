@@ -112,7 +112,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
 
   Future<void> reconnect(Duration delay) async {
     reconnecting = true;
-    log('Trying to reconnect in ${delay.inSeconds}');
+    log('Trying to reconnect in ${delay.inSeconds} Seconds');
     await Future.delayed(delay);
     channels.clear();
     channels.addAll(getAllChannels());
