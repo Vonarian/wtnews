@@ -139,9 +139,8 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     if (channels.isNotEmpty) {
       Future.delayed(Duration.zero, () async {
         final newsChannel = channels.first;
-
+        temporaryLegacy = false;
         newsChannel.stream.listen((event) async {
-          temporaryLegacy = false;
           final json = jsonDecode(event);
           if (json['error'] != null) return;
           if (json is! List) {
