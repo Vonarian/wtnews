@@ -6,7 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/data/github.dart';
+import '../data/github.dart';
 import 'downloader.dart';
 import 'home.dart';
 

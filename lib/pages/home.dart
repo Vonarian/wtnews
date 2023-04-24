@@ -7,13 +7,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_notifier/local_notifier.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:wtnews/services/data/firebase.dart';
+import 'package:wtnews/data/firebase.dart';
 import 'package:wtnews/widgets/news_view.dart';
 import 'package:wtnews/widgets/settings.dart';
 
+import '../data/rtdb_model.dart';
 import '../main.dart';
 import '../providers.dart';
-import '../services/data/rtdb_model.dart';
 
 class Home extends ConsumerStatefulWidget {
   final SharedPreferences prefs;

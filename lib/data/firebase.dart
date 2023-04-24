@@ -5,11 +5,12 @@ import 'package:firebase_dart/database.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../main.dart';
-import 'firebase_data.dart';
+import '../main.dart';
+import '../data/firebase_data.dart' as d;
 
 class PresenceService {
-  static final database = FirebaseDatabase(app: app, databaseURL: dataBaseUrl);
+  static final database =
+      FirebaseDatabase(app: app, databaseURL: d.dataBaseUrl);
   StreamSubscription? subscription;
   DatabaseReference? con;
 

@@ -12,8 +12,8 @@ import 'package:tray_manager/tray_manager.dart' as tray;
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/von_assistant/von_assistant.dart';
 
+import '../data/github.dart';
 import '../main.dart';
-import '../services/data/github.dart';
 
 class Downloader extends StatefulWidget {
   const Downloader({Key? key}) : super(key: key);

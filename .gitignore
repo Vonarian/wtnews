@@ -45,13 +45,14 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /pubspec.lock
-/lib/services/data/firebase_data.dart
-/lib/services/data/supabase_data.dart
-/lib/services/data/dsn.dart
 /lib/von_assistant/data.dart
 /.puro.json
 local.properties
 /.vscode/launch.json
 /.vscode/settings.json
 # Temporarily used
-lib/services/data/vps_data.dart
+data/vps_data.dart
+/lib/data/dsn.dart
+/lib/data/firebase_data.dart
+/lib/data/supabase_data.dart
+/lib/data/vps_data.dart

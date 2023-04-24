@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-import '../../main.dart';
+import '../main.dart';
 // Currently private
 import 'vps_data.dart' as vps;
 

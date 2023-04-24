@@ -9,8 +9,8 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:wtnews/widgets/gradient_widget.dart';
 
+import '../data/news.dart';
 import '../providers.dart';
-import '../services/data/news.dart';
 import '../services/extensions.dart';
 import 'item_webview.dart';
 

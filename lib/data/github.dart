@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 
-import '../../main.dart';
+import '../main.dart';
 
 GHData networkFromJson(String str) => GHData.fromJson(json.decode(str));
 

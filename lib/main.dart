@@ -18,10 +18,11 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:wtnews/pages/loading.dart';
-import 'package:wtnews/services/data/dsn.dart';
-import 'package:wtnews/services/data/firebase_data.dart';
 import 'package:wtnews/services/utility.dart';
 import 'package:wtnews/widgets/top_widget.dart';
+
+import 'data/dsn.dart';
+import 'data/firebase_data.dart';
 
 late final FirebaseApp app;
 final String pathToVersion =

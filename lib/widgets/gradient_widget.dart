@@ -1,6 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 
-import '../services/data/news.dart';
+import '../data/news.dart';
 import '../services/extensions.dart';
 
 class GradientView extends StatelessWidget {

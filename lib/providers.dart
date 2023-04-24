@@ -1,9 +1,9 @@
 import 'package:firebase_dart/firebase_dart.dart';
 import 'package:fluent_ui/fluent_ui.dart' show Color, Colors;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wtnews/data/firebase.dart';
+import 'package:wtnews/data/news.dart';
 import 'package:wtnews/main.dart';
-import 'package:wtnews/services/data/firebase.dart';
-import 'package:wtnews/services/data/news.dart';
 import 'package:wtnews/services/preferences.dart';
 
 class MyProvider {

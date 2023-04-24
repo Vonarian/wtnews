@@ -13,9 +13,9 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../data/news.dart';
 import '../main.dart';
 import '../providers.dart';
-import '../services/data/news.dart';
 import '../services/utility.dart';
 
 class App extends ConsumerStatefulWidget {
