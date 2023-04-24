@@ -59,14 +59,8 @@ class News extends Equatable {
         'dateString': dateString,
       };
 
-  static WebSocketChannel connectNews() {
+  static WebSocketChannel connectAllNews() {
     //Get from news section
-    final channel = WebSocketChannel.connect(Uri.parse('ws://${vps.address}'));
-    return channel;
-  }
-
-  static WebSocketChannel connectChangelog() {
-    //Get from changelog section
     final channel = WebSocketChannel.connect(Uri.parse('ws://${vps.address}'));
     return channel;
   }
@@ -76,7 +70,7 @@ class News extends Equatable {
     try {
       final response = await dio
           .get('http://${vps.address}')
-          .timeout(const Duration(seconds: 7));
+          .timeout(const Duration(seconds: 5));
       final jsonList = jsonDecode(response.data) as List;
       news = (jsonList.map((e) => News.fromJson(e, workers: false))).toList();
     } catch (e, st) {

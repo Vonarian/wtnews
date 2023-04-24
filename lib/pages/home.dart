@@ -137,58 +137,82 @@ class HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
     final firebaseValue = ref.watch(provider.versionFBProvider);
     final paneDisplayMode = ref
         .watch(provider.prefsProvider.select((value) => value.paneDisplayMode));
-    return Column(
-      children: [
-        Expanded(
-          child: NavigationView(
-            pane: NavigationPane(
-                selected: index,
-                displayMode: paneDisplayMode,
-                onChanged: (newIndex) {
-                  setState(() {
-                    index = newIndex;
-                  });
-                },
-                items: [
-                  PaneItem(
-                      icon: const Icon(FluentIcons.home),
-                      title: const Text(
-                        'Home',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      body: const NewsView()),
-                ],
-                footerItems: [
-                  PaneItem(
-                    icon: const Icon(FluentIcons.settings),
-                    title: const Text(
-                      'Settings',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    infoBadge: firebaseValue.when(
-                      data: (data) {
-                        if (data != null) {
-                          return const Tooltip(
-                            message: 'New update!',
-                            child: InfoBadge(source: Text('!')),
-                          );
-                        } else {
-                          return null;
-                        }
-                      },
-                      loading: () => null,
-                      error: (error, st) => null,
-                    ),
-                    body: Settings(widget.prefs),
+    final updateMode = ref.watch(provider.updateModeProvider);
+    final modeText = updateMode.modeText;
+    final wsText = updateMode.wsText;
+    final iconColor = updateMode.iconColor;
+    Color? wsColor;
+    if (wsText.contains('Disconnected')) {
+      wsColor = Colors.red;
+    }
+    return NavigationView(
+      pane: NavigationPane(
+          selected: index,
+          displayMode: paneDisplayMode,
+          onChanged: (newIndex) {
+            setState(() {
+              index = newIndex;
+            });
+          },
+          items: [
+            PaneItem(
+                icon: const Icon(FluentIcons.home),
+                title: const Text(
+                  'Home',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
                   ),
-                ]),
-          ),
-        ),
-      ],
+                ),
+                body: const NewsView()),
+          ],
+          footerItems: [
+            PaneItem(
+                icon: Icon(
+                  iconColor != Colors.red
+                      ? FluentIcons.plug_connected
+                      : FluentIcons.plug_disconnected,
+                  color: iconColor,
+                ),
+                title: RichText(
+                  text: TextSpan(children: [
+                    TextSpan(
+                      text: modeText,
+                    ),
+                    TextSpan(
+                      text: modeText.isEmpty ? wsText : ' ($wsText)',
+                      style: TextStyle(
+                          color: wsColor,
+                          fontSize: modeText.isEmpty ? null : 10),
+                    ),
+                  ]),
+                ),
+                body: const SizedBox(),
+                enabled: false),
+            PaneItem(
+              icon: const Icon(FluentIcons.settings),
+              title: const Text(
+                'Settings',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              infoBadge: firebaseValue.when(
+                data: (data) {
+                  if (data != null) {
+                    return const Tooltip(
+                      message: 'New update!',
+                      child: InfoBadge(source: Text('!')),
+                    );
+                  } else {
+                    return null;
+                  }
+                },
+                loading: () => null,
+                error: (error, st) => null,
+              ),
+              body: Settings(widget.prefs),
+            ),
+          ]),
     );
   }
 }

@@ -10,7 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:tray_manager/tray_manager.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../data/news.dart';
@@ -30,14 +29,8 @@ class App extends ConsumerStatefulWidget {
 }
 
 class AppState extends ConsumerState<App> with TrayListener, WindowListener {
-  final List<WebSocketChannel> channels = [];
   late final FlutterTts tts;
-
-  List<WebSocketChannel> getAllChannels() {
-    final newsChannel = News.connectNews();
-    final changelogChannel = News.connectChangelog();
-    return [newsChannel, changelogChannel];
-  }
+  late final newsChannel = News.connectAllNews();
 
   void loadFromPrefs() {
     newItemTitle.value = prefs.getString('lastTitle');
@@ -46,12 +39,16 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   @override
   void initState() {
     super.initState();
+    trayManager.addListener(this);
+    windowManager.addListener(this);
     loadFromPrefs();
     avoidEmptyNews();
     legacyChecker();
     AppUtil.setupTTS().then((value) => tts = value);
-    trayManager.addListener(this);
-    windowManager.addListener(this);
+    final modeNotifier = ref.read(provider.updateModeProvider.notifier);
+    autoLegacy.addListener(() {
+      modeNotifier.update(autoLegacy: autoLegacy.value);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(provider.prefsProvider.notifier).load();
       if (widget.startup &&
@@ -59,13 +56,12 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
         await _trayInit();
       }
     });
-    channels.addAll(getAllChannels());
     webSocketConnect();
     final appPrefs = ref.read(provider.prefsProvider);
-    Future.delayed(const Duration(seconds: 10), () {
-      final newsList = ref.read(provider.newsProvider);
-      final newItem = newsList.first;
+    Future.delayed(const Duration(seconds: 20), () {
       newItemTitle.addListener(() async {
+        final newsList = ref.read(provider.newsProvider);
+        final newItem = newsList.first;
         try {
           if (!appPrefs.focusedMode) {
             await AppUtil.sendNotification(
@@ -97,6 +93,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
         } catch (e, st) {
           await Sentry.captureException(e, stackTrace: st);
         }
+        prefs.setString('lastTitle', newItemTitle.value!);
       });
     });
     Timer.periodic(const Duration(seconds: 2), (timer) async {
@@ -114,79 +111,56 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     reconnecting = true;
     log('Trying to reconnect in ${delay.inSeconds} Seconds');
     await Future.delayed(delay);
-    channels.clear();
-    channels.addAll(getAllChannels());
     await webSocketConnect();
     reconnecting = false;
   }
 
   Future<void> _onError(e, {required String channelName}) async {
     log('$channelName Error: ${e.toString()}');
-    temporaryLegacy = true;
+    autoLegacy.value = true;
     if (reconnecting) return;
     await webSocketReconnect(const Duration(seconds: 10));
   }
 
   Future<void> _onDone({required String channelName}) async {
     log('$channelName Done');
-    temporaryLegacy = true;
+    autoLegacy.value = true;
     if (reconnecting) return;
     await webSocketReconnect(const Duration(seconds: 10));
   }
 
   Future<void> webSocketConnect() async {
     final newsNotifier = ref.read(provider.newsProvider.notifier);
-    if (channels.isNotEmpty) {
-      Future.delayed(Duration.zero, () async {
-        final newsChannel = channels.first;
-        temporaryLegacy = false;
-        newsChannel.stream.listen((event) async {
-          final json = jsonDecode(event);
-          if (json['error'] != null) return;
-          if (json is! List) {
-            final news = News.fromJson(json, workers: false);
-
-            newsNotifier.add(news);
-            newsNotifier.deduplicate();
-            newsNotifier.sortByTime();
-            return;
-          }
+    Future.delayed(Duration.zero, () async {
+      newsChannel.ready.then((_) {
+        autoLegacy.value = false;
+        ref
+            .read(provider.updateModeProvider.notifier)
+            .update(webSocketConnected: true);
+      }).timeout(const Duration(seconds: 2));
+      newsChannel.stream.listen((event) {
+        autoLegacy.value = false;
+        final json = jsonDecode(event);
+        if (json['error'] != null) return;
+        if (json is! List) {
+          final news = News.fromJson(json, workers: false);
+          newsNotifier.add(news);
+          newsNotifier.deduplicate();
+          newsNotifier.sortByTime();
+        } else {
           final listNews =
               json.map((e) => News.fromJson(e, workers: false)).toList();
 
           newsNotifier.addAll(listNews);
           newsNotifier.deduplicate();
           newsNotifier.sortByTime();
-        },
-            cancelOnError: false,
-            onError: (e) => _onError(e, channelName: 'NewsChannel'),
-            onDone: () => _onDone(channelName: 'NewsChannel'));
-        final changelogChannel = channels.last;
-        changelogChannel.stream.listen(
-          (event) async {
-            final json = jsonDecode(event);
-            if (json['error'] != null) return;
-            if (json is! List) {
-              final news = News.fromJson(json, workers: false);
-
-              newsNotifier.add(news);
-              newsNotifier.deduplicate();
-              newsNotifier.sortByTime();
-              return;
-            }
-            final listNews =
-                json.map((e) => News.fromJson(e, workers: false)).toList();
-
-            newsNotifier.addAll(listNews);
-            newsNotifier.deduplicate();
-            newsNotifier.sortByTime();
-          },
+        }
+        newItemTitle.value = ref.read(provider.newsProvider).first.title;
+      },
           cancelOnError: false,
-          onError: (e) => _onError(e, channelName: 'ChangelogChannel'),
-          onDone: () => _onDone(channelName: 'ChangelogChannel'),
-        );
-      });
-    }
+          onError: (e) => _onError(e, channelName: 'NewsChannel'),
+          onDone: () => _onDone(channelName: 'NewsChannel'));
+    });
   }
 
   Future<void> avoidEmptyNews() async {
@@ -194,7 +168,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     while (ref.read(provider.newsProvider).isEmpty) {
       try {
         final value = await News.getAllNews()
-            .timeout(const Duration(seconds: 7), onTimeout: () => []);
+            .timeout(const Duration(seconds: 10), onTimeout: () => []);
         if (value.isNotEmpty) {
           newsNotifier.addAll(value);
           newsNotifier.deduplicate();
@@ -212,9 +186,9 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     Timer.periodic(const Duration(seconds: 20), (timer) async {
       if (ref.read(
               provider.prefsProvider.select((value) => value.legacyUpdate)) ||
-          temporaryLegacy) {
+          autoLegacy.value) {
         final value = await News.getAllNews()
-            .timeout(const Duration(seconds: 7), onTimeout: () => []);
+            .timeout(const Duration(seconds: 10), onTimeout: () => []);
         if (value.isNotEmpty) {
           newsNotifier.addAll(value);
           newsNotifier.deduplicate();
@@ -224,16 +198,15 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     });
   }
 
-  bool temporaryLegacy = false;
+  final autoLegacy = ValueNotifier(false);
   bool reconnecting = false;
 
   @override
   void dispose() {
     trayManager.removeListener(this);
     windowManager.removeListener(this);
-    for (var ch in channels) {
-      ch.sink.close();
-    }
+    newsChannel.sink.close();
+    autoLegacy.dispose();
     super.dispose();
   }
 

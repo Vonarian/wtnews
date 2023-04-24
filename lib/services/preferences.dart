@@ -4,9 +4,12 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../main.dart';
+import '../providers.dart';
 
 class PreferencesNotifier extends StateNotifier<Preferences> {
-  PreferencesNotifier(super.state);
+  final StateNotifierProviderRef ref;
+
+  PreferencesNotifier(super.state, {required this.ref});
 
   void load() {
     final json = prefs.getString('preferences');
@@ -46,6 +49,19 @@ class PreferencesNotifier extends StateNotifier<Preferences> {
       legacyUpdate: legacyUpdate ?? state.legacyUpdate,
     );
     save();
+  }
+
+  @override
+  set state(Preferences value) {
+    super.state = value;
+    if (state.legacyUpdate == true) {
+      ref.read(provider.updateModeProvider.notifier).update(manualLegacy: true);
+    }
+    if (state.legacyUpdate == false) {
+      ref
+          .read(provider.updateModeProvider.notifier)
+          .update(manualLegacy: false);
+    }
   }
 }
 

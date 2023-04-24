@@ -6,6 +6,8 @@ import 'package:wtnews/data/news.dart';
 import 'package:wtnews/main.dart';
 import 'package:wtnews/services/preferences.dart';
 
+import 'data/update_mode.dart';
+
 class MyProvider {
   final systemColorProvider = StateProvider<Color>((_) => Colors.red);
   final versionFBProvider = StreamProvider<String?>(
@@ -24,9 +26,17 @@ class MyProvider {
   );
 
   final prefsProvider = StateNotifierProvider<PreferencesNotifier, Preferences>(
-      (_) => PreferencesNotifier(const Preferences()));
+      (ref) => PreferencesNotifier(const Preferences(), ref: ref));
   final newsProvider =
       StateNotifierProvider<NewsNotifier, List<News>>((_) => NewsNotifier());
+  final updateModeProvider =
+      StateNotifierProvider<UpdateModeNotifier, UpdateMode>(
+          (ref) => UpdateModeNotifier(
+                const UpdateMode(
+                    autoLegacy: false,
+                    manualLegacy: false,
+                    webSocketConnected: false),
+              ));
 }
 
 final provider = MyProvider();
