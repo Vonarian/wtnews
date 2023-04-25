@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:tray_manager/tray_manager.dart';
+import 'package:websocket_universal/websocket_universal.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../data/news.dart';
@@ -30,7 +31,7 @@ class App extends ConsumerStatefulWidget {
 
 class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   late final FlutterTts tts;
-  late final newsChannel = News.connectAllNews();
+  late final IWebSocketHandler<String, String> newsChannel;
 
   void loadFromPrefs() {
     newItemTitle.value = prefs.getString('lastTitle');
@@ -39,24 +40,21 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   @override
   void initState() {
     super.initState();
+    newsChannel = News.connectAllNews();
     trayManager.addListener(this);
     windowManager.addListener(this);
     loadFromPrefs();
     avoidEmptyNews();
     legacyChecker();
     AppUtil.setupTTS().then((value) => tts = value);
-    final modeNotifier = ref.read(provider.updateModeProvider.notifier);
-    autoLegacy.addListener(() {
-      modeNotifier.update(autoLegacy: autoLegacy.value);
-    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      webSocketConnect();
       ref.read(provider.prefsProvider.notifier).load();
       if (widget.startup &&
           ref.read(provider.prefsProvider).minimizeAtStartup) {
         await _trayInit();
       }
     });
-    webSocketConnect();
     final appPrefs = ref.read(provider.prefsProvider);
     Future.delayed(const Duration(seconds: 20), () {
       newItemTitle.addListener(() async {
@@ -107,59 +105,58 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     });
   }
 
-  Future<void> webSocketReconnect(Duration delay) async {
-    reconnecting = true;
-    log('Trying to reconnect in ${delay.inSeconds} Seconds');
-    await Future.delayed(delay);
-    await webSocketConnect();
-    reconnecting = false;
-  }
-
-  Future<void> _onError(e, {required String channelName}) async {
-    log('$channelName Error: ${e.toString()}');
-    autoLegacy.value = true;
-    if (reconnecting) return;
-    await webSocketReconnect(const Duration(seconds: 10));
-  }
-
-  Future<void> _onDone({required String channelName}) async {
-    log('$channelName Done');
-    autoLegacy.value = true;
-    if (reconnecting) return;
-    await webSocketReconnect(const Duration(seconds: 10));
+  Future<void> socketTrack() async {
+    final updateModeNotifier = ref.read(provider.updateModeProvider.notifier);
+    newsChannel.socketStateStream.listen((event) {
+      log(event.status.name);
+      switch (event.status) {
+        case SocketStatus.disconnected:
+          autoLegacy = true;
+          updateModeNotifier.update(
+              webSocketConnected: false, autoLegacy: true);
+          break;
+        case SocketStatus.connecting:
+          break;
+        case SocketStatus.connected:
+          autoLegacy = false;
+          updateModeNotifier.update(
+              webSocketConnected: true, autoLegacy: false);
+          break;
+      }
+    });
+    newsChannel.logEventStream.listen((event) {
+      log(event.status.name);
+    });
   }
 
   Future<void> webSocketConnect() async {
     final newsNotifier = ref.read(provider.newsProvider.notifier);
     Future.delayed(Duration.zero, () async {
-      newsChannel.ready.then((_) {
-        autoLegacy.value = false;
-        ref
-            .read(provider.updateModeProvider.notifier)
-            .update(webSocketConnected: true);
-      }).timeout(const Duration(seconds: 2));
-      newsChannel.stream.listen((event) {
-        autoLegacy.value = false;
-        final json = jsonDecode(event);
-        if (json['error'] != null) return;
-        if (json is! List) {
-          final news = News.fromJson(json, workers: false);
-          newsNotifier.add(news);
-          newsNotifier.deduplicate();
-          newsNotifier.sortByTime();
-        } else {
-          final listNews =
-              json.map((e) => News.fromJson(e, workers: false)).toList();
+      socketTrack();
+      newsChannel.incomingMessagesStream.listen(
+        (event) {
+          log(event);
+          final json = jsonDecode(event);
+          if (json['error'] != null) return;
+          if (json is! List) {
+            final news = News.fromJson(json, workers: false);
+            newsNotifier.add(news);
+            newsNotifier.deduplicate();
+            newsNotifier.sortByTime();
+          } else {
+            final listNews =
+                json.map((e) => News.fromJson(e, workers: false)).toList();
 
-          newsNotifier.addAll(listNews);
-          newsNotifier.deduplicate();
-          newsNotifier.sortByTime();
-        }
-        newItemTitle.value = ref.read(provider.newsProvider).first.title;
-      },
-          cancelOnError: false,
-          onError: (e) => _onError(e, channelName: 'NewsChannel'),
-          onDone: () => _onDone(channelName: 'NewsChannel'));
+            newsNotifier.addAll(listNews);
+            newsNotifier.deduplicate();
+            newsNotifier.sortByTime();
+          }
+          newItemTitle.value = ref.read(provider.newsProvider).first.title;
+        },
+      );
+      Future.delayed(const Duration(seconds: 4), () {
+        newsChannel.sendMessage('force');
+      });
     });
   }
 
@@ -186,7 +183,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     Timer.periodic(const Duration(seconds: 20), (timer) async {
       if (ref.read(
               provider.prefsProvider.select((value) => value.legacyUpdate)) ||
-          autoLegacy.value) {
+          autoLegacy) {
         final value = await News.getAllNews()
             .timeout(const Duration(seconds: 10), onTimeout: () => []);
         if (value.isNotEmpty) {
@@ -198,15 +195,13 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     });
   }
 
-  final autoLegacy = ValueNotifier(false);
-  bool reconnecting = false;
+  bool autoLegacy = false;
 
   @override
   void dispose() {
     trayManager.removeListener(this);
     windowManager.removeListener(this);
-    newsChannel.sink.close();
-    autoLegacy.dispose();
+    newsChannel.disconnect('Bye bye mada faqa');
     super.dispose();
   }
 

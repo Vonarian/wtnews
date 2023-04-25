@@ -6,7 +6,7 @@ version: 1.0.0+1
 
 
 environment:
-  sdk: ">=2.19.5 <3.0.0"
+  sdk: ">=2.19.6 <3.0.0"
 
 dependencies:
   flutter:
@@ -38,7 +38,7 @@ dependencies:
   system_info2: ^3.0.1
   cached_network_image: ^3.2.1
   contextmenu: ^3.0.0
-  web_socket_channel: ^2.3.0
+  websocket_universal: ^0.5.2
   equatable: ^2.0.5
   flutter_tts: ^3.6.3
   webview_windows: ^0.2.2

@@ -4,7 +4,7 @@ import 'dart:developer';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:websocket_universal/websocket_universal.dart';
 
 import '../main.dart';
 // Currently private
@@ -59,10 +59,27 @@ class News extends Equatable {
         'dateString': dateString,
       };
 
-  static WebSocketChannel connectAllNews() {
+  static const _websocketConnectionUri = 'ws://${vps.address}';
+  static const _connectionOptions = SocketConnectionOptions(
+    pingIntervalMs: 3000,
+    timeoutConnectionMs: 4000,
+    skipPingMessages: true,
+    reconnectionDelay: Duration(seconds: 5),
+    failedReconnectionAttemptsLimit: 999999999,
+    pingRestrictionForce: false,
+  );
+
+  static final IMessageProcessor<String, String> _textSocketProcessor =
+      SocketSimpleTextProcessor();
+
+  static IWebSocketHandler<String, String> connectAllNews() {
     //Get from news section
-    final channel = WebSocketChannel.connect(Uri.parse('ws://${vps.address}'));
-    return channel;
+    final textSocketHandler = IWebSocketHandler<String, String>.createClient(
+      _websocketConnectionUri, // Postman echo ws server
+      _textSocketProcessor,
+      connectionOptions: _connectionOptions,
+    );
+    return textSocketHandler;
   }
 
   static Future<List<News>> getAllNews() async {
