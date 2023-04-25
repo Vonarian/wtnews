@@ -41,6 +41,9 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
   void initState() {
     super.initState();
     newsChannel = News.connectAllNews();
+    socketTrack();
+    newsChannel.connect().then((value) =>
+        value ? webSocketConnect() : log('Websocket Failed to Connect'));
     trayManager.addListener(this);
     windowManager.addListener(this);
     loadFromPrefs();
@@ -48,7 +51,6 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     legacyChecker();
     AppUtil.setupTTS().then((value) => tts = value);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      webSocketConnect();
       ref.read(provider.prefsProvider.notifier).load();
       if (widget.startup &&
           ref.read(provider.prefsProvider).minimizeAtStartup) {
@@ -95,6 +97,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
       });
     });
     Timer.periodic(const Duration(seconds: 2), (timer) async {
+      if (!mounted) timer.cancel();
       if (!focused) return;
       Color? systemColor = await DynamicColorPlugin.getAccentColor();
       if (ref.read(provider.systemColorProvider.notifier).state !=
@@ -107,7 +110,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
 
   Future<void> socketTrack() async {
     final updateModeNotifier = ref.read(provider.updateModeProvider.notifier);
-    newsChannel.socketStateStream.listen((event) {
+    newsChannel.socketHandlerStateStream.listen((event) {
       log(event.status.name);
       switch (event.status) {
         case SocketStatus.disconnected:
@@ -124,15 +127,11 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
           break;
       }
     });
-    newsChannel.logEventStream.listen((event) {
-      log(event.status.name);
-    });
   }
 
   Future<void> webSocketConnect() async {
     final newsNotifier = ref.read(provider.newsProvider.notifier);
     Future.delayed(Duration.zero, () async {
-      socketTrack();
       newsChannel.incomingMessagesStream.listen(
         (event) {
           log(event);
@@ -154,9 +153,6 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
           newItemTitle.value = ref.read(provider.newsProvider).first.title;
         },
       );
-      Future.delayed(const Duration(seconds: 4), () {
-        newsChannel.sendMessage('force');
-      });
     });
   }
 
@@ -181,6 +177,7 @@ class AppState extends ConsumerState<App> with TrayListener, WindowListener {
     final newsNotifier = ref.read(provider.newsProvider.notifier);
 
     Timer.periodic(const Duration(seconds: 20), (timer) async {
+      if (!mounted) timer.cancel();
       if (ref.read(
               provider.prefsProvider.select((value) => value.legacyUpdate)) ||
           autoLegacy) {

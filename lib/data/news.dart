@@ -40,12 +40,12 @@ class News extends Equatable {
         title: json['title'],
         description: json['description'],
         imageUrl: json['imageUrl'],
-        date: DateFormat('d-LLLL-y')
-            .parseLoose(json[workers ? 'date' : 'dateString']),
+        date:
+            DateFormat('d-LLLL-y').parseLoose(json[workers ? 'date' : 'date']),
         link: json['link'],
         isNews: json['isNews'],
         dev: json['dev'],
-        dateString: json[workers ? 'date' : 'dateString'],
+        dateString: json[workers ? 'date' : 'date'],
       );
 
   Map<String, dynamic> toJson() => {
@@ -59,25 +59,24 @@ class News extends Equatable {
         'dateString': dateString,
       };
 
-  static const _websocketConnectionUri = 'ws://${vps.address}';
-  static const _connectionOptions = SocketConnectionOptions(
-    pingIntervalMs: 3000,
-    timeoutConnectionMs: 4000,
-    skipPingMessages: true,
-    reconnectionDelay: Duration(seconds: 5),
-    failedReconnectionAttemptsLimit: 999999999,
-    pingRestrictionForce: false,
-  );
-
   static final IMessageProcessor<String, String> _textSocketProcessor =
       SocketSimpleTextProcessor();
 
   static IWebSocketHandler<String, String> connectAllNews() {
+    const websocketConnectionUri = 'ws://${vps.address}';
+    const connectionOptions = SocketConnectionOptions(
+      pingIntervalMs: 3000,
+      timeoutConnectionMs: 4000,
+      reconnectionDelay: Duration(seconds: 3),
+      failedReconnectionAttemptsLimit: 999999999,
+      skipPingMessages: true,
+      pingRestrictionForce: true,
+    );
     //Get from news section
     final textSocketHandler = IWebSocketHandler<String, String>.createClient(
-      _websocketConnectionUri, // Postman echo ws server
+      websocketConnectionUri, // Postman echo ws server
       _textSocketProcessor,
-      connectionOptions: _connectionOptions,
+      connectionOptions: connectionOptions,
     );
     return textSocketHandler;
   }
