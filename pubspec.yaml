@@ -6,7 +6,7 @@ version: 1.0.0+1
 
 
 environment:
-  sdk: ">=2.19.6 <3.0.0"
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -31,7 +31,7 @@ dependencies:
   path: ^1.8.1
   ffi: ^2.0.1
   path_provider: ^2.0.13
-  intl: ^0.17.0
+  intl: ^0.18.0
   fluent_ui: ^4.4.2
   system_theme: ^2.1.0
   dynamic_color: ^1.6.3
